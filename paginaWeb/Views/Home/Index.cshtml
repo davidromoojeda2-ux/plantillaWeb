@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="py-12 px-4 max-w-4xl mx-auto text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 mb-6 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        Tailwind CSS v4 + pnpm integrado con éxito
+    </div>
+
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-4">
+        Bienvenido a <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-600">paginaWeb</span>
+    </h1>
+    <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
+        Tu proyecto ASP.NET Core ahora cuenta con Tailwind CSS configurado de forma ultra liviana mediante CLI y pnpm.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left my-8">
+        <div class="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+            <div class="text-sky-500 text-2xl font-bold mb-2">⚡ Rápido</div>
+            <p class="text-slate-600 text-sm">Compilación ultrarrápida con el nuevo motor de Tailwind v4 y pnpm.</p>
+        </div>
+        <div class="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+            <div class="text-indigo-500 text-2xl font-bold mb-2">📦 Liviano</div>
+            <p class="text-slate-600 text-sm">Sin configuraciones pesadas ni dependencias innecesarias.</p>
+        </div>
+        <div class="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+            <div class="text-emerald-500 text-2xl font-bold mb-2">🔄 Automático</div>
+            <p class="text-slate-600 text-sm">Compilación integrada automáticamente con dotnet build.</p>
+        </div>
+    </div>
+</div>
+
