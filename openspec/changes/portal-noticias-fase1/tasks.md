@@ -58,7 +58,7 @@
 
 ## 7. Verificación Integral del Sistema
 
-- [ ] 7.1 Ejecutar `dotnet build` en la solución completa y verificar que compile con cero errores y cero advertencias
-- [ ] 7.2 Ejecutar `pnpm run build:css` y verificar que los estilos del sitio público y administrador se generen correctamente
-- [ ] 7.3 Validar que la navegación anónima a `/admin` redirija a login y que las rutas públicas operen sin exigir credenciales
-- [ ] 7.4 Registrar commit de punto de control final y cierre de Fase 1 (`feat(release): cierre y verificación integral de fase 1 portal noticias`)
+- [x] 7.1 Ejecutar `dotnet build` en la solución completa y verificar que compile con cero errores y cero advertencias
+- [x] 7.2 Ejecutar `pnpm run build:css` y verificar que los estilos del sitio público y administrador se generen correctamente
+- [x] 7.3 Validar que la navegación anónima a `/admin` redirija a login y que las rutas públicas operen sin exigir credenciales
+- [x] 7.4 Registrar commit de punto de control final y cierre de Fase 1 (`feat(release): cierre y verificación integral de fase 1 portal noticias`)
