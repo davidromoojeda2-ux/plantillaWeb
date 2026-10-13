@@ -1,5 +1,220 @@
 @import "tailwindcss";
 
 @source "../Views";
+@source "../Areas";
 @source "../wwwroot/js";
 
+/* ─── Fuentes Google ────────────────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+/* ─── Tokens de diseño corporativo ─────────────────────────────────────────── */
+@theme {
+  /* Paleta de marca (azul corporativo) */
+  --color-brand-900: #00296B;
+  --color-brand-700: #003F88;
+  --color-brand-500: #00509D;
+  --color-brand-300: #1565C0;
+
+  /* Acento amarillo */
+  --color-accent:       #FDC500;
+  --color-accent-light: #FFD500;
+
+  /* Superficies y neutros */
+  --color-surface: #F5F6F8;
+  --color-surface-alt: #ECEEF2;
+  --color-ink:     #1F2933;
+  --color-ink-muted: #546578;
+  --color-line:    #E2E5EA;
+
+  /* Tipografía */
+  --font-heading: "Merriweather", Georgia, serif;
+  --font-body:    "Inter", system-ui, sans-serif;
+
+  /* Espaciado y radio */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-pill: 9999px;
+
+  /* Sombras */
+  --shadow-card: 0 2px 8px 0 rgb(0 0 0 / 0.08);
+  --shadow-nav:  0 4px 16px 0 rgb(0 0 0 / 0.12);
+}
+
+/* ─── Base global ───────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--color-ink);
+    background: #ffffff;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--color-brand-900);
+  }
+
+  a {
+    color: var(--color-brand-700);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover { color: var(--color-brand-500); }
+
+  img { max-width: 100%; height: auto; display: block; }
+}
+
+/* ─── Componentes reutilizables ─────────────────────────────────────────────── */
+@layer components {
+
+  /* Botón primario (CTA) */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.5rem;
+    background: var(--color-accent);
+    color: var(--color-brand-900);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.9375rem;
+    border-radius: var(--radius-pill);
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 6px rgb(253 197 0 / 0.35);
+  }
+  .btn-primary:hover {
+    background: var(--color-accent-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgb(253 197 0 / 0.45);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* Botón secundario (outline) */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5625rem 1.375rem;
+    background: transparent;
+    color: var(--color-brand-700);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--color-brand-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-secondary:hover {
+    background: var(--color-brand-700);
+    color: #ffffff;
+  }
+
+  /* Tarjeta de artículo */
+  .card-article {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .card-article:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+  }
+
+  /* Etiqueta de categoría */
+  .badge-category {
+    display: inline-block;
+    padding: 0.2rem 0.75rem;
+    background: var(--color-brand-900);
+    color: var(--color-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: var(--radius-pill);
+  }
+
+  /* Sección hero oscura */
+  .hero-dark {
+    background: var(--color-brand-900);
+    color: #ffffff;
+  }
+  .hero-dark h1, .hero-dark h2, .hero-dark h3 { color: #ffffff; }
+
+  /* Barra de progreso de lectura */
+  #reading-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0%;
+    background: var(--color-accent);
+    z-index: 9999;
+    transition: width 0.1s linear;
+  }
+
+  /* Panel admin — sidebar */
+  .admin-sidebar {
+    background: var(--color-brand-900);
+    color: #ffffff;
+    min-height: 100vh;
+    width: 16rem;
+    padding: 1.5rem 1rem;
+  }
+  .admin-sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    color: rgba(255,255,255,0.8);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+  .admin-sidebar a:hover,
+  .admin-sidebar a.active {
+    background: rgba(255,255,255,0.1);
+    color: var(--color-accent);
+  }
+}
+
+/* ─── Utilidades adicionales ────────────────────────────────────────────────── */
+@layer utilities {
+  .font-heading { font-family: var(--font-heading); }
+  .font-body    { font-family: var(--font-body); }
+
+  .text-brand-900 { color: var(--color-brand-900); }
+  .text-brand-700 { color: var(--color-brand-700); }
+  .text-accent    { color: var(--color-accent); }
+  .text-ink-muted { color: var(--color-ink-muted); }
+
+  .bg-brand-900 { background-color: var(--color-brand-900); }
+  .bg-surface   { background-color: var(--color-surface); }
+  .bg-accent    { background-color: var(--color-accent); }
+
+  .border-line  { border-color: var(--color-line); }
+
+  /* Animación fade-in para entradas de contenido */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fade-up 0.4s ease forwards;
+  }
+}
