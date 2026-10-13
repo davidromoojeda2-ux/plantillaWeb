@@ -1,0 +1,53 @@
+@model Domine.Entities.InformativePage
+@{
+    ViewData["Title"] = Model.Title;
+    var otherPages = (List<Domine.Entities.InformativePage>?)ViewBag.OtherPages ?? new();
+}
+
+<div class="space-y-12">
+    <!-- ─── Hero Institucional Oscuro de Alto Contraste ──────────────────────── -->
+    <section class="bg-gradient-to-br from-[#001D4A] via-[#00296B] to-[#003F88] text-white py-16 sm:py-24 border-b border-white/10">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[#FDC500] text-[11px] font-bold tracking-wider uppercase backdrop-blur-xs">
+                <span>ACTUALIZACIÓN:</span>
+                <span>@Model.UpdatedAt.ToString("dd MMMM yyyy")</span>
+            </div>
+
+            <h1 class="text-3xl sm:text-5xl font-serif font-black tracking-tight leading-tight">
+                @Model.Title
+            </h1>
+
+            <p class="text-sm sm:text-base text-blue-100 max-w-2xl leading-relaxed">
+                Lineamientos, compromisos editoriales y bases éticas que rigen nuestro ejercicio periodístico e institucional.
+            </p>
+        </div>
+    </section>
+
+    <!-- ─── Cuerpo del Documento + Menú de Secciones ─────────────────────────── -->
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            <!-- Menú Lateral Institucional -->
+            <aside class="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 sticky top-28">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-100">
+                    Documentos Institucionales
+                </h4>
+                <nav class="space-y-1.5 text-xs">
+                    @foreach (var pageItem in otherPages)
+                    {
+                        <a href="/info/@pageItem.Slug"
+                           class="block px-3 py-2 rounded-xl transition font-medium @(pageItem.Slug == Model.Slug ? "bg-[#00296B] text-white font-bold" : "text-slate-700 hover:bg-slate-100")">
+                            @pageItem.Title
+                        </a>
+                    }
+                </nav>
+            </aside>
+
+            <!-- Contenido Estructurado -->
+            <main class="lg:col-span-8 bg-white p-8 sm:p-12 rounded-3xl border border-slate-200/80 shadow-xs">
+                <div class="prose prose-slate prose-lg max-w-none font-sans leading-relaxed text-slate-800 space-y-6">
+                    @Html.Raw(Model.Content)
+                </div>
+            </main>
+        </div>
+    </div>
+</div>

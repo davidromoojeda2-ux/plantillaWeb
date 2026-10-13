@@ -1,33 +1,163 @@
+@model List<Domine.Entities.Article>
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Noticias Principales y Análisis";
+    var featured = (List<Domine.Entities.Article>?)ViewBag.Featured ?? new();
+    var categories = (Dictionary<string, string>?)ViewBag.Categories ?? new();
+    var images = (Dictionary<string, Domine.Entities.ImageMetadata>?)ViewBag.Images ?? new();
+    var mainHero = featured.FirstOrDefault() ?? Model.FirstOrDefault();
+    var secondaryFeatured = featured.Skip(1).Take(2).ToList();
 }
 
-<div class="py-12 px-4 max-w-4xl mx-auto text-center">
-    <div class="inline-flex items-center gap-2 px-3 py-1 mb-6 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        Tailwind CSS v4 + pnpm integrado con éxito
-    </div>
+<div class="space-y-16 py-8">
+    <!-- ─── Sección Hero de Noticias Destacadas ───────────────────────────── -->
+    @if (mainHero != null)
+    {
+        var heroCover = mainHero.CoverImageId != null && images.ContainsKey(mainHero.CoverImageId) ? images[mainHero.CoverImageId] : null;
+        var heroImgUrl = heroCover?.Variants.OrderByDescending(v => v.Width).FirstOrDefault()?.PublicUrl ?? "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1600&auto=format&fit=crop&q=80";
+        var heroCatName = mainHero.CategoryId != null && categories.ContainsKey(mainHero.CategoryId) ? categories[mainHero.CategoryId] : "Especial";
 
-    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-4">
-        Bienvenido a <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-indigo-600">paginaWeb</span>
-    </h1>
-    <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
-        Tu proyecto ASP.NET Core ahora cuenta con Tailwind CSS configurado de forma ultra liviana mediante CLI y pnpm.
-    </p>
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                <!-- Noticia Principal (8 columnas) -->
+                <div class="lg:col-span-8 group relative rounded-3xl overflow-hidden shadow-xl bg-slate-900 min-h-[460px] flex flex-col justify-end">
+                    <img src="@heroImgUrl" alt="@mainHero.Title"
+                         class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-75 transition duration-700 ease-out" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left my-8">
-        <div class="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
-            <div class="text-sky-500 text-2xl font-bold mb-2">⚡ Rápido</div>
-            <p class="text-slate-600 text-sm">Compilación ultrarrápida con el nuevo motor de Tailwind v4 y pnpm.</p>
+                    <div class="relative p-8 sm:p-10 z-10 space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#FDC500] text-[#00296B] shadow-sm">
+                                @heroCatName
+                            </span>
+                            <span class="text-xs text-white/80 font-mono">
+                                @mainHero.PublishedAt?.ToString("dd MMMM yyyy")
+                            </span>
+                        </div>
+
+                        <h2 class="text-2xl sm:text-4xl font-serif font-black text-white leading-tight">
+                            <a href="/articulos/@mainHero.Slug" class="hover:text-[#FFD500] transition">
+                                @mainHero.Title
+                            </a>
+                        </h2>
+
+                        <p class="text-sm sm:text-base text-slate-200 line-clamp-2 max-w-2xl font-sans leading-relaxed">
+                            @mainHero.Summary
+                        </p>
+
+                        <div class="pt-2 flex items-center gap-4 text-xs text-white/90">
+                            <span class="font-semibold">Por @mainHero.Author</span>
+                            <span>•</span>
+                            <a href="/articulos/@mainHero.Slug" class="inline-flex items-center gap-1.5 font-bold text-[#FDC500] hover:underline">
+                                Leer artículo completo →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Noticias Secundarias Destacadas (4 columnas) -->
+                <div class="lg:col-span-4 flex flex-col gap-6">
+                    @if (secondaryFeatured.Any())
+                    {
+                        @foreach (var sec in secondaryFeatured)
+                        {
+                            var secCover = sec.CoverImageId != null && images.ContainsKey(sec.CoverImageId) ? images[sec.CoverImageId] : null;
+                            var secImgUrl = secCover?.Variants.FirstOrDefault()?.PublicUrl ?? "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop&q=80";
+                            var secCatName = sec.CategoryId != null && categories.ContainsKey(sec.CategoryId) ? categories[sec.CategoryId] : "Actualidad";
+
+                            <div class="flex-1 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-[#00509D]/40 transition group">
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[11px] font-bold uppercase tracking-wider text-[#003F88]">@secCatName</span>
+                                        <span class="text-[11px] text-slate-400">@sec.PublishedAt?.ToString("dd MMM")</span>
+                                    </div>
+                                    <h3 class="font-serif font-bold text-lg text-slate-900 group-hover:text-[#00509D] transition line-clamp-2">
+                                        <a href="/articulos/@sec.Slug">@sec.Title</a>
+                                    </h3>
+                                    <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">@sec.Summary</p>
+                                </div>
+                                <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                                    <span>@sec.Author</span>
+                                    <a href="/articulos/@sec.Slug" class="font-semibold text-[#00509D] hover:underline">Leer más →</a>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="flex-1 bg-gradient-to-br from-[#00296B] to-[#003F88] rounded-3xl p-8 text-white flex flex-col justify-center items-center text-center space-y-3 shadow-md">
+                            <span class="text-3xl">📰</span>
+                            <h3 class="font-serif font-bold text-xl">Periodismo Independiente</h3>
+                            <p class="text-xs text-blue-100 leading-relaxed max-w-xs">Análisis crítico de los sucesos más relevantes de la jornada sin compromisos comerciales.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+
+    <!-- ─── Grid Cronológico de Publicaciones Recientes ───────────────────── -->
+    <section id="ultimas-noticias" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+            <div>
+                <h3 class="text-2xl font-serif font-black text-[#00296B]">Últimas Publicaciones</h3>
+                <p class="text-xs text-slate-500 mt-1">Crónicas, reportajes e investigaciones recientes</p>
+            </div>
+            <a href="/buscar?q=" class="text-xs font-bold text-[#00509D] hover:underline">Ver archivo completo →</a>
         </div>
-        <div class="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
-            <div class="text-indigo-500 text-2xl font-bold mb-2">📦 Liviano</div>
-            <p class="text-slate-600 text-sm">Sin configuraciones pesadas ni dependencias innecesarias.</p>
-        </div>
-        <div class="p-6 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
-            <div class="text-emerald-500 text-2xl font-bold mb-2">🔄 Automático</div>
-            <p class="text-slate-600 text-sm">Compilación integrada automáticamente con dotnet build.</p>
-        </div>
-    </div>
+
+        @if (!Model.Any())
+        {
+            <div class="py-16 text-center text-slate-400">
+                <p class="text-base font-medium">Aún no hay publicaciones en el portal.</p>
+                <p class="text-xs mt-1">Ingresa al panel administrativo para publicar las primeras noticias.</p>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                @foreach (var art in Model)
+                {
+                    var artCover = art.CoverImageId != null && images.ContainsKey(art.CoverImageId) ? images[art.CoverImageId] : null;
+                    var artImgUrl = artCover?.Variants.FirstOrDefault()?.PublicUrl ?? "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&auto=format&fit=crop&q=80";
+                    var artCat = art.CategoryId != null && categories.ContainsKey(art.CategoryId) ? categories[art.CategoryId] : "General";
+
+                    <article class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
+                        <div>
+                            <!-- Imagen de Tarjeta -->
+                            <div class="aspect-[16/10] overflow-hidden bg-slate-100 relative">
+                                <img src="@artImgUrl" alt="@art.Title" loading="lazy"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                                <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/95 text-[#00296B] shadow-xs backdrop-blur-xs">
+                                    @artCat
+                                </span>
+                            </div>
+
+                            <div class="p-6 space-y-3">
+                                <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                                    <span>@art.PublishedAt?.ToString("dd MMMM yyyy")</span>
+                                    <span>•</span>
+                                    <span>@art.ViewCount lecturas</span>
+                                </div>
+
+                                <h4 class="font-serif font-bold text-lg text-slate-900 group-hover:text-[#00509D] transition leading-snug line-clamp-2">
+                                    <a href="/articulos/@art.Slug">@art.Title</a>
+                                </h4>
+
+                                <p class="text-xs text-slate-600 line-clamp-3 leading-relaxed">
+                                    @art.Summary
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <span class="font-semibold text-slate-700">@art.Author</span>
+                            <a href="/articulos/@art.Slug" class="font-bold text-[#00509D] hover:text-[#00296B] inline-flex items-center gap-1">
+                                Leer nota →
+                            </a>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
 </div>
-

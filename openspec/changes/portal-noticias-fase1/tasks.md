@@ -48,13 +48,13 @@
 
 ## 6. Portal Público (paginaWeb)
 
-- [ ] 6.1 Crear `NavbarViewComponent` con carga reactiva desde caché y menú responsivo según wireframe de referencia (`assets/frame navbar.png`) con dropdowns por categoría, botón de login y botón CTA
-- [ ] 6.2 Implementar página de inicio (`Home/Index`) con sección hero para noticias destacadas y grid cronológico de publicaciones recientes
-- [ ] 6.3 Implementar vistas de catálogo por categoría y subcategoría con paginación de 9 artículos y filtros activos
-- [ ] 6.4 Implementar vista de detalle del artículo (`/articulos/{slug}`) según wireframe (`assets/frame articulo...png`) con barra de progreso superior, tiempo de lectura, índice interactivo lateral ("En esta página"), imágenes WebP y formulario de comentarios con honeypot
-- [ ] 6.5 Implementar motor de búsqueda por texto en `/buscar` con resultados paginados y mensajes informativos cuando no hay coincidencias
-- [ ] 6.6 Implementar rutas `/info/{slug}` con hero e índice navegable (`assets/frame politicas de calidad.png`), pie de página multiculumna con enlaces legales y redes sociales (`assets/frame footer.png`) y aviso de cookies
-- [ ] 6.7 Registrar commit de punto de control para el Portal Público (`feat(public): vistas públicas, catálogo, detalle con lectura y comentarios`)
+- [x] 6.1 Crear `NavbarViewComponent` con carga reactiva desde caché y menú responsivo según wireframe de referencia (`assets/frame navbar.png`) con dropdowns por categoría, botón de login y botón CTA
+- [x] 6.2 Implementar página de inicio (`Home/Index`) con sección hero para noticias destacadas y grid cronológico de publicaciones recientes
+- [x] 6.3 Implementar vistas de catálogo por categoría y subcategoría con paginación de 9 artículos y filtros activos
+- [x] 6.4 Implementar vista de detalle del artículo (`/articulos/{slug}`) según wireframe (`assets/frame articulo...png`) con barra de progreso superior, tiempo de lectura, índice interactivo lateral ("En esta página"), imágenes WebP y formulario de comentarios con honeypot
+- [x] 6.5 Implementar motor de búsqueda por texto en `/buscar` con resultados paginados y mensajes informativos cuando no hay coincidencias
+- [x] 6.6 Implementar rutas `/info/{slug}` con hero e índice navegable (`assets/frame politicas de calidad.png`), pie de página multiculumna con enlaces legales y redes sociales (`assets/frame footer.png`) y aviso de cookies
+- [x] 6.7 Registrar commit de punto de control para el Portal Público (`feat(public): vistas públicas, catálogo, detalle con lectura y comentarios`)
 
 ## 7. Verificación Integral del Sistema
 

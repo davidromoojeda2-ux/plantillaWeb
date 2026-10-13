@@ -1,50 +1,145 @@
+@inject Aplication.Services.IPageService PageService
+@{
+    var footerPages = await PageService.GetFooterPagesAsync();
+}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es" class="h-full scroll-smooth">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - paginaWeb</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - Portal Noticias" : "Portal Noticias - Periodismo Independiente y Análisis Profundo")</title>
+    <meta name="description" content="@(ViewData["MetaDescription"] ?? "Portal informativo con las últimas noticias, cobertura en profundidad, reportajes y análisis sobre tecnología, economía y cultura.")" />
+
+    <meta property="og:title" content="@(ViewData["Title"] ?? "Portal Noticias")" />
+    <meta property="og:description" content="@(ViewData["MetaDescription"] ?? "Noticias rigurosas y actualizadas.")" />
+    <meta property="og:type" content="website" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/paginaWeb.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">paginaWeb</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+<body class="min-h-full flex flex-col font-sans text-slate-800 bg-[#F5F6F8] antialiased selection:bg-[#FDC500] selection:text-[#00296B]">
+
+    <!-- ─── Barra Superior de Navegación ────────────────────────────────────── -->
+    @await Component.InvokeAsync("Navbar")
+
+    <!-- ─── Contenido Principal ──────────────────────────────────────────────── -->
+    <main class="flex-1">
+        @RenderBody()
+    </main>
+
+    <!-- ─── Pie de Página Dinámico (Footer) ─────────────────────────────────── -->
+    <footer class="bg-[#00296B] text-white pt-16 pb-12 mt-20 border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-white/10">
+                <!-- Columna Marca -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-[#FDC500] text-[#00296B] font-bold text-2xl flex items-center justify-center shadow-lg">
+                            N
+                        </div>
+                        <div>
+                            <span class="text-xl font-serif font-black tracking-tight text-white">PORTAL</span>
+                            <span class="text-xl font-serif font-bold tracking-tight text-[#FFD500]">NOTICIAS</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-blue-100/80 leading-relaxed max-w-sm">
+                        Comprometidos con el periodismo riguroso, la verificación exhaustiva de los hechos y la cobertura en profundidad de los sucesos que transforman nuestro mundo.
+                    </p>
+                    <div class="flex items-center gap-3 pt-2">
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" aria-label="X Twitter">
+                            <span class="font-bold text-xs">𝕏</span>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" aria-label="Facebook">
+                            <span class="font-bold text-xs">f</span>
+                        </a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" aria-label="Instagram">
+                            <span class="font-bold text-xs">📸</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Columna Secciones -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Secciones</h4>
+                    <ul class="space-y-2.5 text-sm text-blue-100/90">
+                        <li><a href="/categoria/tecnologia" class="hover:text-white transition">Tecnología</a></li>
+                        <li><a href="/categoria/economia" class="hover:text-white transition">Economía</a></li>
+                        <li><a href="/categoria/cultura" class="hover:text-white transition">Cultura</a></li>
+                        <li><a href="/categoria/inteligencia-artificial" class="hover:text-white transition">Inteligencia Artificial</a></li>
+                    </ul>
+                </div>
+
+                <!-- Columna Institucional -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Institucional</h4>
+                    <ul class="space-y-2.5 text-sm text-blue-100/90">
+                        @foreach (var pageItem in footerPages)
+                        {
+                            <li>
+                                <a href="/info/@pageItem.Slug" class="hover:text-white transition">@pageItem.Title</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <!-- Columna Contacto / Redacción -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Redacción</h4>
+                    <ul class="space-y-2.5 text-sm text-blue-100/90">
+                        <li><a href="/admin/login" class="text-blue-200 hover:text-white transition flex items-center gap-1.5 font-medium"><span>Acceso a Redacción</span> →</a></li>
+                        <li><span class="text-xs text-blue-200/70">contacto@portalnoticias.com</span></li>
+                        <li><span class="text-xs text-blue-200/70">Bogotá, Colombia</span></li>
                     </ul>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - paginaWeb - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <!-- Fila Inferior de Copyright -->
+            <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-200/70">
+                <p>© @DateTime.UtcNow.Year Portal Noticias. Todos los derechos reservados.</p>
+                <div class="flex items-center gap-6">
+                    <a href="/info/politica-de-privacidad" class="hover:text-white transition">Privacidad y Cookies</a>
+                    <a href="/info/politicas-de-calidad" class="hover:text-white transition">Ética Editorial</a>
+                </div>
+            </div>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- ─── Banner de Cookies ────────────────────────────────────────────────── -->
+    <div id="cookieBanner" class="hidden fixed bottom-4 right-4 max-w-md bg-slate-900 text-white rounded-2xl p-5 shadow-2xl border border-white/10 z-50 transition-all duration-300">
+        <div class="flex items-start gap-4">
+            <span class="text-2xl flex-shrink-0">🍪</span>
+            <div class="space-y-2">
+                <h5 class="font-bold text-sm">Respetamos tu privacidad</h5>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Utilizamos cookies analíticas para mejorar tu experiencia en nuestro portal. No compartimos información personal con terceros.
+                </p>
+                <div class="pt-2 flex items-center gap-3">
+                    <button type="button" id="acceptCookiesBtn" class="px-4 py-1.5 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-xs shadow-xs transition">
+                        Aceptar
+                    </button>
+                    <a href="/info/politica-de-privacidad" class="text-xs text-slate-400 hover:text-white underline">
+                        Más información
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('cookies_accepted')) {
+                document.getElementById('cookieBanner')?.classList.remove('hidden');
+            }
+            document.getElementById('acceptCookiesBtn')?.addEventListener('click', () => {
+                localStorage.setItem('cookies_accepted', 'true');
+                document.getElementById('cookieBanner')?.classList.add('hidden');
+            });
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
