@@ -1,0 +1,67 @@
+@model List<Domine.Entities.InformativePage>
+@{
+    ViewData["Title"] = "Páginas Informativas";
+}
+
+@section HeaderActions {
+    <a href="/admin/secciones/nueva" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nueva Página
+    </a>
+}
+
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div>
+            <h3 class="font-bold text-slate-800 text-base">Secciones Institucionales</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Políticas de calidad, privacidad, términos de uso y acerca de nosotros.</p>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="p-12 text-center text-slate-400">
+            <p class="font-medium text-slate-600">No hay páginas informativas creadas.</p>
+            <a href="/admin/secciones/nueva" class="mt-2 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear primera sección →</a>
+        </div>
+    }
+    else
+    {
+        <div class="divide-y divide-slate-100">
+            @foreach (var p in Model)
+            {
+                <div class="p-5 hover:bg-slate-50/50 transition flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-lg bg-blue-50 text-[#003F88] font-bold text-xs flex items-center justify-center">
+                            @p.Order
+                        </span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-slate-800 text-sm">@p.Title</h4>
+                                <span class="text-xs text-slate-400 font-mono">/info/@p.Slug</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                @(p.ShowInFooter ? "✓ Enlace visible en pie de página" : "Oculto del pie de página") • Modificado: @p.UpdatedAt.ToString("dd/MM/yyyy")
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <a href="/info/@p.Slug" target="_blank" class="p-2 text-slate-400 hover:text-[#00509D] rounded-lg transition" title="Ver en portal público">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                        <a href="/admin/secciones/editar/@p.Id" class="p-2 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </a>
+                        <form method="post" action="/admin/secciones/eliminar/@p.Id" onsubmit="return confirm('¿Eliminar esta sección institucional?');" class="inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Eliminar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

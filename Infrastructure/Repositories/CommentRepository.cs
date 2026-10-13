@@ -17,6 +17,9 @@ public class CommentRepository : ICommentRepository
     public async Task<List<Comment>> GetPendingAsync() =>
         await _col.Find(c => c.Status == CommentStatus.Pendiente).SortBy(c => c.CreatedAt).ToListAsync();
 
+    public async Task<List<Comment>> GetByStatusAsync(CommentStatus status) =>
+        await _col.Find(c => c.Status == status).SortByDescending(c => c.CreatedAt).ToListAsync();
+
     public async Task<List<Comment>> GetAllAsync() =>
         await _col.Find(_ => true).SortByDescending(c => c.CreatedAt).ToListAsync();
 

@@ -1,0 +1,99 @@
+@model List<Domine.Entities.Category>
+@{
+    ViewData["Title"] = "Gestión de Categorías";
+    var subs = (List<Domine.Entities.Category>?)ViewBag.Subs ?? new();
+}
+
+@section HeaderActions {
+    <a href="/admin/categorias/nueva" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nueva Categoría
+    </a>
+}
+
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div>
+            <h3 class="font-bold text-slate-800 text-base">Estructura y Menú del Portal</h3>
+            <p class="text-xs text-slate-400 mt-0.5">El orden y visibilidad impactan directamente en la barra de navegación pública.</p>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="p-12 text-center text-slate-400">
+            <p class="font-medium text-slate-600">No hay categorías registradas.</p>
+            <a href="/admin/categorias/nueva" class="mt-2 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear primera categoría →</a>
+        </div>
+    }
+    else
+    {
+        <div class="divide-y divide-slate-100">
+            @foreach (var parent in Model)
+            {
+                var children = subs.Where(s => s.ParentId == parent.Id).OrderBy(s => s.Order).ToList();
+                <div class="p-5 hover:bg-slate-50/50 transition">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-lg bg-blue-50 text-[#003F88] font-bold text-xs flex items-center justify-center">
+                                @parent.Order
+                            </span>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-slate-800 text-base">@parent.Name</h4>
+                                    <span class="text-xs text-slate-400 font-mono">/@parent.Slug</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                    <span>@(parent.ShowInMenu ? "✓ Visible en menú" : "Oculto de menú")</span>
+                                    <span>•</span>
+                                    <span class="@(parent.IsActive ? "text-emerald-600 font-semibold" : "text-slate-400")">
+                                        @(parent.IsActive ? "Activa" : "Inactiva")
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <a href="/admin/categorias/editar/@parent.Id" class="p-2 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </a>
+                            <form method="post" action="/admin/categorias/eliminar/@parent.Id" onsubmit="return confirm('¿Eliminar esta categoría principal y sus subcategorías?');" class="inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Eliminar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    @if (children.Any())
+                    {
+                        <div class="ml-11 mt-3 pl-4 border-l-2 border-slate-200 space-y-2">
+                            @foreach (var child in children)
+                            {
+                                <div class="flex items-center justify-between py-1.5 text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs text-slate-400 font-mono">#@child.Order</span>
+                                        <span class="font-medium text-slate-700">@child.Name</span>
+                                        <span class="text-xs text-slate-400 font-mono">/@child.Slug</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <a href="/admin/categorias/editar/@child.Id" class="p-1 text-slate-400 hover:text-slate-700 rounded transition" title="Editar subcategoría">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </a>
+                                        <form method="post" action="/admin/categorias/eliminar/@child.Id" onsubmit="return confirm('¿Eliminar esta subcategoría?');" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="p-1 text-slate-400 hover:text-rose-600 rounded transition" title="Eliminar">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

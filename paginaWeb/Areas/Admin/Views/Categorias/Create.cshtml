@@ -1,0 +1,94 @@
+@model Aplication.DTOs.CategoryDto
+@{
+    ViewData["Title"] = "Nueva Categoría";
+    var parents = (List<Domine.Entities.Category>?)ViewBag.Parents ?? new();
+}
+
+<div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-xs p-8">
+    <h3 class="text-lg font-bold text-slate-800 mb-6">Crear Categoría o Subcategoría</h3>
+
+    <form method="post" action="/admin/categorias/nueva" class="space-y-6">
+        @Html.AntiForgeryToken()
+
+        <div>
+            <label asp-for="Name" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Nombre</label>
+            <input asp-for="Name" id="nameInput" required placeholder="ej: Ciencia y Tecnología"
+                   class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+            <span asp-validation-for="Name" class="text-xs text-rose-600 mt-1 block"></span>
+        </div>
+
+        <div>
+            <label asp-for="Slug" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Slug URL</label>
+            <input asp-for="Slug" id="slugInput" required placeholder="ej: ciencia-y-tecnologia"
+                   class="w-full text-sm font-mono rounded-xl border border-slate-300 px-4 py-2.5 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+            <span asp-validation-for="Slug" class="text-xs text-rose-600 mt-1 block"></span>
+        </div>
+
+        <div>
+            <label asp-for="ParentId" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Categoría Padre (Dejar vacío para categoría raíz)</label>
+            <select asp-for="ParentId" class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 bg-white">
+                <option value="">-- Ninguna (Categoría Principal) --</option>
+                @foreach (var p in parents)
+                {
+                    <option value="@p.Id">@p.Name</option>
+                }
+            </select>
+        </div>
+
+        <div>
+            <label asp-for="Description" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Descripción</label>
+            <textarea asp-for="Description" rows="2" placeholder="Breve descripción del tema..."
+                      class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2 focus:ring-2 focus:ring-[#00509D] focus:outline-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div>
+                <label asp-for="Order" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Orden</label>
+                <input asp-for="Order" type="number" min="0" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2" />
+            </div>
+
+            <div class="flex items-center pt-5">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input asp-for="ShowInMenu" type="checkbox" class="rounded border-slate-300 text-[#00296B]" />
+                    <span class="text-xs font-semibold text-slate-700">Mostrar en Menú</span>
+                </label>
+            </div>
+
+            <div class="flex items-center pt-5">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input asp-for="IsActive" type="checkbox" class="rounded border-slate-300 text-[#00296B]" />
+                    <span class="text-xs font-semibold text-slate-700">Activa</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-100 flex gap-3">
+            <button type="submit" class="py-2.5 px-6 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-sm transition">
+                Guardar Categoría
+            </button>
+            <a href="/admin/categorias" class="py-2.5 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        const nameInput = document.getElementById('nameInput');
+        const slugInput = document.getElementById('slugInput');
+        nameInput.addEventListener('input', () => {
+            if (!slugInput.dataset.manual) {
+                slugInput.value = nameInput.value
+                    .toLowerCase()
+                    .trim()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+        });
+        slugInput.addEventListener('input', () => {
+            slugInput.dataset.manual = 'true';
+        });
+    </script>
+}

@@ -44,6 +44,7 @@ public interface ICommentRepository
 {
     Task<List<Comment>> GetByArticleAsync(string articleId, CommentStatus status = CommentStatus.Aprobado);
     Task<List<Comment>> GetPendingAsync();
+    Task<List<Comment>> GetByStatusAsync(CommentStatus status);
     Task<List<Comment>> GetAllAsync();
     Task<Comment?> GetByIdAsync(string id);
     Task InsertAsync(Comment comment);

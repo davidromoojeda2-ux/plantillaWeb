@@ -87,4 +87,101 @@ public static class MongoDbIndexer
                 new CreateIndexOptions { Unique = true, Name = "ux_users_email" })
         ]);
     }
+
+    public static async Task EnsureSeedDataAsync(MongoDbContext context)
+    {
+        // ─── Usuario Admin Inicial ─────────────────────────────────────────────
+        var adminCount = await context.Users.CountDocumentsAsync(Builders<Domine.Entities.AdminUser>.Filter.Empty);
+        if (adminCount == 0)
+        {
+            var adminUser = new Domine.Entities.AdminUser
+            {
+                Username = "admin",
+                Email = "admin@portalnoticias.com",
+                DisplayName = "Administrador del Sistema",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            await context.Users.InsertOneAsync(adminUser);
+        }
+
+        // ─── Categorías Iniciales ──────────────────────────────────────────────
+        var catCount = await context.Categories.CountDocumentsAsync(Builders<Domine.Entities.Category>.Filter.Empty);
+        if (catCount == 0)
+        {
+            var tecnologia = new Domine.Entities.Category
+            {
+                Name = "Tecnología",
+                Slug = "tecnologia",
+                Description = "Noticias de innovación, software y gadgets",
+                Order = 1,
+                ShowInMenu = true,
+                IsActive = true
+            };
+            var economia = new Domine.Entities.Category
+            {
+                Name = "Economía",
+                Slug = "economia",
+                Description = "Finanzas, mercados y negocios globales",
+                Order = 2,
+                ShowInMenu = true,
+                IsActive = true
+            };
+            var cultura = new Domine.Entities.Category
+            {
+                Name = "Cultura",
+                Slug = "cultura",
+                Description = "Arte, cine, literatura y sociedad",
+                Order = 3,
+                ShowInMenu = true,
+                IsActive = true
+            };
+
+            await context.Categories.InsertManyAsync([tecnologia, economia, cultura]);
+
+            var iaSub = new Domine.Entities.Category
+            {
+                Name = "Inteligencia Artificial",
+                Slug = "inteligencia-artificial",
+                ParentId = tecnologia.Id,
+                Order = 1,
+                ShowInMenu = true,
+                IsActive = true
+            };
+            var ciberSub = new Domine.Entities.Category
+            {
+                Name = "Ciberseguridad",
+                Slug = "ciberseguridad",
+                ParentId = tecnologia.Id,
+                Order = 2,
+                ShowInMenu = true,
+                IsActive = true
+            };
+            await context.Categories.InsertManyAsync([iaSub, ciberSub]);
+        }
+
+        // ─── Páginas Informativas Iniciales ───────────────────────────────────
+        var pageCount = await context.Pages.CountDocumentsAsync(Builders<Domine.Entities.InformativePage>.Filter.Empty);
+        if (pageCount == 0)
+        {
+            var politicas = new Domine.Entities.InformativePage
+            {
+                Title = "Políticas de Calidad y Ética Editorial",
+                Slug = "politicas-de-calidad",
+                Content = "<h2>1. Compromiso con la Veracidad</h2><p>Nuestro portal se rige por principios de rigor periodístico, verificación exhaustiva de hechos y separación clara entre información y opinión.</p><h2>2. Independencia Editorial</h2><p>Las decisiones editoriales son completamente autónomas e inmunes a presiones comerciales o partidarias.</p>",
+                Order = 1,
+                ShowInFooter = true
+            };
+            var privacidad = new Domine.Entities.InformativePage
+            {
+                Title = "Política de Privacidad y Cookies",
+                Slug = "politica-de-privacidad",
+                Content = "<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>",
+                Order = 2,
+                ShowInFooter = true
+            };
+            await context.Pages.InsertManyAsync([politicas, privacidad]);
+        }
+    }
 }

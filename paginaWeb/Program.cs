@@ -69,6 +69,7 @@ using (var scope = app.Services.CreateScope())
 {
     var ctx = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
     await MongoDbIndexer.EnsureIndexesAsync(ctx);
+    await MongoDbIndexer.EnsureSeedDataAsync(ctx);
 }
 
 // ─── Pipeline HTTP ────────────────────────────────────────────────────────────
