@@ -1,7 +1,39 @@
-## ===============================
-## Node & Package Managers
-## ===============================
+# ==============================================================================
+# .gitignore para Proyecto ASP.NET Core (.NET 10) + Frontend Node/pnpm + Docker
+# ==============================================================================
+
+# ─── .NET & Visual Studio ─────────────────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+**/[Dd]ebug/
+**/[Rr]elease/
+[Tt]est[Rr]esults/
+**/[Tt]est[Rr]esults/
+[Pp]ublish/
+**/[Pp]ublish/
+
+# Archivos de usuario y cache de Visual Studio
+.vs/
+**/.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.pidb
+*.sln.docstates
+*.pubxml
+*.pubxml.user
+*.PublishProfiles
+*.dmp
+*.mdmp
+
+# ─── Node.js & Gestores de Paquetes ───────────────────────────────────────────
 node_modules/
+**/node_modules/
 .pnpm-store/
 npm-debug.log*
 yarn-debug.log*
@@ -9,30 +41,33 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-## ===============================
-## .NET & Visual Studio
-## ===============================
-**/[Bb]in/
-**/[Oo]bj/
-[Bb]in/
-[Oo]bj/
-[Dd]ebug/
-[Rr]elease/
-TestResults/
-*.user
-*.userosscache
-*.suo
-*.userprefs
-*.pidb
-*.sln.docstates
-.vs/
-**/.vs/
+# ─── Entorno, Secretos y Credenciales (Seguridad Crítica) ──────────────────────
+.env
+.env.*
+!.env.example
 
-## ===============================
-## Editors & IDEs
-## ===============================
-.idea/
-*.sln.iml
+# Configuraciones locales con contraseñas de desarrollo
+appsettings.Local.json
+appsettings.*.local.json
+
+# Certificados y llaves criptográficas privadas
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+# Sobrescrituras locales de Docker Compose (no compartir en repo)
+docker-compose.override.yml
+*.override.yml
+
+# ─── Almacenamiento de Archivos y Subidas de Usuarios ─────────────────────────
+**/wwwroot/uploads/*
+!**/wwwroot/uploads/.gitkeep
+
+# ─── Editores e IDEs ──────────────────────────────────────────────────────────
+# Visual Studio Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -40,23 +75,17 @@ TestResults/
 !.vscode/extensions.json
 *.code-workspace
 
-## ===============================
-## User Uploads & Media Storage
-## ===============================
-**/wwwroot/uploads/*
-!**/wwwroot/uploads/.gitkeep
+# JetBrains (Rider, IntelliJ, etc.)
+.idea/
+*.sln.iml
+_ReSharper*/
+*.DotSettings.user
 
-## ===============================
-## OS & Environment
-## ===============================
+# ─── Sistema Operativo y Temporales ───────────────────────────────────────────
 .DS_Store
 Thumbs.db
 Desktop.ini
 *.log
-
-## ===============================
-## Environment files
-## ===============================
-.env
-.env.*
-!.env.example
+*.bak
+*.swp
+*~
