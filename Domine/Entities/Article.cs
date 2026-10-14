@@ -14,6 +14,7 @@ public enum ArticleStatus
 /// Artículo del portal de noticias. Contiene el contenido editorial completo,
 /// metadatos SEO, referencias a imágenes en R2 y estado de publicación.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class Article
 {
     [BsonId]
@@ -45,6 +46,9 @@ public class Article
     [BsonRepresentation(BsonType.ObjectId)]
     public string? CoverImageId { get; set; }
 
+    /// <summary>Ruta o URL directa de la imagen de portada.</summary>
+    public string? CoverImageUrl { get; set; }
+
     /// <summary>Ids adicionales de imágenes asociadas al artículo.</summary>
     [BsonRepresentation(BsonType.ObjectId)]
     public List<string> ImageIds { get; set; } = [];
@@ -65,4 +69,18 @@ public class Article
 
     /// <summary>Tiempo estimado de lectura en minutos (calculado al publicar).</summary>
     public int ReadingTimeMinutes { get; set; } = 1;
+
+    /// <summary>
+    /// Calcula el tiempo estimado de lectura en base al conteo de palabras del contenido HTML.
+    /// </summary>
+    public static int EstimateReadingTime(string? htmlContent)
+    {
+        if (string.IsNullOrWhiteSpace(htmlContent)) return 1;
+
+        var words = System.Text.RegularExpressions.Regex
+            .Replace(htmlContent, "<[^>]+>", " ")
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+
+        return Math.Max(1, (int)Math.Ceiling(words / 200.0));
+    }
 }

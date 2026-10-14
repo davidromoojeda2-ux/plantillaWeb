@@ -1,9 +1,9 @@
-@model List<Domine.Entities.Article>
+@model List<ArticleResponseDto>
 @{
     ViewData["Title"] = "Noticias Principales y Análisis";
-    var featured = (List<Domine.Entities.Article>?)ViewBag.Featured ?? new();
+    var featured = (List<ArticleResponseDto>?)ViewBag.Featured ?? new();
     var categories = (Dictionary<string, string>?)ViewBag.Categories ?? new();
-    var images = (Dictionary<string, Domine.Entities.ImageMetadata>?)ViewBag.Images ?? new();
+    var images = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.Images ?? new();
     var mainHero = featured.FirstOrDefault() ?? Model.FirstOrDefault();
     var secondaryFeatured = featured.Skip(1).Take(2).ToList();
 }
@@ -13,15 +13,18 @@
     @if (mainHero != null)
     {
         var heroCover = mainHero.CoverImageId != null && images.ContainsKey(mainHero.CoverImageId) ? images[mainHero.CoverImageId] : null;
-        var heroImgUrl = heroCover?.Variants.OrderByDescending(v => v.Width).FirstOrDefault()?.PublicUrl ?? "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1600&auto=format&fit=crop&q=80";
+        var heroImgUrl = !string.IsNullOrWhiteSpace(mainHero.CoverImageUrl) ? mainHero.CoverImageUrl : ImageMapper.GetBestUrl(heroCover);
         var heroCatName = mainHero.CategoryId != null && categories.ContainsKey(mainHero.CategoryId) ? categories[mainHero.CategoryId] : "Especial";
 
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 <!-- Noticia Principal (8 columnas) -->
                 <div class="lg:col-span-8 group relative rounded-3xl overflow-hidden shadow-xl bg-slate-900 min-h-[460px] flex flex-col justify-end">
-                    <img src="@heroImgUrl" alt="@mainHero.Title"
-                         class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-75 transition duration-700 ease-out" />
+                    @if (!string.IsNullOrEmpty(heroImgUrl))
+                    {
+                        <img src="@heroImgUrl" alt="@(!string.IsNullOrWhiteSpace(heroCover?.Alt) ? heroCover.Alt : mainHero.Title)"
+                             class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-75 transition duration-700 ease-out" />
+                    }
                     <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
 
                     <div class="relative p-8 sm:p-10 z-10 space-y-4">
@@ -61,7 +64,7 @@
                         @foreach (var sec in secondaryFeatured)
                         {
                             var secCover = sec.CoverImageId != null && images.ContainsKey(sec.CoverImageId) ? images[sec.CoverImageId] : null;
-                            var secImgUrl = secCover?.Variants.FirstOrDefault()?.PublicUrl ?? "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop&q=80";
+                            var secImgUrl = !string.IsNullOrWhiteSpace(sec.CoverImageUrl) ? sec.CoverImageUrl : (ImageMapper.GetThumbnailUrl(secCover) ?? ImageMapper.GetBestUrl(secCover));
                             var secCatName = sec.CategoryId != null && categories.ContainsKey(sec.CategoryId) ? categories[sec.CategoryId] : "Actualidad";
 
                             <div class="flex-1 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-[#00509D]/40 transition group">
@@ -118,15 +121,24 @@
                 @foreach (var art in Model)
                 {
                     var artCover = art.CoverImageId != null && images.ContainsKey(art.CoverImageId) ? images[art.CoverImageId] : null;
-                    var artImgUrl = artCover?.Variants.FirstOrDefault()?.PublicUrl ?? "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&auto=format&fit=crop&q=80";
+                    var artImgUrl = !string.IsNullOrWhiteSpace(art.CoverImageUrl) ? art.CoverImageUrl : (ImageMapper.GetThumbnailUrl(artCover) ?? ImageMapper.GetBestUrl(artCover));
                     var artCat = art.CategoryId != null && categories.ContainsKey(art.CategoryId) ? categories[art.CategoryId] : "General";
 
                     <article class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
                         <div>
                             <!-- Imagen de Tarjeta -->
                             <div class="aspect-[16/10] overflow-hidden bg-slate-100 relative">
-                                <img src="@artImgUrl" alt="@art.Title" loading="lazy"
-                                     class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                                @if (!string.IsNullOrEmpty(artImgUrl))
+                                {
+                                    <img src="@artImgUrl" alt="@(!string.IsNullOrWhiteSpace(artCover?.Alt) ? artCover.Alt : art.Title)" loading="lazy"
+                                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                                }
+                                else
+                                {
+                                    <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400">
+                                        <svg class="w-12 h-12 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+                                    </div>
+                                }
                                 <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/95 text-[#00296B] shadow-xs backdrop-blur-xs">
                                     @artCat
                                 </span>

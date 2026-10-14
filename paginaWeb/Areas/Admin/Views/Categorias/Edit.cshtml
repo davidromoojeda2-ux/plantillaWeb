@@ -1,7 +1,7 @@
 @model Aplication.DTOs.CategoryDto
 @{
     ViewData["Title"] = "Editar Categoría";
-    var parents = (List<Domine.Entities.Category>?)ViewBag.Parents ?? new();
+    var parents = (List<CategoryResponseDto>?)ViewBag.Parents ?? new();
     var categoryId = (string)ViewBag.CategoryId;
 }
 

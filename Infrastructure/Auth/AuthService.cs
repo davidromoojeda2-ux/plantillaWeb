@@ -1,4 +1,6 @@
+using Aplication.DTOs;
 using Aplication.Interfaces;
+using Aplication.Mappers;
 using Aplication.Services;
 using Domine.Entities;
 
@@ -23,6 +25,9 @@ public class AuthService : IAuthService
         return valid;
     }
 
-    public Task<AdminUser?> GetUserAsync(string username) =>
-        _userRepo.GetByUsernameAsync(username);
+    public async Task<AdminUserDto?> GetUserAsync(string username)
+    {
+        var user = await _userRepo.GetByUsernameAsync(username);
+        return user is not null ? AuthMapper.ToDto(user) : null;
+    }
 }

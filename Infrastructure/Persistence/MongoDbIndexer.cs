@@ -86,6 +86,14 @@ public static class MongoDbIndexer
                 Builders<Domine.Entities.AdminUser>.IndexKeys.Ascending(u => u.Email),
                 new CreateIndexOptions { Unique = true, Name = "ux_users_email" })
         ]);
+
+        // ─── images ───────────────────────────────────────────────────────────
+        await context.Images.Indexes.CreateManyAsync(
+        [
+            new CreateIndexModel<Domine.Entities.ImageMetadata>(
+                Builders<Domine.Entities.ImageMetadata>.IndexKeys.Ascending(i => i.ArticleId),
+                new CreateIndexOptions { Name = "ix_images_article_id" })
+        ]);
     }
 
     public static async Task EnsureSeedDataAsync(MongoDbContext context)
@@ -182,6 +190,72 @@ public static class MongoDbIndexer
                 ShowInFooter = true
             };
             await context.Pages.InsertManyAsync([politicas, privacidad]);
+        }
+
+        // ─── Artículos Iniciales ──────────────────────────────────────────────
+        var articleCount = await context.Articles.CountDocumentsAsync(Builders<Domine.Entities.Article>.Filter.Empty);
+        if (articleCount == 0)
+        {
+            var catTec = await context.Categories.Find(c => c.Slug == "tecnologia").FirstOrDefaultAsync();
+            var catEco = await context.Categories.Find(c => c.Slug == "economia").FirstOrDefaultAsync();
+            var catCul = await context.Categories.Find(c => c.Slug == "cultura").FirstOrDefaultAsync();
+
+            var articles = new List<Domine.Entities.Article>
+            {
+                new Domine.Entities.Article
+                {
+                    Title = "Revolución de la Inteligencia Artificial y la Nueva Era de la Automatización",
+                    Slug = "revolucion-inteligencia-artificial-nueva-era",
+                    Summary = "Un análisis exhaustivo sobre cómo los nuevos modelos generativos y la computación en la nube transforman la industria global.",
+                    Content = "<h2>1. El Estado Actual del Ecosistema Tecnológico</h2><p>El ritmo de avance en modelos fundacionales ha sobrepasado las estimaciones iniciales. Las organizaciones aceleran su migración hacia arquitecturas híbridas y seguras.</p><h2>2. Desafíos y Gobernanza de Datos</h2><p>La seguridad de la infraestructura y el cumplimiento regulatorio son pilares críticos para garantizar operaciones confiables a escala.</p>",
+                    Author = "Redacción de Tecnología",
+                    CategoryId = catTec?.Id,
+                    Tags = ["Tecnología", "IA", "Innovación"],
+                    Featured = true,
+                    Status = Domine.Entities.ArticleStatus.Publicado,
+                    PublishedAt = DateTime.UtcNow.AddHours(-2),
+                    CreatedAt = DateTime.UtcNow.AddHours(-2),
+                    UpdatedAt = DateTime.UtcNow.AddHours(-2),
+                    ReadingTimeMinutes = 4,
+                    ViewCount = 145
+                },
+                new Domine.Entities.Article
+                {
+                    Title = "Mercados Globales y Nuevas Perspectivas Financieras para este Trimestre",
+                    Slug = "mercados-globales-perspectivas-financieras",
+                    Summary = "Evaluación macroeconómica sobre las tasas de interés, comercio internacional y flujo de inversiones sostenibles.",
+                    Content = "<h2>Comercio y Política Monetaria</h2><p>Los bancos centrales ajustan sus políticas ante la desaceleración de la inflación, impulsando la confianza en mercados emergentes.</p>",
+                    Author = "Análisis Económico",
+                    CategoryId = catEco?.Id,
+                    Tags = ["Economía", "Finanzas", "Mercados"],
+                    Featured = false,
+                    Status = Domine.Entities.ArticleStatus.Publicado,
+                    PublishedAt = DateTime.UtcNow.AddHours(-5),
+                    CreatedAt = DateTime.UtcNow.AddHours(-5),
+                    UpdatedAt = DateTime.UtcNow.AddHours(-5),
+                    ReadingTimeMinutes = 3,
+                    ViewCount = 89
+                },
+                new Domine.Entities.Article
+                {
+                    Title = "Preservación del Patrimonio y Nuevos Espacios Culturales Contemporáneos",
+                    Slug = "preservacion-patrimonio-espacios-culturales",
+                    Summary = "Iniciativas comunitarias e institucionales rescatan centros históricos y fomentan el diálogo artístico multidisciplinario.",
+                    Content = "<h2>Encuentro entre Historia y Modernidad</h2><p>La integración de técnicas digitales permite documentar y difundir expresiones culturales en formatos interactivos para nuevas generaciones.</p>",
+                    Author = "Redacción Cultural",
+                    CategoryId = catCul?.Id,
+                    Tags = ["Cultura", "Arte", "Sociedad"],
+                    Featured = false,
+                    Status = Domine.Entities.ArticleStatus.Publicado,
+                    PublishedAt = DateTime.UtcNow.AddHours(-8),
+                    CreatedAt = DateTime.UtcNow.AddHours(-8),
+                    UpdatedAt = DateTime.UtcNow.AddHours(-8),
+                    ReadingTimeMinutes = 3,
+                    ViewCount = 62
+                }
+            };
+
+            await context.Articles.InsertManyAsync(articles);
         }
     }
 }

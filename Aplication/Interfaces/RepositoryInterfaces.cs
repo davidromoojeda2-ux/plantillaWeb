@@ -79,9 +79,11 @@ public interface IInformativePageRepository
 public interface IImageMetadataRepository
 {
     Task<List<ImageMetadata>> GetAllAsync(int skip = 0, int take = 50);
+    Task<List<ImageMetadata>> GetByArticleIdAsync(string articleId);
     Task<ImageMetadata?> GetByIdAsync(string id);
     Task InsertAsync(ImageMetadata image);
     Task UpdateAltAsync(string id, string alt);
+    Task UpdateArticleIdAsync(string id, string? articleId);
     Task DeleteAsync(string id);
 }
 

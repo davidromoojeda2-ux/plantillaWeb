@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Aplication.DTOs;
 using Aplication.Interfaces;
+using Aplication.Mappers;
 using Domine.Entities;
 
 namespace Aplication.Services;
@@ -10,9 +11,10 @@ namespace Aplication.Services;
 
 public interface ICommentService
 {
-    Task<List<Comment>> GetApprovedByArticleAsync(string articleId);
-    Task<List<Comment>> GetPendingAsync();
-    Task<List<Comment>> GetAllAsync();
+    Task<List<CommentResponseDto>> GetApprovedByArticleAsync(string articleId);
+    Task<List<CommentResponseDto>> GetPendingAsync();
+    Task<List<CommentResponseDto>> GetAllAsync();
+    Task<List<CommentResponseDto>> GetByStatusAsync(string? status);
     Task SubmitAsync(CommentSubmissionDto dto, string visitorIp);
     Task ApproveAsync(string id);
     Task RejectAsync(string id);
@@ -30,11 +32,29 @@ public class CommentService : ICommentService
         _visitorRepo = visitorRepo;
     }
 
-    public Task<List<Comment>> GetApprovedByArticleAsync(string articleId) =>
-        _commentRepo.GetByArticleAsync(articleId, CommentStatus.Aprobado);
+    public async Task<List<CommentResponseDto>> GetApprovedByArticleAsync(string articleId) =>
+        CommentMapper.ToDtoList(await _commentRepo.GetByArticleAsync(articleId, CommentStatus.Aprobado));
 
-    public Task<List<Comment>> GetPendingAsync() => _commentRepo.GetPendingAsync();
-    public Task<List<Comment>> GetAllAsync() => _commentRepo.GetAllAsync();
+    public async Task<List<CommentResponseDto>> GetPendingAsync() =>
+        CommentMapper.ToDtoList(await _commentRepo.GetPendingAsync());
+
+    public async Task<List<CommentResponseDto>> GetAllAsync() =>
+        CommentMapper.ToDtoList(await _commentRepo.GetAllAsync());
+
+    public async Task<List<CommentResponseDto>> GetByStatusAsync(string? status)
+    {
+        List<Comment> comments;
+        if (string.Equals(status, "aprobado", StringComparison.OrdinalIgnoreCase))
+            comments = await _commentRepo.GetByStatusAsync(CommentStatus.Aprobado);
+        else if (string.Equals(status, "rechazado", StringComparison.OrdinalIgnoreCase))
+            comments = await _commentRepo.GetByStatusAsync(CommentStatus.Rechazado);
+        else if (string.Equals(status, "todos", StringComparison.OrdinalIgnoreCase))
+            comments = await _commentRepo.GetAllAsync();
+        else
+            comments = await _commentRepo.GetPendingAsync();
+
+        return CommentMapper.ToDtoList(comments);
+    }
 
     public async Task SubmitAsync(CommentSubmissionDto dto, string visitorIp)
     {
@@ -48,14 +68,8 @@ public class CommentService : ICommentService
             await _visitorRepo.InsertAsync(visitor);
         }
 
-        await _commentRepo.InsertAsync(new Comment
-        {
-            ArticleId = dto.ArticleId,
-            VisitorId = visitor.Id,
-            Name = dto.Name,
-            Content = dto.Content,
-            Status = CommentStatus.Pendiente
-        });
+        var comment = CommentMapper.ToEntity(dto, visitor.Id);
+        await _commentRepo.InsertAsync(comment);
     }
 
     public Task ApproveAsync(string id) => _commentRepo.UpdateStatusAsync(id, CommentStatus.Aprobado);
@@ -70,12 +84,12 @@ public class CommentService : ICommentService
 
 public interface IPageService
 {
-    Task<List<InformativePage>> GetAllAsync();
-    Task<List<InformativePage>> GetFooterPagesAsync();
-    Task<InformativePage?> GetBySlugAsync(string slug);
-    Task<InformativePage?> GetByIdAsync(string id);
-    Task<InformativePage> CreateAsync(PageDto dto);
-    Task<InformativePage> UpdateAsync(string id, PageDto dto);
+    Task<List<PageResponseDto>> GetAllAsync();
+    Task<List<PageResponseDto>> GetFooterPagesAsync();
+    Task<PageResponseDto?> GetBySlugAsync(string slug);
+    Task<PageResponseDto?> GetByIdAsync(string id);
+    Task<PageResponseDto> CreateAsync(PageDto dto);
+    Task<PageResponseDto> UpdateAsync(string id, PageDto dto);
     Task DeleteAsync(string id);
 }
 
@@ -85,30 +99,39 @@ public class PageService : IPageService
 
     public PageService(IInformativePageRepository repo) => _repo = repo;
 
-    public Task<List<InformativePage>> GetAllAsync() => _repo.GetAllAsync();
-    public Task<List<InformativePage>> GetFooterPagesAsync() => _repo.GetFooterPagesAsync();
-    public Task<InformativePage?> GetBySlugAsync(string slug) => _repo.GetBySlugAsync(slug);
-    public Task<InformativePage?> GetByIdAsync(string id) => _repo.GetByIdAsync(id);
+    public async Task<List<PageResponseDto>> GetAllAsync() =>
+        PageMapper.ToDtoList(await _repo.GetAllAsync());
 
-    public async Task<InformativePage> CreateAsync(PageDto dto)
+    public async Task<List<PageResponseDto>> GetFooterPagesAsync() =>
+        PageMapper.ToDtoList(await _repo.GetFooterPagesAsync());
+
+    public async Task<PageResponseDto?> GetBySlugAsync(string slug)
     {
-        var page = new InformativePage
-        {
-            Title = dto.Title, Slug = dto.Slug, Content = dto.Content,
-            Order = dto.Order, ShowInFooter = dto.ShowInFooter
-        };
-        await _repo.InsertAsync(page);
-        return page;
+        var page = await _repo.GetBySlugAsync(slug);
+        return page is not null ? PageMapper.ToDto(page) : null;
     }
 
-    public async Task<InformativePage> UpdateAsync(string id, PageDto dto)
+    public async Task<PageResponseDto?> GetByIdAsync(string id)
+    {
+        var page = await _repo.GetByIdAsync(id);
+        return page is not null ? PageMapper.ToDto(page) : null;
+    }
+
+    public async Task<PageResponseDto> CreateAsync(PageDto dto)
+    {
+        var page = PageMapper.ToEntity(dto);
+        await _repo.InsertAsync(page);
+        return PageMapper.ToDto(page);
+    }
+
+    public async Task<PageResponseDto> UpdateAsync(string id, PageDto dto)
     {
         var page = await _repo.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Sección '{id}' no encontrada.");
-        page.Title = dto.Title; page.Slug = dto.Slug; page.Content = dto.Content;
-        page.Order = dto.Order; page.ShowInFooter = dto.ShowInFooter;
+
+        PageMapper.ApplyUpdate(page, dto);
         await _repo.UpdateAsync(page);
-        return page;
+        return PageMapper.ToDto(page);
     }
 
     public Task DeleteAsync(string id) => _repo.DeleteAsync(id);
@@ -119,5 +142,5 @@ public class PageService : IPageService
 public interface IAuthService
 {
     Task<bool> ValidateCredentialsAsync(string username, string password);
-    Task<AdminUser?> GetUserAsync(string username);
+    Task<AdminUserDto?> GetUserAsync(string username);
 }

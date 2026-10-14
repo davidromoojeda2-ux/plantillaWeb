@@ -1,7 +1,7 @@
 @model Aplication.DTOs.CategoryDto
 @{
     ViewData["Title"] = "Nueva Categoría";
-    var parents = (List<Domine.Entities.Category>?)ViewBag.Parents ?? new();
+    var parents = (List<CategoryResponseDto>?)ViewBag.Parents ?? new();
 }
 
 <div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-xs p-8">

@@ -43,6 +43,9 @@ public class ImageMetadataRepository : IImageMetadataRepository
     public async Task<List<ImageMetadata>> GetAllAsync(int skip = 0, int take = 50) =>
         await _col.Find(_ => true).SortByDescending(i => i.UploadedAt).Skip(skip).Limit(take).ToListAsync();
 
+    public async Task<List<ImageMetadata>> GetByArticleIdAsync(string articleId) =>
+        await _col.Find(i => i.ArticleId == articleId).SortByDescending(i => i.UploadedAt).ToListAsync();
+
     public async Task<ImageMetadata?> GetByIdAsync(string id) =>
         await _col.Find(i => i.Id == id).FirstOrDefaultAsync();
 
@@ -51,6 +54,10 @@ public class ImageMetadataRepository : IImageMetadataRepository
     public async Task UpdateAltAsync(string id, string alt) =>
         await _col.UpdateOneAsync(i => i.Id == id,
             Builders<ImageMetadata>.Update.Set(i => i.Alt, alt));
+
+    public async Task UpdateArticleIdAsync(string id, string? articleId) =>
+        await _col.UpdateOneAsync(i => i.Id == id,
+            Builders<ImageMetadata>.Update.Set(i => i.ArticleId, string.IsNullOrWhiteSpace(articleId) ? null : articleId));
 
     public async Task DeleteAsync(string id) => await _col.DeleteOneAsync(i => i.Id == id);
 }

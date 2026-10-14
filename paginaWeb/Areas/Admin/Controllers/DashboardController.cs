@@ -1,4 +1,5 @@
-using Aplication.Interfaces;
+using Aplication.Services;
+using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,32 +9,31 @@ namespace paginaWeb.Areas.Admin.Controllers;
 [Authorize]
 public class DashboardController : Controller
 {
-    private readonly IArticleRepository _articleRepo;
-    private readonly ICategoryRepository _categoryRepo;
-    private readonly ICommentRepository _commentRepo;
-    private readonly IImageMetadataRepository _imageRepo;
+    private readonly IArticleService _articleService;
+    private readonly ICategoryService _categoryService;
+    private readonly ICommentService _commentService;
+    private readonly ImageService _imageService;
 
     public DashboardController(
-        IArticleRepository articleRepo,
-        ICategoryRepository categoryRepo,
-        ICommentRepository commentRepo,
-        IImageMetadataRepository imageRepo)
+        IArticleService articleService,
+        ICategoryService categoryService,
+        ICommentService commentService,
+        ImageService imageService)
     {
-        _articleRepo = articleRepo;
-        _categoryRepo = categoryRepo;
-        _commentRepo = commentRepo;
-        _imageRepo = imageRepo;
+        _articleService = articleService;
+        _categoryService = categoryService;
+        _commentService = commentService;
+        _imageService = imageService;
     }
 
     [Route("admin")]
     [Route("admin/dashboard")]
     public async Task<IActionResult> Index()
     {
-        var articles = await _articleRepo.GetAllAsync(0, 10);
-        var totalArticles = await _articleRepo.CountPublishedAsync();
-        var categories = await _categoryRepo.GetAllAsync();
-        var pendingComments = await _commentRepo.GetPendingAsync();
-        var images = await _imageRepo.GetAllAsync(0, 10);
+        var articles = await _articleService.GetAllAdminAsync(1, 10);
+        var (_, totalArticles) = await _articleService.GetPublishedAsync(1, 1);
+        var categories = await _categoryService.GetAllAsync();
+        var pendingComments = await _commentService.GetPendingAsync();
 
         ViewBag.TotalArticles = totalArticles;
         ViewBag.TotalCategories = categories.Count;

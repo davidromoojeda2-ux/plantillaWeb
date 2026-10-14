@@ -6,6 +6,7 @@ namespace Infrastructure.Storage;
 
 /// <summary>
 /// Proveedor de almacenamiento para Cloudflare R2 usando la API compatible con AWS S3.
+/// Generar el bucket en clouflare y crear el API del servicio
 /// Configurar en appsettings / User Secrets:
 ///   CloudflareR2:AccountId, CloudflareR2:AccessKeyId, CloudflareR2:SecretAccessKey,
 ///   CloudflareR2:BucketName, CloudflareR2:PublicDomain
@@ -18,12 +19,18 @@ public class CloudflareR2Storage : IImageStorage
 
     public CloudflareR2Storage(IConfiguration config)
     {
-        var accountId = config["CloudflareR2:AccountId"]!;
-        var accessKey = config["CloudflareR2:AccessKeyId"]!;
-        var secretKey = config["CloudflareR2:SecretAccessKey"]!;
+        var accountId = config["CloudflareR2:AccountId"];
+        var accessKey = config["CloudflareR2:AccessKeyId"];
+        var secretKey = config["CloudflareR2:SecretAccessKey"];
 
-        _bucket = config["CloudflareR2:BucketName"]!;
-        _publicDomain = config["CloudflareR2:PublicDomain"]!.TrimEnd('/');
+        _bucket = config["CloudflareR2:BucketName"] ?? "portal-noticias";
+        _publicDomain = (config["CloudflareR2:PublicDomain"] ?? string.Empty).TrimEnd('/');
+
+        if (string.IsNullOrWhiteSpace(accountId) || string.IsNullOrWhiteSpace(accessKey) || string.IsNullOrWhiteSpace(secretKey))
+        {
+            throw new InvalidOperationException(
+                "Credenciales de Cloudflare R2 incompletas. Verifique CloudflareR2:AccountId, CloudflareR2:AccessKeyId y CloudflareR2:SecretAccessKey en appsettings o variables de entorno.");
+        }
 
         var s3Config = new AmazonS3Config
         {
@@ -57,5 +64,5 @@ public class CloudflareR2Storage : IImageStorage
         await _s3.DeleteObjectAsync(request, ct);
     }
 
-    public string GetPublicUrl(string key) => $"{_publicDomain}/{key}";
+    public string GetPublicUrl(string key) => $"{_publicDomain}/{key.TrimStart('/')}";
 }

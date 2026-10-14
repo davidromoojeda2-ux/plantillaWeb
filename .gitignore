@@ -29,8 +29,27 @@ TestResults/
 **/.vs/
 
 ## ===============================
+## Editors & IDEs
+## ===============================
+.idea/
+*.sln.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+## ===============================
+## User Uploads & Media Storage
+## ===============================
+**/wwwroot/uploads/*
+!**/wwwroot/uploads/.gitkeep
+
+## ===============================
 ## OS & Environment
 ## ===============================
 .DS_Store
 Thumbs.db
 Desktop.ini
+*.log

@@ -1,7 +1,6 @@
 using Aplication.DTOs;
-using Aplication.Interfaces;
 using Aplication.Services;
-using Domine.Entities;
+using Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc;
 
 namespace paginaWeb.Controllers;
@@ -9,35 +8,36 @@ namespace paginaWeb.Controllers;
 public class HomeController : Controller
 {
     private readonly IArticleService _articleService;
-    private readonly ICategoryRepository _categoryRepo;
+    private readonly ICategoryService _categoryService;
     private readonly ICommentService _commentService;
     private readonly IPageService _pageService;
-    private readonly IImageMetadataRepository _imageRepo;
+    private readonly ImageService _imageService;
 
     public HomeController(
         IArticleService articleService,
-        ICategoryRepository categoryRepo,
+        ICategoryService categoryService,
         ICommentService commentService,
         IPageService pageService,
-        IImageMetadataRepository imageRepo)
+        ImageService imageService)
     {
         _articleService = articleService;
-        _categoryRepo = categoryRepo;
+        _categoryService = categoryService;
         _commentService = commentService;
         _pageService = pageService;
-        _imageRepo = imageRepo;
+        _imageService = imageService;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
         var featured = await _articleService.GetFeaturedAsync(3);
-        var (recent, total) = await _articleService.GetPublishedAsync(1, 9);
-        var categories = await _categoryRepo.GetAllAsync();
+        var (recent, _) = await _articleService.GetPublishedAsync(1, 9);
+        var categories = await _categoryService.GetAllAsync();
 
         ViewBag.Featured = featured;
         ViewBag.Categories = categories.ToDictionary(c => c.Id, c => c.Name);
-        ViewBag.Images = await LoadImageVariantsDictAsync(recent.Concat(featured).Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
+        ViewBag.Images = await _imageService.GetVariantsDictAsync(
+            recent.Concat(featured).Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
 
         return View(recent);
     }
@@ -45,18 +45,19 @@ public class HomeController : Controller
     [HttpGet("categoria/{slug}")]
     public async Task<IActionResult> Categoria(string slug, int page = 1)
     {
-        var category = await _categoryRepo.GetBySlugAsync(slug);
+        var category = await _categoryService.GetBySlugAsync(slug);
         if (category is null) return NotFound();
 
         var (articles, total) = await _articleService.GetByCategoryAsync(category.Id, page, 9);
-        var categories = await _categoryRepo.GetAllAsync();
+        var categories = await _categoryService.GetAllAsync();
 
         ViewBag.Category = category;
         ViewBag.Page = page;
         ViewBag.TotalPages = (int)Math.Ceiling((double)total / 9);
         ViewBag.TotalCount = total;
         ViewBag.Categories = categories.ToDictionary(c => c.Id, c => c.Name);
-        ViewBag.Images = await LoadImageVariantsDictAsync(articles.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
+        ViewBag.Images = await _imageService.GetVariantsDictAsync(
+            articles.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
 
         return View(articles);
     }
@@ -65,30 +66,26 @@ public class HomeController : Controller
     public async Task<IActionResult> Articulo(string slug)
     {
         var article = await _articleService.GetBySlugAsync(slug);
-        if (article is null || article.Status != ArticleStatus.Publicado)
+        if (article is null || !string.Equals(article.Status, "Publicado", StringComparison.OrdinalIgnoreCase))
             return NotFound();
 
         await _articleService.IncrementViewCountAsync(article.Id);
 
         var comments = await _commentService.GetApprovedByArticleAsync(article.Id);
         var category = !string.IsNullOrEmpty(article.CategoryId)
-            ? await _categoryRepo.GetByIdAsync(article.CategoryId)
+            ? await _categoryService.GetByIdAsync(article.CategoryId)
             : null;
 
-        ImageMetadata? coverImage = null;
+        ImageMetadataResponseDto? coverImage = null;
         if (!string.IsNullOrEmpty(article.CoverImageId))
         {
-            coverImage = await _imageRepo.GetByIdAsync(article.CoverImageId);
+            coverImage = await _imageService.GetByIdAsync(article.CoverImageId);
         }
-
-        // Estimación de tiempo de lectura (palabras / 200)
-        var wordCount = (article.Content ?? "").Split([' ', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries).Length;
-        var readingMinutes = Math.Max(1, (int)Math.Ceiling(wordCount / 200.0));
 
         ViewBag.Comments = comments;
         ViewBag.Category = category;
         ViewBag.CoverImage = coverImage;
-        ViewBag.ReadingMinutes = readingMinutes;
+        ViewBag.ReadingMinutes = article.ReadingTimeMinutes;
 
         return View(article);
     }
@@ -115,17 +112,18 @@ public class HomeController : Controller
     {
         var query = q?.Trim() ?? string.Empty;
         var (items, total) = string.IsNullOrEmpty(query)
-            ? (new List<Article>(), 0L)
+            ? ([], 0L)
             : await _articleService.SearchAsync(query, page, 9);
 
-        var categories = await _categoryRepo.GetAllAsync();
+        var categories = await _categoryService.GetAllAsync();
 
         ViewBag.Query = query;
         ViewBag.Page = page;
         ViewBag.TotalPages = (int)Math.Ceiling((double)total / 9);
         ViewBag.TotalCount = total;
         ViewBag.Categories = categories.ToDictionary(c => c.Id, c => c.Name);
-        ViewBag.Images = await LoadImageVariantsDictAsync(items.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
+        ViewBag.Images = await _imageService.GetVariantsDictAsync(
+            items.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
 
         return View(items);
     }
@@ -140,16 +138,5 @@ public class HomeController : Controller
         ViewBag.OtherPages = allPages;
 
         return View(page);
-    }
-
-    private async Task<Dictionary<string, ImageMetadata>> LoadImageVariantsDictAsync(IEnumerable<string> ids)
-    {
-        var dict = new Dictionary<string, ImageMetadata>();
-        foreach (var id in ids.Distinct())
-        {
-            var img = await _imageRepo.GetByIdAsync(id);
-            if (img != null) dict[id] = img;
-        }
-        return dict;
     }
 }

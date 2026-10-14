@@ -1,7 +1,7 @@
-@model Domine.Entities.InformativePage
+@model PageResponseDto
 @{
     ViewData["Title"] = Model.Title;
-    var otherPages = (List<Domine.Entities.InformativePage>?)ViewBag.OtherPages ?? new();
+    var otherPages = (List<PageResponseDto>?)ViewBag.OtherPages ?? new();
 }
 
 <div class="space-y-12">

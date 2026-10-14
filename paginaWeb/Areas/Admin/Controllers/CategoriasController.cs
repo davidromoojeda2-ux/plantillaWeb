@@ -1,7 +1,6 @@
 using Aplication.DTOs;
-using Aplication.Interfaces;
+using Aplication.Mappers;
 using Aplication.Services;
-using Domine.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,19 +11,19 @@ namespace paginaWeb.Areas.Admin.Controllers;
 [Route("admin/categorias")]
 public class CategoriasController : Controller
 {
-    private readonly ICategoryRepository _categoryRepo;
+    private readonly ICategoryService _categoryService;
     private readonly IMenuService _menuService;
 
-    public CategoriasController(ICategoryRepository categoryRepo, IMenuService menuService)
+    public CategoriasController(ICategoryService categoryService, IMenuService menuService)
     {
-        _categoryRepo = categoryRepo;
+        _categoryService = categoryService;
         _menuService = menuService;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
-        var all = await _categoryRepo.GetAllAsync();
+        var all = await _categoryService.GetAllAsync();
         var parents = all.Where(c => c.ParentId is null).OrderBy(c => c.Order).ToList();
         var subs = all.Where(c => c.ParentId is not null).ToList();
 
@@ -43,7 +42,7 @@ public class CategoriasController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CategoryDto model)
     {
-        if (await _categoryRepo.SlugExistsAsync(model.Slug))
+        if (await _categoryService.SlugExistsAsync(model.Slug))
         {
             ModelState.AddModelError(nameof(model.Slug), $"El slug '{model.Slug}' ya está registrado.");
         }
@@ -54,18 +53,7 @@ public class CategoriasController : Controller
             return View(model);
         }
 
-        var category = new Category
-        {
-            Name = model.Name,
-            Slug = model.Slug.ToLowerInvariant(),
-            Description = model.Description,
-            ParentId = string.IsNullOrEmpty(model.ParentId) ? null : model.ParentId,
-            Order = model.Order,
-            ShowInMenu = model.ShowInMenu,
-            IsActive = model.IsActive
-        };
-
-        await _categoryRepo.InsertAsync(category);
+        await _categoryService.CreateAsync(model);
         _menuService.InvalidateMenu();
 
         TempData["Success"] = "Categoría creada con éxito e invalidada la caché del menú.";
@@ -75,21 +63,12 @@ public class CategoriasController : Controller
     [HttpGet("editar/{id}")]
     public async Task<IActionResult> Edit(string id)
     {
-        var category = await _categoryRepo.GetByIdAsync(id);
+        var category = await _categoryService.GetByIdAsync(id);
         if (category is null) return NotFound();
 
         await LoadParentsViewBagAsync(id);
 
-        var model = new CategoryDto
-        {
-            Name = category.Name,
-            Slug = category.Slug,
-            Description = category.Description,
-            ParentId = category.ParentId,
-            Order = category.Order,
-            ShowInMenu = category.ShowInMenu,
-            IsActive = category.IsActive
-        };
+        var model = CategoryMapper.ToEditDto(category);
 
         ViewBag.CategoryId = id;
         return View(model);
@@ -99,7 +78,7 @@ public class CategoriasController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(string id, CategoryDto model)
     {
-        if (await _categoryRepo.SlugExistsAsync(model.Slug, id))
+        if (await _categoryService.SlugExistsAsync(model.Slug, id))
         {
             ModelState.AddModelError(nameof(model.Slug), $"El slug '{model.Slug}' ya está en uso.");
         }
@@ -111,18 +90,7 @@ public class CategoriasController : Controller
             return View(model);
         }
 
-        var category = await _categoryRepo.GetByIdAsync(id);
-        if (category is null) return NotFound();
-
-        category.Name = model.Name;
-        category.Slug = model.Slug.ToLowerInvariant();
-        category.Description = model.Description;
-        category.ParentId = string.IsNullOrEmpty(model.ParentId) ? null : model.ParentId;
-        category.Order = model.Order;
-        category.ShowInMenu = model.ShowInMenu;
-        category.IsActive = model.IsActive;
-
-        await _categoryRepo.UpdateAsync(category);
+        await _categoryService.UpdateAsync(id, model);
         _menuService.InvalidateMenu();
 
         TempData["Success"] = "Categoría actualizada e invalidada la caché del menú.";
@@ -133,7 +101,7 @@ public class CategoriasController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id)
     {
-        await _categoryRepo.DeleteAsync(id);
+        await _categoryService.DeleteAsync(id);
         _menuService.InvalidateMenu();
         TempData["Success"] = "Categoría eliminada con éxito.";
         return RedirectToAction(nameof(Index));
@@ -141,8 +109,10 @@ public class CategoriasController : Controller
 
     private async Task LoadParentsViewBagAsync(string? excludeId = null)
     {
-        var all = await _categoryRepo.GetAllAsync();
-        var parents = all.Where(c => c.ParentId is null && (excludeId == null || c.Id != excludeId)).ToList();
-        ViewBag.Parents = parents;
+        var all = await _categoryService.GetAllAsync();
+        ViewBag.Parents = all
+            .Where(c => c.ParentId is null && (excludeId is null || c.Id != excludeId))
+            .OrderBy(c => c.Order)
+            .ToList();
     }
 }

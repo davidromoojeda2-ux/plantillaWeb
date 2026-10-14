@@ -28,17 +28,37 @@ builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 
 // ─── Servicios de aplicación ──────────────────────────────────────────────────
 builder.Services.AddScoped<IMenuService, MenuService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IPageService, PageService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // ─── Almacenamiento de imágenes ───────────────────────────────────────────────
-// En desarrollo se usa LocalStorage; en producción registrar CloudflareR2Storage
-if (builder.Environment.IsDevelopment())
-    builder.Services.AddScoped<IImageStorage, LocalStorage>();
+builder.Services.AddScoped<LocalStorage>();
+
+var hasCloudflareConfig = !string.IsNullOrWhiteSpace(builder.Configuration["CloudflareR2:AccountId"]) &&
+                          !string.IsNullOrWhiteSpace(builder.Configuration["CloudflareR2:AccessKeyId"]) &&
+                          !string.IsNullOrWhiteSpace(builder.Configuration["CloudflareR2:SecretAccessKey"]);
+
+if (hasCloudflareConfig)
+{
+    builder.Services.AddScoped<CloudflareR2Storage>();
+}
+
+// Configuración de proveedor: "Local" o "CloudflareR2"
+var configuredProvider = builder.Configuration["Storage:Provider"];
+var useCloudflare = string.Equals(configuredProvider, "CloudflareR2", StringComparison.OrdinalIgnoreCase)
+                    || (string.IsNullOrEmpty(configuredProvider) && !builder.Environment.IsDevelopment() && hasCloudflareConfig);
+
+if (useCloudflare && hasCloudflareConfig)
+{
+    builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<CloudflareR2Storage>());
+}
 else
-    builder.Services.AddScoped<IImageStorage, CloudflareR2Storage>();
+{
+    builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<LocalStorage>());
+}
 
 builder.Services.AddScoped<ImageService>();
 
@@ -77,6 +97,25 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
 
 app.UseStaticFiles();
+
+// Si se configuró una ruta física para LocalStorage en VPS fuera de wwwroot, servirla bajo RequestPath
+var customUploadsPath = app.Configuration["LocalStorage:BasePath"];
+var customUploadsUrl = app.Configuration["LocalStorage:BaseUrl"] ?? "/uploads";
+if (!string.IsNullOrWhiteSpace(customUploadsPath))
+{
+    var resolvedPath = Path.IsPathRooted(customUploadsPath)
+        ? customUploadsPath
+        : Path.Combine(app.Environment.ContentRootPath, customUploadsPath);
+
+    Directory.CreateDirectory(resolvedPath);
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(resolvedPath),
+        RequestPath = new PathString(customUploadsUrl.StartsWith('/') ? customUploadsUrl : "/" + customUploadsUrl)
+    });
+}
+
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

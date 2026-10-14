@@ -50,5 +50,9 @@ public class ImageMetadata
     /// <summary>Proveedor de almacenamiento: "r2" o "local".</summary>
     public string Storage { get; set; } = "r2";
 
+    /// <summary>Id del artículo al cual está vinculada la imagen (opcional).</summary>
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? ArticleId { get; set; }
+
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 }

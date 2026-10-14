@@ -1,7 +1,7 @@
-@model List<Domine.Entities.Category>
+@model List<CategoryResponseDto>
 @{
     ViewData["Title"] = "Gestión de Categorías";
-    var subs = (List<Domine.Entities.Category>?)ViewBag.Subs ?? new();
+    var subs = (List<CategoryResponseDto>?)ViewBag.Subs ?? new();
 }
 
 @section HeaderActions {

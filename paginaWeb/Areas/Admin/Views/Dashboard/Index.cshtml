@@ -1,7 +1,7 @@
 @{
     ViewData["Title"] = "Dashboard";
-    var recentArticles = (List<Domine.Entities.Article>?)ViewBag.RecentArticles ?? new();
-    var pendingComments = (List<Domine.Entities.Comment>?)ViewBag.PendingComments ?? new();
+    var recentArticles = (List<ArticleResponseDto>?)ViewBag.RecentArticles ?? new();
+    var pendingComments = (List<CommentResponseDto>?)ViewBag.PendingComments ?? new();
 }
 
 @section HeaderActions {
@@ -88,7 +88,7 @@
                                 </p>
                             </div>
                             <div class="flex items-center gap-2 flex-shrink-0">
-                                @if (art.Status == Domine.Entities.ArticleStatus.Publicado)
+                                @if (art.Status == "Publicado")
                                 {
                                     <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Publicado</span>
                                 }

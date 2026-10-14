@@ -1,4 +1,4 @@
-@model List<Domine.Entities.Comment>
+@model List<CommentResponseDto>
 @{
     ViewData["Title"] = "Moderación de Comentarios";
     var estado = (string)ViewBag.Estado;
@@ -40,11 +40,11 @@
                             <div class="flex items-center gap-3">
                                 <span class="font-bold text-slate-900 text-sm">@c.Name</span>
                                 <span class="text-xs text-slate-400 font-mono">@c.CreatedAt.ToString("g")</span>
-                                @if (c.Status == Domine.Entities.CommentStatus.Pendiente)
+                                @if (c.Status == "Pendiente")
                                 {
                                     <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">Pendiente</span>
                                 }
-                                else if (c.Status == Domine.Entities.CommentStatus.Aprobado)
+                                else if (c.Status == "Aprobado")
                                 {
                                     <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Aprobado</span>
                                 }
@@ -61,7 +61,7 @@
 
                         <!-- Acciones -->
                         <div class="flex items-center gap-2 flex-shrink-0 pt-2 md:pt-0">
-                            @if (c.Status != Domine.Entities.CommentStatus.Aprobado)
+                            @if (c.Status != "Aprobado")
                             {
                                 <form method="post" action="/admin/comentarios/aprobar/@c.Id">
                                     @Html.AntiForgeryToken()
@@ -72,7 +72,7 @@
                                 </form>
                             }
 
-                            @if (c.Status != Domine.Entities.CommentStatus.Rechazado)
+                            @if (c.Status != "Rechazado")
                             {
                                 <form method="post" action="/admin/comentarios/rechazar/@c.Id">
                                     @Html.AntiForgeryToken()

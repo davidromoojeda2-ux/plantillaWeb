@@ -1,4 +1,4 @@
-@model List<Domine.Entities.Article>
+@model List<ArticleResponseDto>
 @{
     ViewData["Title"] = "Gestión de Artículos";
     var categories = (Dictionary<string, string>?)ViewBag.Categories ?? new();
@@ -54,7 +54,7 @@
                                 @(art.CategoryId != null && categories.ContainsKey(art.CategoryId) ? categories[art.CategoryId] : "-")
                             </td>
                             <td class="px-6 py-4">
-                                @if (art.Status == Domine.Entities.ArticleStatus.Publicado)
+                                @if (string.Equals(art.Status, "Publicado", StringComparison.OrdinalIgnoreCase))
                                 {
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Publicado

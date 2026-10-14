@@ -1,6 +1,6 @@
 using Aplication.DTOs;
+using Aplication.Mappers;
 using Aplication.Services;
-using Domine.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -57,14 +57,7 @@ public class SeccionesController : Controller
         var page = await _pageService.GetByIdAsync(id);
         if (page is null) return NotFound();
 
-        var model = new PageDto
-        {
-            Title = page.Title,
-            Slug = page.Slug,
-            Content = page.Content,
-            Order = page.Order,
-            ShowInFooter = page.ShowInFooter
-        };
+        var model = PageMapper.ToEditDto(page);
 
         ViewBag.PageId = id;
         return View(model);

@@ -1,7 +1,7 @@
 using Aplication.DTOs;
 using Aplication.Interfaces;
+using Aplication.Mappers;
 using Aplication.Services;
-using Domine.Entities;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,19 +14,16 @@ namespace paginaWeb.Areas.Admin.Controllers;
 public class ArticulosController : Controller
 {
     private readonly IArticleService _articleService;
-    private readonly ICategoryRepository _categoryRepo;
-    private readonly IImageMetadataRepository _imageRepo;
+    private readonly ICategoryService _categoryService;
     private readonly ImageService _imageService;
 
     public ArticulosController(
         IArticleService articleService,
-        ICategoryRepository categoryRepo,
-        IImageMetadataRepository imageRepo,
+        ICategoryService categoryService,
         ImageService imageService)
     {
         _articleService = articleService;
-        _categoryRepo = categoryRepo;
-        _imageRepo = imageRepo;
+        _categoryService = categoryService;
         _imageService = imageService;
     }
 
@@ -34,7 +31,7 @@ public class ArticulosController : Controller
     public async Task<IActionResult> Index(int page = 1)
     {
         var articles = await _articleService.GetAllAdminAsync(page, 20);
-        var categories = await _categoryRepo.GetAllAsync();
+        var categories = await _categoryService.GetAllAsync();
         ViewBag.Categories = categories.ToDictionary(c => c.Id, c => c.Name);
         ViewBag.Page = page;
         return View(articles);
@@ -84,28 +81,27 @@ public class ArticulosController : Controller
 
         await LoadCategoriesViewBagAsync();
 
-        var model = new ArticleDto
-        {
-            Title = article.Title,
-            Slug = article.Slug,
-            Summary = article.Summary,
-            Content = article.Content,
-            Author = article.Author,
-            CategoryId = article.CategoryId,
-            SubcategoryId = article.SubcategoryId,
-            Tags = article.Tags,
-            CoverImageId = article.CoverImageId,
-            Featured = article.Featured,
-            Status = article.Status.ToString()
-        };
+        var model = ArticleMapper.ToEditDto(article);
 
         ViewBag.ArticleId = id;
         ViewBag.CoverImageUrl = null;
-        if (!string.IsNullOrEmpty(article.CoverImageId))
+        if (!string.IsNullOrEmpty(article.CoverImageUrl))
         {
-            var coverImg = await _imageRepo.GetByIdAsync(article.CoverImageId);
-            ViewBag.CoverImageUrl = coverImg?.Variants.OrderByDescending(v => v.Width).FirstOrDefault()?.PublicUrl;
+            ViewBag.CoverImageUrl = article.CoverImageUrl;
         }
+        else if (!string.IsNullOrEmpty(article.CoverImageId))
+        {
+            var coverImg = await _imageService.GetByIdAsync(article.CoverImageId);
+            ViewBag.CoverImageUrl = ImageMapper.GetBestUrl(coverImg);
+        }
+
+        if (string.IsNullOrEmpty(model.CoverImageUrl) && !string.IsNullOrEmpty(ViewBag.CoverImageUrl))
+        {
+            model.CoverImageUrl = ViewBag.CoverImageUrl;
+        }
+
+        ViewBag.LinkedImages = await _imageService.GetByArticleIdAsync(id);
+        ViewBag.AvailableImages = await _imageService.GetAllAsync(0, 50);
 
         return View(model);
     }
@@ -118,6 +114,9 @@ public class ArticulosController : Controller
         {
             await LoadCategoriesViewBagAsync();
             ViewBag.ArticleId = id;
+            ViewBag.CoverImageUrl = model.CoverImageUrl;
+            ViewBag.LinkedImages = await _imageService.GetByArticleIdAsync(id);
+            ViewBag.AvailableImages = await _imageService.GetAllAsync(0, 50);
             return View(model);
         }
 
@@ -132,6 +131,9 @@ public class ArticulosController : Controller
             ModelState.AddModelError(string.Empty, ex.Message);
             await LoadCategoriesViewBagAsync();
             ViewBag.ArticleId = id;
+            ViewBag.CoverImageUrl = model.CoverImageUrl;
+            ViewBag.LinkedImages = await _imageService.GetByArticleIdAsync(id);
+            ViewBag.AvailableImages = await _imageService.GetAllAsync(0, 50);
             return View(model);
         }
     }
@@ -146,24 +148,23 @@ public class ArticulosController : Controller
     }
 
     [HttpPost("upload-inline")]
-    public async Task<IActionResult> UploadInline(IFormFile file)
+    public async Task<IActionResult> UploadInline(IFormFile file, string? articleId = null)
     {
         if (file is null || file.Length == 0)
             return BadRequest(new { error = "No se ha proporcionado ningún archivo." });
 
         using var stream = file.OpenReadStream();
-        var metadata = await _imageService.ProcessAndStoreAsync(
-            file.FileName, stream, file.FileName);
+        var metadata = await _imageService.ProcessAndStoreDtoAsync(
+            file.FileName, stream, file.FileName, articleId);
 
-        var url = metadata.Variants.OrderByDescending(v => v.Width).FirstOrDefault()?.PublicUrl
-               ?? metadata.Variants.First().PublicUrl;
+        var url = ImageMapper.GetBestUrl(metadata) ?? metadata.Variants.FirstOrDefault()?.PublicUrl;
 
         return Json(new { id = metadata.Id, url = url, alt = metadata.Alt });
     }
 
     private async Task LoadCategoriesViewBagAsync()
     {
-        var all = await _categoryRepo.GetAllAsync();
+        var all = await _categoryService.GetAllAsync();
         ViewBag.ParentCategories = all.Where(c => c.ParentId is null).ToList();
         ViewBag.SubCategories = all.Where(c => c.ParentId is not null).ToList();
     }

@@ -1,5 +1,4 @@
-using Aplication.Interfaces;
-using Domine.Entities;
+using Aplication.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,28 +9,17 @@ namespace paginaWeb.Areas.Admin.Controllers;
 [Route("admin/comentarios")]
 public class ComentariosController : Controller
 {
-    private readonly ICommentRepository _commentRepo;
-    private readonly IArticleRepository _articleRepo;
+    private readonly ICommentService _commentService;
 
-    public ComentariosController(ICommentRepository commentRepo, IArticleRepository articleRepo)
+    public ComentariosController(ICommentService commentService)
     {
-        _commentRepo = commentRepo;
-        _articleRepo = articleRepo;
+        _commentService = commentService;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Index(string? estado = null)
     {
-        List<Comment> comments;
-        if (estado == "aprobado")
-            comments = await _commentRepo.GetByStatusAsync(CommentStatus.Aprobado);
-        else if (estado == "rechazado")
-            comments = await _commentRepo.GetByStatusAsync(CommentStatus.Rechazado);
-        else if (estado == "todos")
-            comments = await _commentRepo.GetAllAsync();
-        else
-            comments = await _commentRepo.GetPendingAsync();
-
+        var comments = await _commentService.GetByStatusAsync(estado);
         ViewBag.Estado = estado ?? "pendiente";
         return View(comments);
     }
@@ -40,7 +28,7 @@ public class ComentariosController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Approve(string id, string? returnEstado = null)
     {
-        await _commentRepo.UpdateStatusAsync(id, CommentStatus.Aprobado);
+        await _commentService.ApproveAsync(id);
         TempData["Success"] = "Comentario aprobado; ahora es visible en el portal público.";
         return RedirectToAction(nameof(Index), new { estado = returnEstado });
     }
@@ -49,7 +37,7 @@ public class ComentariosController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Reject(string id, string? returnEstado = null)
     {
-        await _commentRepo.UpdateStatusAsync(id, CommentStatus.Rechazado);
+        await _commentService.RejectAsync(id);
         TempData["Success"] = "Comentario rechazado.";
         return RedirectToAction(nameof(Index), new { estado = returnEstado });
     }
@@ -58,7 +46,7 @@ public class ComentariosController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id, string? returnEstado = null)
     {
-        await _commentRepo.DeleteAsync(id);
+        await _commentService.DeleteAsync(id);
         TempData["Success"] = "Comentario eliminado definitivamente.";
         return RedirectToAction(nameof(Index), new { estado = returnEstado });
     }

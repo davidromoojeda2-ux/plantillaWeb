@@ -1,6 +1,7 @@
-@model List<Domine.Entities.ImageMetadata>
+@model List<ImageMetadataResponseDto>
 @{
     ViewData["Title"] = "Biblioteca de Imágenes";
+    var articles = (List<ArticleResponseDto>?)ViewBag.Articles ?? new();
 }
 
 <div class="space-y-8">
@@ -8,7 +9,7 @@
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
         <h3 class="font-bold text-slate-800 text-sm mb-4">Subir Nueva Imagen al Repositorio</h3>
 
-        <form method="post" action="/admin/imagenes/subir" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <form method="post" action="/admin/imagenes/subir" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             @Html.AntiForgeryToken()
             <div class="md:col-span-1">
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Archivo de Imagen</label>
@@ -17,14 +18,29 @@
             </div>
 
             <div class="md:col-span-1">
-                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Texto Alternativo (Accesibilidad Alt)</label>
-                <input type="text" name="alt" placeholder="Descripción breve de la imagen..."
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Texto Alt (Accesibilidad)</label>
+                <input type="text" name="alt" placeholder="Descripción de la imagen..."
                        class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
             </div>
 
             <div class="md:col-span-1">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Vincular a Artículo (Opcional)</label>
+                <select name="articleId" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none">
+                    <option value="">-- Sin artículo --</option>
+                    @foreach (var art in articles)
+                    {
+                        <option value="@art.Id">@art.Title</option>
+                    }
+                </select>
+                <label class="flex items-center gap-1.5 mt-1.5 cursor-pointer">
+                    <input type="checkbox" name="setAsCover" value="true" class="rounded border-slate-300 text-[#00296B] focus:ring-[#00296B]" />
+                    <span class="text-[11px] text-slate-600">Asignar como portada</span>
+                </label>
+            </div>
+
+            <div class="md:col-span-1">
                 <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-sm transition">
-                    Optimizar y Guardar en R2
+                    Optimizar y Guardar
                 </button>
             </div>
         </form>
@@ -62,10 +78,50 @@
                                 </span>
                             </div>
 
-                            <div class="p-3.5 space-y-2">
+                            <div class="p-3.5 space-y-3">
                                 <p class="text-xs font-semibold text-slate-800 truncate" title="@img.OriginalFileName">
                                     @img.OriginalFileName
                                 </p>
+
+                                <!-- Estado de vinculación con Artículo -->
+                                <div>
+                                    @if (!string.IsNullOrEmpty(img.ArticleId))
+                                    {
+                                        <div class="flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                            <a href="/admin/articulos/editar/@img.ArticleId" class="truncate hover:underline font-medium" title="Ir a editar artículo">
+                                                @(img.ArticleTitle ?? "Artículo vinculado")
+                                            </a>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-[11px] text-slate-400 italic">Sin artículo vinculado</span>
+                                    }
+                                </div>
+
+                                <!-- Formulario para vincular / cambiar artículo -->
+                                <form method="post" action="/admin/imagenes/vincular-articulo" class="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1.5">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@img.Id" />
+                                    <label class="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Vincular a artículo</label>
+                                    <div class="flex gap-1.5">
+                                        <select name="articleId" class="w-full text-xs rounded-lg border border-slate-300 px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-[#00509D]">
+                                            <option value="">-- Desvincular --</option>
+                                            @foreach (var art in articles)
+                                            {
+                                                <option value="@art.Id" selected="@(art.Id == img.ArticleId)">@art.Title</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="px-2.5 py-1 bg-[#00509D] hover:bg-[#003F88] text-white text-xs font-semibold rounded-lg shrink-0 transition" title="Guardar vínculo">
+                                            Vincular
+                                        </button>
+                                    </div>
+                                    <label class="flex items-center gap-1 cursor-pointer">
+                                        <input type="checkbox" name="setAsCover" value="true" class="rounded text-[#00296B] scale-90" />
+                                        <span class="text-[10px] text-slate-600">Usar como portada</span>
+                                    </label>
+                                </form>
 
                                 <form method="post" action="/admin/imagenes/actualizar-alt" class="flex gap-1.5 items-center">
                                     @Html.AntiForgeryToken()
