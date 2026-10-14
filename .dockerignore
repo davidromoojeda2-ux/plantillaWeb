@@ -1,0 +1,15 @@
+**/.git
+**/.github
+**/.vs
+**/.vscode
+**/.idea
+**/bin
+**/obj
+**/node_modules
+**/wwwroot/uploads
+**/uploads
+*.user
+*.suo
+*.log
+openspec
+*.md

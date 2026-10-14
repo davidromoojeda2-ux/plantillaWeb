@@ -1,0 +1,113 @@
+name: CI/CD Pipeline - Docker & VPS Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ─── 1. Compilación y Construcción de Imagen Docker ─────────────────────────
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Iniciar sesión en GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraer metadatos de Docker (tags y etiquetas)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Construir y publicar imagen Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── 2. Despliegue Automatizado en VPS Ubuntu ──────────────────────────────
+  deploy:
+    name: Deploy to Ubuntu VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout del repositorio para copiar archivos de orquestación
+        uses: actions/checkout@v4
+
+      - name: Transferir docker-compose.yml y .env.example al VPS
+        uses: appleboy/scp-action@v0.1.7
+        if: "${{ secrets.SSH_HOST != '' }}"
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "docker-compose.yml,.env.example"
+          target: "/opt/portal-noticias"
+
+      - name: Ejecutar despliegue vía SSH en el VPS
+        uses: appleboy/ssh-action@v1.2.0
+        if: "${{ secrets.SSH_HOST != '' }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_PATH: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          envs: GITHUB_TOKEN,GITHUB_ACTOR,IMAGE_PATH
+          script: |
+            set -e
+            cd /opt/portal-noticias
+
+            # Si el archivo .env no existe todavía en el servidor, crearlo desde .env.example
+            if [ ! -f .env ]; then
+              cp .env.example .env
+              # Actualizar el nombre de imagen en el .env recién creado
+              sed -i "s|DOCKER_IMAGE=.*|DOCKER_IMAGE=$IMAGE_PATH|g" .env
+              echo "[AVISO] Se generó el archivo .env inicial en /opt/portal-noticias/.env. Recuerda ajustar las credenciales."
+            fi
+
+            # Iniciar sesión en GitHub Container Registry para descargar la imagen privada/pública
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+            # Descargar la versión más reciente de la imagen
+            docker compose pull web
+
+            # Levantar o reiniciar los contenedores en segundo plano
+            docker compose up -d --remove-orphans
+
+            # Limpiar imágenes Docker antiguas sin usar
+            docker image prune -f

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -12,7 +12,7 @@
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildTailwind" BeforeTargets="Build">
+  <Target Name="BuildTailwind" BeforeTargets="Build" Condition="'$(SkipTailwind)' != 'true'">
     <Exec Command="pnpm.cmd run build:css" Condition="$(OS) == 'Windows_NT'" />
     <Exec Command="pnpm run build:css" Condition="$(OS) != 'Windows_NT'" />
   </Target>

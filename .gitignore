@@ -53,3 +53,10 @@ TestResults/
 Thumbs.db
 Desktop.ini
 *.log
+
+## ===============================
+## Environment files
+## ===============================
+.env
+.env.*
+!.env.example
