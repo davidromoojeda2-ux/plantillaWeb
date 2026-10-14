@@ -1,7 +1,9 @@
-name: CI/CD Pipeline - Docker & VPS Deploy
+name: CI/CD Pipeline - Validacion, Docker y Despliegue VPS
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
@@ -14,10 +16,51 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # ─── 1. Compilación y Construcción de Imagen Docker ─────────────────────────
+  # ─── 1. Validación Rápida de Código (Fast Feedback CI) ──────────────────────
+  validate-code:
+    name: Validar Compilacion y Estilos
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.11.2
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: paginaWeb/pnpm-lock.yaml
+
+      - name: Instalar dependencias frontend y compilar Tailwind CSS
+        working-directory: ./paginaWeb
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build:css
+
+      - name: Configurar .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restaurar dependencias NuGet
+        run: dotnet restore paginaWeb.slnx
+
+      - name: Compilar solución (.NET 10)
+        run: dotnet build paginaWeb.slnx -c Release --no-restore -p:SkipTailwind=true
+
+  # ─── 2. Construcción y Publicación de Imagen Docker ─────────────────────────
   build-and-push:
     name: Build & Push Docker Image
+    needs: validate-code
     runs-on: ubuntu-latest
+    # Solo publica la imagen si el commit es en 'main' o ejecución manual
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout del repositorio
@@ -53,15 +96,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ─── 2. Despliegue Automatizado en VPS Ubuntu ──────────────────────────────
+  # ─── 3. Despliegue Automatizado con Smoke Test en VPS ───────────────────────
   deploy:
-    name: Deploy to Ubuntu VPS
+    name: Deploy & Healthcheck en VPS
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Checkout del repositorio para copiar archivos de orquestación
+      - name: Checkout del repositorio para transferir configuración
         uses: actions/checkout@v4
 
       - name: Transferir docker-compose.yml y .env.example al VPS
@@ -75,7 +118,7 @@ jobs:
           source: "docker-compose.yml,.env.example"
           target: "/opt/portal-noticias"
 
-      - name: Ejecutar despliegue vía SSH en el VPS
+      - name: Desplegar y Verificar Salud del Servicio vía SSH
         uses: appleboy/ssh-action@v1.2.0
         if: "${{ secrets.SSH_HOST != '' }}"
         env:
@@ -92,22 +135,47 @@ jobs:
             set -e
             cd /opt/portal-noticias
 
-            # Si el archivo .env no existe todavía en el servidor, crearlo desde .env.example
+            # 1. Asegurar archivo .env con valores base si es la primera ejecución
             if [ ! -f .env ]; then
               cp .env.example .env
-              # Actualizar el nombre de imagen en el .env recién creado
               sed -i "s|DOCKER_IMAGE=.*|DOCKER_IMAGE=$IMAGE_PATH|g" .env
-              echo "[AVISO] Se generó el archivo .env inicial en /opt/portal-noticias/.env. Recuerda ajustar las credenciales."
+              echo "[INFO] Archivo .env inicial creado en /opt/portal-noticias/.env."
             fi
 
-            # Iniciar sesión en GitHub Container Registry para descargar la imagen privada/pública
+            # 2. Autenticar en GHCR y descargar imagen actualizada
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-
-            # Descargar la versión más reciente de la imagen
             docker compose pull web
 
-            # Levantar o reiniciar los contenedores en segundo plano
+            # 3. Levantar contenedores
             docker compose up -d --remove-orphans
 
-            # Limpiar imágenes Docker antiguas sin usar
+            # 4. Obtener puerto configurado en .env (por defecto 5000)
+            APP_PORT=$(grep -E '^HOST_PORT=' .env | cut -d '=' -f2 | tr -d ' \r\n' || echo "5000")
+            [ -z "$APP_PORT" ] && APP_PORT="5000"
+
+            # 5. Smoke Test / Verificación de Salud Post-Despliegue
+            echo "==> Iniciando Smoke Test: verificando respuesta en http://127.0.0.1:$APP_PORT/ ..."
+            HEALTHY=0
+            for i in $(seq 1 15); do
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "http://127.0.0.1:$APP_PORT/" || true)
+              echo "Intento $i/15: Código de respuesta HTTP: [$HTTP_CODE]"
+              
+              # Aceptamos 200 (OK), 301/302 (Redirección normal)
+              if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "302" ]; then
+                echo "==> [EXITO] La aplicacion web responde correctamente (HTTP $HTTP_CODE)."
+                HEALTHY=1
+                break
+              fi
+              sleep 2
+            done
+
+            if [ "$HEALTHY" -ne 1 ]; then
+              echo "==> [ERROR CRITICO] La aplicacion no respondio satisfactoriamente en 30 segundos."
+              echo "==> Volcando los ultimos 60 logs del contenedor web:"
+              docker compose logs --tail=60 web
+              exit 1
+            fi
+
+            # 6. Limpieza preventiva de imagenes Docker antiguas en deshuso
             docker image prune -f
+            echo "==> Despliegue completado y verificado con exito."

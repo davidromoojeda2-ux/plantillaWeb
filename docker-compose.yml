@@ -1,5 +1,6 @@
 services:
   # ─── Aplicación Web ASP.NET Core ──────────────────────────────────────────
+  # Base de datos: MongoDB Atlas (externa, no requiere contenedor local)
   web:
     image: ${DOCKER_IMAGE:-ghcr.io/davidromoojeda2-ux/plantillaweb:latest}
     build:
@@ -8,12 +9,11 @@ services:
     container_name: portal_web
     restart: unless-stopped
     ports:
-      # Expone la aplicación en localhost para ser servida por Nginx del host (o cambia según necesidad)
       - "${HOST_PORT:-5000}:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - MongoDB__ConnectionString=mongodb://${MONGO_USER:-admin}:${MONGO_PASS:-adminpassword123}@mongo:27017/portal_noticias?authSource=admin
+      - MongoDB__ConnectionString=${MONGO_CONNECTION_STRING}
       - MongoDB__DatabaseName=${MONGO_DB:-portal_noticias}
       - Storage__Provider=${STORAGE_PROVIDER:-Local}
       - LocalStorage__BaseUrl=/uploads
@@ -25,35 +25,8 @@ services:
     volumes:
       # Persistencia de imágenes subidas cuando se usa almacenamiento local
       - ./uploads:/app/wwwroot/uploads
-    depends_on:
-      mongo:
-        condition: service_healthy
     networks:
       - app_network
-
-  # ─── Base de Datos MongoDB ────────────────────────────────────────────────
-  mongo:
-    image: mongo:7.0
-    container_name: portal_mongo
-    restart: unless-stopped
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER:-admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS:-adminpassword123}
-      - MONGO_INITDB_DATABASE=${MONGO_DB:-portal_noticias}
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test: ["CMD-SHELL", "mongosh -u ${MONGO_USER:-admin} -p ${MONGO_PASS:-adminpassword123} --eval 'db.adminCommand(\"ping\")' || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-    networks:
-      - app_network
-
-volumes:
-  mongo_data:
-    name: portal_mongo_data
 
 networks:
   app_network:

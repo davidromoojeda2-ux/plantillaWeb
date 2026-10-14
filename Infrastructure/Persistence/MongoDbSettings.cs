@@ -5,6 +5,6 @@ namespace Infrastructure.Persistence;
 /// </summary>
 public class MongoDbSettings
 {
-    public string ConnectionString { get; set; } = "mongodb://localhost:27017";
+    public string ConnectionString { get; set; } = string.Empty;
     public string DatabaseName { get; set; } = "portal_noticias";
 }
