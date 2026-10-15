@@ -66,6 +66,9 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
+      - name: Formatear nombre de imagen en minúsculas
+        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -104,12 +107,38 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Checkout del repositorio para transferir configuración
+      - name: Formatear nombre de imagen en minúsculas
+        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      # ─── Opción Dokploy: Despliegue Ultrarrápido por Webhook (Sin SSH) ────────
+      - name: Disparar Despliegue en Dokploy vía Webhook
+        if: "${{ secrets.DOKPLOY_WEBHOOK_URL != '' }}"
+        run: |
+          echo "==> Notificando a Dokploy para descargar la nueva imagen Docker..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}" || true)
+          echo "Respuesta inicial del Webhook (POST): HTTP $HTTP_STATUS"
+          
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "==> [EXITO] Dokploy ha recibido la señal y comenzo a desplegar la imagen en el VPS."
+          else
+            echo "==> [REINTENTO] Intentando llamada GET al Webhook..."
+            HTTP_STATUS_GET=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.DOKPLOY_WEBHOOK_URL }}" || true)
+            if [ "$HTTP_STATUS_GET" -ge 200 ] && [ "$HTTP_STATUS_GET" -lt 300 ]; then
+              echo "==> [EXITO] Dokploy ha recibido la señal y comenzo a desplegar la imagen en el VPS (GET)."
+            else
+              echo "==> [ERROR] No se pudo activar el Webhook de Dokploy. Codigo HTTP: $HTTP_STATUS_GET"
+              exit 1
+            fi
+          fi
+
+      # ─── Opción Tradicional: Conexión SSH directa al VPS (Fallback) ───────────
+      - name: Checkout del repositorio para transferir configuración (SSH Fallback)
         uses: actions/checkout@v4
+        if: "${{ secrets.DOKPLOY_WEBHOOK_URL == '' && secrets.SSH_HOST != '' }}"
 
       - name: Transferir docker-compose.yml y .env.example al VPS
         uses: appleboy/scp-action@v0.1.7
-        if: "${{ secrets.SSH_HOST != '' }}"
+        if: "${{ secrets.DOKPLOY_WEBHOOK_URL == '' && secrets.SSH_HOST != '' }}"
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -120,7 +149,7 @@ jobs:
 
       - name: Desplegar y Verificar Salud del Servicio vía SSH
         uses: appleboy/ssh-action@v1.2.0
-        if: "${{ secrets.SSH_HOST != '' }}"
+        if: "${{ secrets.DOKPLOY_WEBHOOK_URL == '' && secrets.SSH_HOST != '' }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}

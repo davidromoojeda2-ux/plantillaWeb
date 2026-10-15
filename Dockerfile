@@ -4,8 +4,8 @@
 FROM node:22-alpine AS frontend
 WORKDIR /src/frontend
 
-# Habilitar pnpm
-RUN npm install -g pnpm
+# Habilitar pnpm versión fijada
+RUN npm install -g pnpm@12.11.2
 
 # Copiar manifiestos de dependencias para aprovechar caché
 COPY paginaWeb/package.json paginaWeb/pnpm-lock.yaml ./
