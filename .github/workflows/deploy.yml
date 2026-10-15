@@ -105,6 +105,12 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    env:
+      DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT || 22 }}
 
     steps:
       - name: Formatear nombre de imagen en minúsculas
@@ -112,17 +118,17 @@ jobs:
 
       # ─── Opción Dokploy: Despliegue Ultrarrápido por Webhook (Sin SSH) ────────
       - name: Disparar Despliegue en Dokploy vía Webhook
-        if: "${{ secrets.DOKPLOY_WEBHOOK_URL != '' }}"
+        if: env.DOKPLOY_WEBHOOK_URL != ''
         run: |
           echo "==> Notificando a Dokploy para descargar la nueva imagen Docker..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}" || true)
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${DOKPLOY_WEBHOOK_URL}" || true)
           echo "Respuesta inicial del Webhook (POST): HTTP $HTTP_STATUS"
           
           if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
             echo "==> [EXITO] Dokploy ha recibido la señal y comenzo a desplegar la imagen en el VPS."
           else
             echo "==> [REINTENTO] Intentando llamada GET al Webhook..."
-            HTTP_STATUS_GET=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.DOKPLOY_WEBHOOK_URL }}" || true)
+            HTTP_STATUS_GET=$(curl -s -o /dev/null -w "%{http_code}" "${DOKPLOY_WEBHOOK_URL}" || true)
             if [ "$HTTP_STATUS_GET" -ge 200 ] && [ "$HTTP_STATUS_GET" -lt 300 ]; then
               echo "==> [EXITO] Dokploy ha recibido la señal y comenzo a desplegar la imagen en el VPS (GET)."
             else
@@ -134,31 +140,31 @@ jobs:
       # ─── Opción Tradicional: Conexión SSH directa al VPS (Fallback) ───────────
       - name: Checkout del repositorio para transferir configuración (SSH Fallback)
         uses: actions/checkout@v4
-        if: "${{ secrets.DOKPLOY_WEBHOOK_URL == '' && secrets.SSH_HOST != '' }}"
+        if: env.DOKPLOY_WEBHOOK_URL == '' && env.SSH_HOST != ''
 
       - name: Transferir docker-compose.yml y .env.example al VPS
         uses: appleboy/scp-action@v0.1.7
-        if: "${{ secrets.DOKPLOY_WEBHOOK_URL == '' && secrets.SSH_HOST != '' }}"
+        if: env.DOKPLOY_WEBHOOK_URL == '' && env.SSH_HOST != ''
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
+          port: ${{ env.SSH_PORT }}
           source: "docker-compose.yml,.env.example"
           target: "/opt/portal-noticias"
 
       - name: Desplegar y Verificar Salud del Servicio vía SSH
         uses: appleboy/ssh-action@v1.2.0
-        if: "${{ secrets.DOKPLOY_WEBHOOK_URL == '' && secrets.SSH_HOST != '' }}"
+        if: env.DOKPLOY_WEBHOOK_URL == '' && env.SSH_HOST != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_PATH: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
+          port: ${{ env.SSH_PORT }}
           envs: GITHUB_TOKEN,GITHUB_ACTOR,IMAGE_PATH
           script: |
             set -e
