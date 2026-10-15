@@ -5,7 +5,7 @@
 }
 
 @section HeaderActions {
-    <a href="/admin/articulos/nuevo" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
+    <a asp-area="Admin" asp-controller="Articulos" asp-action="Create" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Nuevo Artículo
     </a>
@@ -23,7 +23,7 @@
             <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-.586-1.414l-4.5-4.5A2 2 0 0015.5 3H5"/></svg>
             <p class="font-medium text-slate-600">No hay artículos registrados.</p>
             <p class="text-xs text-slate-400 mt-1">Comienza publicando tu primera noticia o crónica.</p>
-            <a href="/admin/articulos/nuevo" class="mt-4 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear artículo ahora →</a>
+            <a asp-area="Admin" asp-controller="Articulos" asp-action="Create" class="mt-4 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear artículo ahora →</a>
         </div>
     }
     else
@@ -45,7 +45,7 @@
                     {
                         <tr class="hover:bg-slate-50/60 transition-colors">
                             <td class="px-6 py-4">
-                                <a href="/admin/articulos/editar/@art.Id" class="font-semibold text-slate-800 hover:text-[#00509D] line-clamp-1">
+                                <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id" class="font-semibold text-slate-800 hover:text-[#00509D] line-clamp-1">
                                     @art.Title
                                 </a>
                                 <span class="text-xs text-slate-400 font-mono">/@art.Slug</span>
@@ -75,13 +75,13 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="inline-flex items-center gap-2">
-                                    <a href="/articulos/@art.Slug" target="_blank" class="p-1.5 text-slate-400 hover:text-[#00509D] rounded-lg transition" title="Ver en portal público">
+                                    <a asp-area="" asp-controller="Home" asp-action="Articulo" asp-route-slug="@art.Slug" target="_blank" class="p-1.5 text-slate-400 hover:text-[#00509D] rounded-lg transition" title="Ver en portal público">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                     </a>
-                                    <a href="/admin/articulos/editar/@art.Id" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
+                                    <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </a>
-                                    <form method="post" action="/admin/articulos/eliminar/@art.Id" onsubmit="return confirm('¿Seguro que deseas eliminar este artículo? Esta acción no se puede deshacer.');" class="inline">
+                                    <form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="Delete" asp-route-id="@art.Id" onsubmit="return confirm('¿Seguro que deseas eliminar este artículo? Esta acción no se puede deshacer.');" class="inline">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Eliminar">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>

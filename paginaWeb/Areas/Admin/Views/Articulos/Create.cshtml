@@ -1,11 +1,9 @@
-@model Aplication.DTOs.ArticleDto
+@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
 @{
     ViewData["Title"] = "Nuevo Artículo";
-    var parents = (List<CategoryResponseDto>?)ViewBag.ParentCategories ?? new();
-    var subs = (List<CategoryResponseDto>?)ViewBag.SubCategories ?? new();
 }
 
-<form method="post" action="/admin/articulos/nuevo" class="space-y-8" id="articleForm">
+<form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="Create" class="space-y-8" id="articleForm">
     @Html.AntiForgeryToken()
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -80,7 +78,7 @@
                     <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-sm transition">
                         Guardar Noticia
                     </button>
-                    <a href="/admin/articulos" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
+                    <a asp-area="Admin" asp-controller="Articulos" asp-action="Index" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
                         Cancelar
                     </a>
                 </div>
@@ -94,7 +92,7 @@
                     <label asp-for="CategoryId" class="block text-xs font-semibold text-slate-600 mb-1">Categoría Principal</label>
                     <select asp-for="CategoryId" id="categorySelect" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white">
                         <option value="">-- Seleccionar Categoría --</option>
-                        @foreach (var p in parents)
+                        @foreach (var p in Model.ParentCategories)
                         {
                             <option value="@p.Id">@p.Name</option>
                         }
@@ -105,7 +103,7 @@
                     <label asp-for="SubcategoryId" class="block text-xs font-semibold text-slate-600 mb-1">Subcategoría (Opcional)</label>
                     <select asp-for="SubcategoryId" id="subcategorySelect" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white">
                         <option value="">-- Ninguna --</option>
-                        @foreach (var s in subs)
+                        @foreach (var s in Model.SubCategories)
                         {
                             <option value="@s.Id" data-parent="@s.ParentId">@s.Name</option>
                         }
@@ -121,8 +119,8 @@
                 </div>
 
                 <!-- Vista previa -->
-                <div id="coverPreviewContainer" class="hidden">
-                    <img id="coverPreviewImg" src="" alt="Portada" class="w-full h-36 object-cover rounded-xl border border-slate-200" onerror="this.onerror=null; this.src='';" />
+                <div id="coverPreviewContainer" class="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "hidden" : "")">
+                    <img id="coverPreviewImg" src="@Model.CoverImageUrl" alt="Portada" class="w-full h-36 object-cover rounded-xl border border-slate-200" onerror="this.onerror=null; this.src='';" />
                     <div class="flex items-center justify-between mt-2">
                         <span class="text-[11px] text-slate-500 font-medium">Vista previa</span>
                         <button type="button" id="removeCoverBtn" class="text-xs text-rose-600 hover:text-rose-700 hover:underline">Quitar imagen</button>

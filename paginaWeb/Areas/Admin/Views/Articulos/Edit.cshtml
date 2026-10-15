@@ -1,16 +1,11 @@
-@model Aplication.DTOs.ArticleDto
+@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
 @{
     ViewData["Title"] = "Editar Artículo";
-    var parents = (List<CategoryResponseDto>?)ViewBag.ParentCategories ?? new();
-    var subs = (List<CategoryResponseDto>?)ViewBag.SubCategories ?? new();
-    var coverUrl = (string?)ViewBag.CoverImageUrl;
-    var articleId = (string)ViewBag.ArticleId;
-    var linkedImages = (List<ImageMetadataResponseDto>?)ViewBag.LinkedImages ?? new();
-    var availableImages = (List<ImageMetadataResponseDto>?)ViewBag.AvailableImages ?? new();
 }
 
-<form method="post" action="/admin/articulos/editar/@articleId" class="space-y-8" id="articleForm">
+<form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@Model.Id" class="space-y-8" id="articleForm">
     @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- ─── Columna Principal (Contenido y Editor) ─────────────────────── -->
@@ -84,7 +79,7 @@
                     <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-sm transition">
                         Actualizar Noticia
                     </button>
-                    <a href="/admin/articulos" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
+                    <a asp-area="Admin" asp-controller="Articulos" asp-action="Index" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
                         Volver
                     </a>
                 </div>
@@ -98,7 +93,7 @@
                     <label asp-for="CategoryId" class="block text-xs font-semibold text-slate-600 mb-1">Categoría Principal</label>
                     <select asp-for="CategoryId" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white">
                         <option value="">-- Seleccionar Categoría --</option>
-                        @foreach (var p in parents)
+                        @foreach (var p in Model.ParentCategories)
                         {
                             <option value="@p.Id" selected="@(p.Id == Model.CategoryId)">@p.Name</option>
                         }
@@ -109,7 +104,7 @@
                     <label asp-for="SubcategoryId" class="block text-xs font-semibold text-slate-600 mb-1">Subcategoría (Opcional)</label>
                     <select asp-for="SubcategoryId" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white">
                         <option value="">-- Ninguna --</option>
-                        @foreach (var s in subs)
+                        @foreach (var s in Model.SubCategories)
                         {
                             <option value="@s.Id" selected="@(s.Id == Model.SubcategoryId)">@s.Name</option>
                         }
@@ -125,8 +120,8 @@
                 </div>
 
                 <!-- Vista previa -->
-                <div id="coverPreviewContainer" class="@(string.IsNullOrEmpty(coverUrl) ? "hidden" : "")">
-                    <img id="coverPreviewImg" src="@coverUrl" alt="Portada" class="w-full h-36 object-cover rounded-xl border border-slate-200" onerror="this.onerror=null; this.src='';" />
+                <div id="coverPreviewContainer" class="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "hidden" : "")">
+                    <img id="coverPreviewImg" src="@Model.CoverImageUrl" alt="Portada" class="w-full h-36 object-cover rounded-xl border border-slate-200" onerror="this.onerror=null; this.src='';" />
                     <div class="flex items-center justify-between mt-2">
                         <span class="text-[11px] text-slate-500 font-medium">Vista previa actual</span>
                         <button type="button" id="removeCoverBtn" class="text-xs text-rose-600 hover:text-rose-700 hover:underline">Quitar imagen</button>
@@ -151,12 +146,12 @@
                     <input type="file" id="coverFileInput" accept="image/*" class="hidden" />
                 </div>
 
-                @if (linkedImages.Any())
+                @if (Model.LinkedImages.Any())
                 {
                     <div class="pt-2 border-t border-slate-100">
-                        <span class="block text-[11px] font-semibold text-slate-600 mb-1.5">Imágenes vinculadas a este artículo (@linkedImages.Count):</span>
+                        <span class="block text-[11px] font-semibold text-slate-600 mb-1.5">Imágenes vinculadas a este artículo (@Model.LinkedImages.Count):</span>
                         <div class="flex flex-wrap gap-2">
-                            @foreach (var img in linkedImages)
+                            @foreach (var img in Model.LinkedImages)
                             {
                                 var bestUrl = ImageMapper.GetBestUrl(img);
                                 var thumb = ImageMapper.GetThumbnailUrl(img) ?? bestUrl;
@@ -169,13 +164,13 @@
                     </div>
                 }
 
-                @if (availableImages.Any())
+                @if (Model.AvailableImages.Any())
                 {
                     <div class="pt-2 border-t border-slate-100">
                         <label class="block text-[11px] font-semibold text-slate-600 mb-1">O seleccionar de la Biblioteca</label>
                         <select id="libraryImageSelect" class="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white">
                             <option value="">-- Seleccionar imagen existente --</option>
-                            @foreach (var img in availableImages)
+                            @foreach (var img in Model.AvailableImages)
                             {
                                 var bestUrl = ImageMapper.GetBestUrl(img);
                                 <option value="@img.Id" data-url="@bestUrl">@img.OriginalFileName</option>
@@ -235,7 +230,7 @@
             const file = coverFileInput.files[0];
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('articleId', '@articleId');
+            formData.append('articleId', '@Model.Id');
 
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
             try {

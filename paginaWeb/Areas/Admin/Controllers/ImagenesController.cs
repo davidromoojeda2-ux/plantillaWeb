@@ -1,6 +1,8 @@
+using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 using Aplication.Services;
+using Domine.Exceptions;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -77,9 +79,29 @@ public class ImagenesController : Controller
 
             TempData["Success"] = "Imagen procesada, almacenada" + (!string.IsNullOrEmpty(articleId) ? " y vinculada al artículo" : "") + " correctamente.";
         }
-        catch (Exception ex)
+        catch (DomainValidationException ex)
         {
-            TempData["Error"] = "Error al procesar la imagen: " + ex.Message;
+            TempData["Error"] = ex.Message;
+        }
+        catch (ConflictException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (NotFoundException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (ArgumentException ex)
+        {
+            TempData["Error"] = "Error en el archivo de imagen: " + ex.Message;
+        }
+        catch (SixLabors.ImageSharp.UnknownImageFormatException)
+        {
+            TempData["Error"] = "El archivo proporcionado no es un formato de imagen soportado.";
+        }
+        catch (SixLabors.ImageSharp.InvalidImageContentException)
+        {
+            TempData["Error"] = "El archivo de imagen está dañado o su contenido es inválido.";
         }
 
         return RedirectToAction(nameof(Index));
@@ -139,9 +161,21 @@ public class ImagenesController : Controller
 
             TempData["Success"] = "Vínculo de la imagen actualizado correctamente.";
         }
-        catch (Exception ex)
+        catch (DomainValidationException ex)
         {
-            TempData["Error"] = "Error al vincular imagen: " + ex.Message;
+            TempData["Error"] = ex.Message;
+        }
+        catch (ConflictException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (NotFoundException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (ArgumentException ex)
+        {
+            TempData["Error"] = ex.Message;
         }
 
         return RedirectToAction(nameof(Index));
@@ -160,8 +194,16 @@ public class ImagenesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id)
     {
-        await _imageService.DeleteByIdAsync(id);
-        TempData["Success"] = "Imagen y sus variantes WebP eliminadas.";
-        return RedirectToAction(nameof(Index));
+        try
+        {
+            await _imageService.DeleteByIdAsync(id);
+            TempData["Success"] = "Imagen y sus variantes WebP eliminadas.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (NotFoundException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

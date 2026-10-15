@@ -7,7 +7,7 @@
 <div class="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-xs p-8">
     <h3 class="text-lg font-bold text-slate-800 mb-6">Editar Sección Institucional</h3>
 
-    <form method="post" action="/admin/secciones/editar/@pageId" class="space-y-6">
+    <form method="post" asp-area="Admin" asp-controller="Secciones" asp-action="Edit" asp-route-id="@pageId" class="space-y-6">
         @Html.AntiForgeryToken()
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -52,7 +52,7 @@
             <button type="submit" class="py-2.5 px-6 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-sm transition">
                 Actualizar Sección
             </button>
-            <a href="/admin/secciones" class="py-2.5 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
+            <a asp-area="Admin" asp-controller="Secciones" asp-action="Index" class="py-2.5 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
                 Cancelar
             </a>
         </div>

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Aplication.DTOs;
+using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 using Domine.Entities;
@@ -127,14 +128,19 @@ public class PageService : IPageService
     public async Task<PageResponseDto> UpdateAsync(string id, PageDto dto)
     {
         var page = await _repo.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Sección '{id}' no encontrada.");
+            ?? throw new NotFoundException("Sección", id);
 
         PageMapper.ApplyUpdate(page, dto);
         await _repo.UpdateAsync(page);
         return PageMapper.ToDto(page);
     }
 
-    public Task DeleteAsync(string id) => _repo.DeleteAsync(id);
+    public async Task DeleteAsync(string id)
+    {
+        _ = await _repo.GetByIdAsync(id)
+            ?? throw new NotFoundException("Sección", id);
+        await _repo.DeleteAsync(id);
+    }
 }
 
 // ─── Auth Service (interfaz; implementación en Infrastructure.Auth) ───────────

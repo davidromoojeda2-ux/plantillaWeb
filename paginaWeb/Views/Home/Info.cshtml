@@ -34,7 +34,7 @@
                 <nav class="space-y-1.5 text-xs">
                     @foreach (var pageItem in otherPages)
                     {
-                        <a href="/info/@pageItem.Slug"
+                        <a asp-controller="Home" asp-action="Info" asp-route-slug="@pageItem.Slug"
                            class="block px-3 py-2 rounded-xl transition font-medium @(pageItem.Slug == Model.Slug ? "bg-[#00296B] text-white font-bold" : "text-slate-700 hover:bg-slate-100")">
                             @pageItem.Title
                         </a>

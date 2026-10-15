@@ -27,7 +27,7 @@
 
         <div class="p-6 space-y-3">
             <h4 class="font-serif font-black text-xl text-slate-900 group-hover:text-[#00509D] transition line-clamp-2 leading-snug">
-                <a href="/articulos/@art.Slug">@art.Title</a>
+                <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@art.Slug">@art.Title</a>
             </h4>
             <p class="text-xs text-slate-600 line-clamp-3 leading-relaxed">@art.Summary</p>
         </div>

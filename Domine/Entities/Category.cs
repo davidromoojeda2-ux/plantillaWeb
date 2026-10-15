@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using Domine.Exceptions;
 
 namespace Domine.Entities;
 
@@ -35,4 +36,33 @@ public class Category
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Asigna la categoría padre validando que no se cree una auto-referencia cíclica.
+    /// </summary>
+    public void AsignarPadre(string? parentId)
+    {
+        var cleanedParentId = string.IsNullOrWhiteSpace(parentId) ? null : parentId.Trim();
+        if (!string.IsNullOrEmpty(cleanedParentId) && !string.IsNullOrEmpty(Id) && string.Equals(cleanedParentId, Id, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new DomainValidationException("Una categoría no puede ser padre de sí misma.", nameof(ParentId));
+        }
+
+        ParentId = cleanedParentId;
+    }
+
+    /// <summary>
+    /// Valida las invariantes de la categoría según las reglas de negocio del dominio.
+    /// </summary>
+    public void ValidarInvariantes()
+    {
+        if (string.IsNullOrWhiteSpace(Name))
+            throw new DomainValidationException("El nombre de la categoría es obligatorio.", nameof(Name));
+
+        if (string.IsNullOrWhiteSpace(Slug))
+            throw new DomainValidationException("El slug de la categoría es obligatorio.", nameof(Slug));
+
+        if (!string.IsNullOrEmpty(ParentId) && !string.IsNullOrEmpty(Id) && string.Equals(ParentId, Id, StringComparison.OrdinalIgnoreCase))
+            throw new DomainValidationException("Una categoría no puede ser padre de sí misma.", nameof(ParentId));
+    }
 }

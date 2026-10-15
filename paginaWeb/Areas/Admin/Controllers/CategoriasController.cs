@@ -1,8 +1,11 @@
 using Aplication.DTOs;
+using Aplication.Exceptions;
 using Aplication.Mappers;
 using Aplication.Services;
+using Domine.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using paginaWeb.Areas.Admin.Models;
 
 namespace paginaWeb.Areas.Admin.Controllers;
 
@@ -34,30 +37,47 @@ public class CategoriasController : Controller
     [HttpGet("nueva")]
     public async Task<IActionResult> Create()
     {
-        await LoadParentsViewBagAsync();
-        return View(new CategoryDto { Order = 1, ShowInMenu = true, IsActive = true });
+        var parents = await GetParentsAsync();
+        var model = new CategoryFormViewModel
+        {
+            Order = 1,
+            ShowInMenu = true,
+            IsActive = true,
+            Parents = parents
+        };
+        return View(model);
     }
 
     [HttpPost("nueva")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CategoryDto model)
+    public async Task<IActionResult> Create(CategoryFormViewModel model)
     {
-        if (await _categoryService.SlugExistsAsync(model.Slug))
-        {
-            ModelState.AddModelError(nameof(model.Slug), $"El slug '{model.Slug}' ya está registrado.");
-        }
-
         if (!ModelState.IsValid)
         {
-            await LoadParentsViewBagAsync();
+            model.Parents = await GetParentsAsync();
             return View(model);
         }
 
-        await _categoryService.CreateAsync(model);
-        _menuService.InvalidateMenu();
+        try
+        {
+            await _categoryService.CreateAsync(model.ToDto());
+            _menuService.InvalidateMenu();
 
-        TempData["Success"] = "Categoría creada con éxito e invalidada la caché del menú.";
-        return RedirectToAction(nameof(Index));
+            TempData["Success"] = "Categoría creada con éxito e invalidada la caché del menú.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (DomainValidationException ex)
+        {
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            model.Parents = await GetParentsAsync();
+            return View(model);
+        }
+        catch (ConflictException ex)
+        {
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            model.Parents = await GetParentsAsync();
+            return View(model);
+        }
     }
 
     [HttpGet("editar/{id}")]
@@ -66,51 +86,71 @@ public class CategoriasController : Controller
         var category = await _categoryService.GetByIdAsync(id);
         if (category is null) return NotFound();
 
-        await LoadParentsViewBagAsync(id);
+        var parents = await GetParentsAsync(id);
+        var model = CategoryFormViewModel.FromDto(category, parents);
 
-        var model = CategoryMapper.ToEditDto(category);
-
-        ViewBag.CategoryId = id;
         return View(model);
     }
 
     [HttpPost("editar/{id}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(string id, CategoryDto model)
+    public async Task<IActionResult> Edit(string id, CategoryFormViewModel model)
     {
-        if (await _categoryService.SlugExistsAsync(model.Slug, id))
-        {
-            ModelState.AddModelError(nameof(model.Slug), $"El slug '{model.Slug}' ya está en uso.");
-        }
+        model.Id = id;
 
         if (!ModelState.IsValid)
         {
-            await LoadParentsViewBagAsync(id);
-            ViewBag.CategoryId = id;
+            model.Parents = await GetParentsAsync(id);
             return View(model);
         }
 
-        await _categoryService.UpdateAsync(id, model);
-        _menuService.InvalidateMenu();
+        try
+        {
+            await _categoryService.UpdateAsync(id, model.ToDto());
+            _menuService.InvalidateMenu();
 
-        TempData["Success"] = "Categoría actualizada e invalidada la caché del menú.";
-        return RedirectToAction(nameof(Index));
+            TempData["Success"] = "Categoría actualizada e invalidada la caché del menú.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (DomainValidationException ex)
+        {
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            model.Parents = await GetParentsAsync(id);
+            return View(model);
+        }
+        catch (ConflictException ex)
+        {
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            model.Parents = await GetParentsAsync(id);
+            return View(model);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpPost("eliminar/{id}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id)
     {
-        await _categoryService.DeleteAsync(id);
-        _menuService.InvalidateMenu();
-        TempData["Success"] = "Categoría eliminada con éxito.";
-        return RedirectToAction(nameof(Index));
+        try
+        {
+            await _categoryService.DeleteAsync(id);
+            _menuService.InvalidateMenu();
+            TempData["Success"] = "Categoría eliminada con éxito.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
     }
 
-    private async Task LoadParentsViewBagAsync(string? excludeId = null)
+    private async Task<List<CategoryResponseDto>> GetParentsAsync(string? excludeId = null)
     {
         var all = await _categoryService.GetAllAsync();
-        ViewBag.Parents = all
+        return all
             .Where(c => c.ParentId is null && (excludeId is null || c.Id != excludeId))
             .OrderBy(c => c.Order)
             .ToList();

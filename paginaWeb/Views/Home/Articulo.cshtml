@@ -27,11 +27,11 @@
     <header class="max-w-4xl mx-auto space-y-6 text-center">
         <!-- Breadcrumbs y Categoría -->
         <div class="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            <a href="/" class="hover:underline">Inicio</a>
+            <a asp-controller="Home" asp-action="Index" class="hover:underline">Inicio</a>
             <span>/</span>
             @if (category != null)
             {
-                <a href="/categoria/@category.Slug" class="text-[#00509D] hover:underline">@category.Name</a>
+                <a asp-controller="Home" asp-action="Categoria" asp-route-slug="@category.Slug" class="text-[#00509D] hover:underline">@category.Name</a>
                 <span>/</span>
             }
             <span class="text-slate-400">Lectura</span>

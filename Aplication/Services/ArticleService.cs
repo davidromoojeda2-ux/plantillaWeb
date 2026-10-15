@@ -1,4 +1,5 @@
 using Aplication.DTOs;
+using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 
@@ -70,10 +71,12 @@ public class ArticleService : IArticleService
 
     public async Task<ArticleResponseDto> CreateAsync(ArticleDto dto)
     {
-        if (await _repo.SlugExistsAsync(dto.Slug))
-            throw new InvalidOperationException($"El slug '{dto.Slug}' ya está en uso.");
-
         var article = ArticleMapper.ToEntity(dto);
+        article.ValidarInvariantes();
+
+        if (await _repo.SlugExistsAsync(article.Slug))
+            throw new DuplicateSlugException(article.Slug);
+
         await _repo.InsertAsync(article);
         return ArticleMapper.ToDto(article);
     }
@@ -81,12 +84,14 @@ public class ArticleService : IArticleService
     public async Task<ArticleResponseDto> UpdateAsync(string id, ArticleDto dto)
     {
         var existing = await _repo.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Artículo '{id}' no encontrado.");
-
-        if (await _repo.SlugExistsAsync(dto.Slug, id))
-            throw new InvalidOperationException($"El slug '{dto.Slug}' ya está en uso.");
+            ?? throw new NotFoundException("Artículo", id);
 
         ArticleMapper.ApplyUpdate(existing, dto);
+        existing.ValidarInvariantes();
+
+        if (await _repo.SlugExistsAsync(existing.Slug, id))
+            throw new DuplicateSlugException(existing.Slug);
+
         await _repo.UpdateAsync(existing);
         return ArticleMapper.ToDto(existing);
     }
@@ -94,7 +99,7 @@ public class ArticleService : IArticleService
     public async Task DeleteAsync(string id)
     {
         _ = await _repo.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Artículo '{id}' no encontrado.");
+            ?? throw new NotFoundException("Artículo", id);
         await _repo.DeleteAsync(id);
     }
 

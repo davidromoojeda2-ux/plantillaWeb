@@ -1,6 +1,8 @@
 using Aplication.DTOs;
+using Aplication.Exceptions;
 using Aplication.Mappers;
 using Aplication.Services;
+using Domine.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,9 +46,14 @@ public class SeccionesController : Controller
             TempData["Success"] = "Página informativa creada correctamente.";
             return RedirectToAction(nameof(Index));
         }
-        catch (Exception ex)
+        catch (DomainValidationException ex)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            return View(model);
+        }
+        catch (ConflictException ex)
+        {
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
             return View(model);
         }
     }
@@ -79,11 +86,21 @@ public class SeccionesController : Controller
             TempData["Success"] = "Página informativa actualizada.";
             return RedirectToAction(nameof(Index));
         }
-        catch (Exception ex)
+        catch (DomainValidationException ex)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
             ViewBag.PageId = id;
             return View(model);
+        }
+        catch (ConflictException ex)
+        {
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            ViewBag.PageId = id;
+            return View(model);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
         }
     }
 
@@ -91,8 +108,15 @@ public class SeccionesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id)
     {
-        await _pageService.DeleteAsync(id);
-        TempData["Success"] = "Página informativa eliminada.";
-        return RedirectToAction(nameof(Index));
+        try
+        {
+            await _pageService.DeleteAsync(id);
+            TempData["Success"] = "Página informativa eliminada.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
     }
 }

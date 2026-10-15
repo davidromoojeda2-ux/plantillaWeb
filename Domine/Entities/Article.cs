@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using Domine.Exceptions;
 
 namespace Domine.Entities;
 
@@ -87,5 +88,50 @@ public class Article
             .Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
 
         return Math.Max(1, (int)Math.Ceiling(words / 200.0));
+    }
+
+    /// <summary>
+    /// Valida las invariantes del artículo según las reglas de negocio del dominio.
+    /// Lanza <see cref="DomainValidationException"/> si el estado es inconsistente.
+    /// </summary>
+    public void ValidarInvariantes()
+    {
+        if (string.IsNullOrWhiteSpace(Title))
+            throw new DomainValidationException("El título del artículo es obligatorio.", nameof(Title));
+
+        if (string.IsNullOrWhiteSpace(Slug))
+            throw new DomainValidationException("El slug del artículo es obligatorio.", nameof(Slug));
+
+        if (Status == ArticleStatus.Publicado)
+        {
+            if (string.IsNullOrWhiteSpace(Content))
+                throw new DomainValidationException("No se puede publicar un artículo sin contenido.", nameof(Content));
+        }
+
+        if (ReadingTimeMinutes < 1)
+            ReadingTimeMinutes = 1;
+    }
+
+    /// <summary>
+    /// Cambia el estado a Publicado, asigna la fecha de publicación si no existía,
+    /// recalcula el tiempo de lectura y valida las invariantes del dominio.
+    /// </summary>
+    public void Publicar()
+    {
+        Status = ArticleStatus.Publicado;
+        PublishedAt ??= DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+        ReadingTimeMinutes = EstimateReadingTime(Content);
+        ValidarInvariantes();
+    }
+
+    /// <summary>
+    /// Cambia el estado a Borrador y valida las invariantes del dominio.
+    /// </summary>
+    public void MarcarBorrador()
+    {
+        Status = ArticleStatus.Borrador;
+        UpdatedAt = DateTime.UtcNow;
+        ValidarInvariantes();
     }
 }

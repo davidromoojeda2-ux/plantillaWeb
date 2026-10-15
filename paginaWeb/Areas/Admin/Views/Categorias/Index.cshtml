@@ -5,7 +5,7 @@
 }
 
 @section HeaderActions {
-    <a href="/admin/categorias/nueva" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
+    <a asp-area="Admin" asp-controller="Categorias" asp-action="Create" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Nueva Categoría
     </a>
@@ -23,7 +23,7 @@
     {
         <div class="p-12 text-center text-slate-400">
             <p class="font-medium text-slate-600">No hay categorías registradas.</p>
-            <a href="/admin/categorias/nueva" class="mt-2 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear primera categoría →</a>
+            <a asp-area="Admin" asp-controller="Categorias" asp-action="Create" class="mt-2 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear primera categoría →</a>
         </div>
     }
     else
@@ -54,10 +54,10 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <a href="/admin/categorias/editar/@parent.Id" class="p-2 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
+                            <a asp-area="Admin" asp-controller="Categorias" asp-action="Edit" asp-route-id="@parent.Id" class="p-2 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             </a>
-                            <form method="post" action="/admin/categorias/eliminar/@parent.Id" onsubmit="return confirm('¿Eliminar esta categoría principal y sus subcategorías?');" class="inline">
+                            <form method="post" asp-area="Admin" asp-controller="Categorias" asp-action="Delete" asp-route-id="@parent.Id" onsubmit="return confirm('¿Eliminar esta categoría principal y sus subcategorías?');" class="inline">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Eliminar">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -78,10 +78,10 @@
                                         <span class="text-xs text-slate-400 font-mono">/@child.Slug</span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <a href="/admin/categorias/editar/@child.Id" class="p-1 text-slate-400 hover:text-slate-700 rounded transition" title="Editar subcategoría">
+                                        <a asp-area="Admin" asp-controller="Categorias" asp-action="Edit" asp-route-id="@child.Id" class="p-1 text-slate-400 hover:text-slate-700 rounded transition" title="Editar subcategoría">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </a>
-                                        <form method="post" action="/admin/categorias/eliminar/@child.Id" onsubmit="return confirm('¿Eliminar esta subcategoría?');" class="inline">
+                                        <form method="post" asp-area="Admin" asp-controller="Categorias" asp-action="Delete" asp-route-id="@child.Id" onsubmit="return confirm('¿Eliminar esta subcategoría?');" class="inline">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="p-1 text-slate-400 hover:text-rose-600 rounded transition" title="Eliminar">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>

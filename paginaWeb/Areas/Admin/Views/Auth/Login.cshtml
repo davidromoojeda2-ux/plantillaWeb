@@ -39,7 +39,7 @@
                 </div>
             }
 
-            <form method="post" action="/admin/login" class="space-y-5">
+            <form method="post" asp-area="Admin" asp-controller="Auth" asp-action="Login" class="space-y-5">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
 
@@ -79,7 +79,7 @@
         </div>
 
         <div class="text-center mt-6">
-            <a href="/" class="text-xs text-blue-200 hover:text-white transition-colors">
+            <a asp-area="" asp-controller="Home" asp-action="Index" class="text-xs text-blue-200 hover:text-white transition-colors">
                 ← Volver al portal público
             </a>
         </div>

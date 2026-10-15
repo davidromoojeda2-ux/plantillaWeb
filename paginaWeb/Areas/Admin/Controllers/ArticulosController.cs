@@ -1,10 +1,13 @@
 using Aplication.DTOs;
+using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 using Aplication.Services;
+using Domine.Exceptions;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using paginaWeb.Areas.Admin.Models;
 
 namespace paginaWeb.Areas.Admin.Controllers;
 
@@ -40,35 +43,43 @@ public class ArticulosController : Controller
     [HttpGet("nuevo")]
     public async Task<IActionResult> Create()
     {
-        await LoadCategoriesViewBagAsync();
-        var model = new ArticleDto
+        var allCategories = await _categoryService.GetAllAsync();
+        var model = new ArticleFormViewModel
         {
             Author = User.Identity?.Name ?? "Redacción",
-            Status = "Publicado"
+            Status = "Publicado",
+            ParentCategories = allCategories.Where(c => c.ParentId is null).OrderBy(c => c.Order).ToList(),
+            SubCategories = allCategories.Where(c => c.ParentId is not null).OrderBy(c => c.Order).ToList()
         };
         return View(model);
     }
 
     [HttpPost("nuevo")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(ArticleDto model)
+    public async Task<IActionResult> Create(ArticleFormViewModel model)
     {
         if (!ModelState.IsValid)
         {
-            await LoadCategoriesViewBagAsync();
+            await PopulateTaxonomyAsync(model);
             return View(model);
         }
 
         try
         {
-            await _articleService.CreateAsync(model);
+            await _articleService.CreateAsync(model.ToDto());
             TempData["Success"] = "Artículo publicado exitosamente.";
             return RedirectToAction(nameof(Index));
         }
-        catch (Exception ex)
+        catch (DomainValidationException ex)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
-            await LoadCategoriesViewBagAsync();
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            await PopulateTaxonomyAsync(model);
+            return View(model);
+        }
+        catch (ConflictException ex)
+        {
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            await PopulateTaxonomyAsync(model);
             return View(model);
         }
     }
@@ -79,62 +90,58 @@ public class ArticulosController : Controller
         var article = await _articleService.GetByIdAsync(id);
         if (article is null) return NotFound();
 
-        await LoadCategoriesViewBagAsync();
+        var allCategories = await _categoryService.GetAllAsync();
+        var parents = allCategories.Where(c => c.ParentId is null).OrderBy(c => c.Order).ToList();
+        var subs = allCategories.Where(c => c.ParentId is not null).OrderBy(c => c.Order).ToList();
 
-        var model = ArticleMapper.ToEditDto(article);
-
-        ViewBag.ArticleId = id;
-        ViewBag.CoverImageUrl = null;
-        if (!string.IsNullOrEmpty(article.CoverImageUrl))
-        {
-            ViewBag.CoverImageUrl = article.CoverImageUrl;
-        }
-        else if (!string.IsNullOrEmpty(article.CoverImageId))
+        string? coverUrl = article.CoverImageUrl;
+        if (string.IsNullOrEmpty(coverUrl) && !string.IsNullOrEmpty(article.CoverImageId))
         {
             var coverImg = await _imageService.GetByIdAsync(article.CoverImageId);
-            ViewBag.CoverImageUrl = ImageMapper.GetBestUrl(coverImg);
+            coverUrl = ImageMapper.GetBestUrl(coverImg);
         }
 
-        if (string.IsNullOrEmpty(model.CoverImageUrl) && !string.IsNullOrEmpty(ViewBag.CoverImageUrl))
-        {
-            model.CoverImageUrl = ViewBag.CoverImageUrl;
-        }
+        var linkedImages = await _imageService.GetByArticleIdAsync(id);
+        var availableImages = await _imageService.GetAllAsync(0, 50);
 
-        ViewBag.LinkedImages = await _imageService.GetByArticleIdAsync(id);
-        ViewBag.AvailableImages = await _imageService.GetAllAsync(0, 50);
+        var model = ArticleFormViewModel.FromDto(
+            article, parents, subs, coverUrl, linkedImages, availableImages);
 
         return View(model);
     }
 
     [HttpPost("editar/{id}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(string id, ArticleDto model)
+    public async Task<IActionResult> Edit(string id, ArticleFormViewModel model)
     {
+        model.Id = id;
         if (!ModelState.IsValid)
         {
-            await LoadCategoriesViewBagAsync();
-            ViewBag.ArticleId = id;
-            ViewBag.CoverImageUrl = model.CoverImageUrl;
-            ViewBag.LinkedImages = await _imageService.GetByArticleIdAsync(id);
-            ViewBag.AvailableImages = await _imageService.GetAllAsync(0, 50);
+            await PopulateCollectionsAsync(model, id);
             return View(model);
         }
 
         try
         {
-            await _articleService.UpdateAsync(id, model);
+            await _articleService.UpdateAsync(id, model.ToDto());
             TempData["Success"] = "Artículo actualizado exitosamente.";
             return RedirectToAction(nameof(Index));
         }
-        catch (Exception ex)
+        catch (DomainValidationException ex)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
-            await LoadCategoriesViewBagAsync();
-            ViewBag.ArticleId = id;
-            ViewBag.CoverImageUrl = model.CoverImageUrl;
-            ViewBag.LinkedImages = await _imageService.GetByArticleIdAsync(id);
-            ViewBag.AvailableImages = await _imageService.GetAllAsync(0, 50);
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            await PopulateCollectionsAsync(model, id);
             return View(model);
+        }
+        catch (ConflictException ex)
+        {
+            ModelState.AddModelError(ex.PropertyName ?? string.Empty, ex.Message);
+            await PopulateCollectionsAsync(model, id);
+            return View(model);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
         }
     }
 
@@ -142,9 +149,16 @@ public class ArticulosController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id)
     {
-        await _articleService.DeleteAsync(id);
-        TempData["Success"] = "Artículo eliminado correctamente.";
-        return RedirectToAction(nameof(Index));
+        try
+        {
+            await _articleService.DeleteAsync(id);
+            TempData["Success"] = "Artículo eliminado correctamente.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpPost("upload-inline")]
@@ -162,10 +176,17 @@ public class ArticulosController : Controller
         return Json(new { id = metadata.Id, url = url, alt = metadata.Alt });
     }
 
-    private async Task LoadCategoriesViewBagAsync()
+    private async Task PopulateTaxonomyAsync(ArticleFormViewModel model)
     {
-        var all = await _categoryService.GetAllAsync();
-        ViewBag.ParentCategories = all.Where(c => c.ParentId is null).ToList();
-        ViewBag.SubCategories = all.Where(c => c.ParentId is not null).ToList();
+        var allCategories = await _categoryService.GetAllAsync();
+        model.ParentCategories = allCategories.Where(c => c.ParentId is null).OrderBy(c => c.Order).ToList();
+        model.SubCategories = allCategories.Where(c => c.ParentId is not null).OrderBy(c => c.Order).ToList();
+    }
+
+    private async Task PopulateCollectionsAsync(ArticleFormViewModel model, string id)
+    {
+        await PopulateTaxonomyAsync(model);
+        model.LinkedImages = await _imageService.GetByArticleIdAsync(id);
+        model.AvailableImages = await _imageService.GetAllAsync(0, 50);
     }
 }

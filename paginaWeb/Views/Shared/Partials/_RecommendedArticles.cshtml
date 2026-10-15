@@ -17,7 +17,7 @@
             {
                 var recImage = rec.CoverImageId != null && Model.Images != null && Model.Images.TryGetValue(rec.CoverImageId, out var ri) ? ri : null;
                 var recUrl = !string.IsNullOrWhiteSpace(rec.CoverImageUrl) ? rec.CoverImageUrl : ImageMapper.GetBestUrl(recImage);
-                <a href="/articulos/@rec.Slug"
+                <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@rec.Slug"
                    class="group block bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1">
                     <!-- Imagen -->
                     <div class="h-44 bg-slate-100 overflow-hidden">

@@ -1,4 +1,5 @@
 using Aplication.DTOs;
+using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 
@@ -41,10 +42,12 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryResponseDto> CreateAsync(CategoryDto dto)
     {
-        if (await _repo.SlugExistsAsync(dto.Slug))
-            throw new InvalidOperationException($"El slug '{dto.Slug}' ya está registrado.");
-
         var category = CategoryMapper.ToEntity(dto);
+        category.ValidarInvariantes();
+
+        if (await _repo.SlugExistsAsync(category.Slug))
+            throw new DuplicateSlugException(category.Slug);
+
         await _repo.InsertAsync(category);
         return CategoryMapper.ToDto(category);
     }
@@ -52,15 +55,23 @@ public class CategoryService : ICategoryService
     public async Task<CategoryResponseDto> UpdateAsync(string id, CategoryDto dto)
     {
         var existing = await _repo.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException($"Categoría '{id}' no encontrada.");
+            ?? throw new NotFoundException("Categoría", id);
 
-        if (await _repo.SlugExistsAsync(dto.Slug, id))
-            throw new InvalidOperationException($"El slug '{dto.Slug}' ya está en uso.");
-
+        existing.AsignarPadre(dto.ParentId);
         CategoryMapper.ApplyUpdate(existing, dto);
+        existing.ValidarInvariantes();
+
+        if (await _repo.SlugExistsAsync(existing.Slug, id))
+            throw new DuplicateSlugException(existing.Slug);
+
         await _repo.UpdateAsync(existing);
         return CategoryMapper.ToDto(existing);
     }
 
-    public Task DeleteAsync(string id) => _repo.DeleteAsync(id);
+    public async Task DeleteAsync(string id)
+    {
+        _ = await _repo.GetByIdAsync(id)
+            ?? throw new NotFoundException("Categoría", id);
+        await _repo.DeleteAsync(id);
+    }
 }

@@ -1,4 +1,4 @@
-# Guía Rápida de Comandos: .NET Secrets, Git y Servidor Ubuntu
+# Guía Rápida de Comandos: .NET Secrets, Git, Servidor Ubuntu y OpenSpec
 
 ---
 
@@ -193,3 +193,52 @@ sudo systemctl reload nginx
 # Ver el estado del servicio Nginx
 sudo systemctl status nginx
 ```
+
+---
+
+## 4. Guía de OpenSpec y Flujos de IA
+
+OpenSpec organiza el desarrollo guiado por especificaciones. Existen dos formas de interactuar con él:
+
+### A. Comandos en el Chat con la IA (`/opsx-...`)
+> **¿Dónde se usan?:** Directamente en el **chat con el asistente de IA** (en esta ventana).  
+> **Nivel de carpeta:** No importa dónde esté tu terminal; la IA trabaja siempre sobre la raíz del proyecto.  
+> **Función:** La IA hace el trabajo pesado por ti (crear o editar código, validar specs, sincronizar y mover archivos).
+
+| Comando en Chat | Cuándo usarlo |
+| :--- | :--- |
+| `/opsx-propose` | Para proponer, analizar y diseñar una nueva funcionalidad o cambio completo. |
+| `/opsx-apply` | Para que la IA implemente en el código las tareas pendientes de un cambio. |
+| `/opsx-sync` | Para sincronizar los cambios de especificaciones temporales a las especificaciones principales (`openspec/specs/`). |
+| `/opsx-archive` | Para finalizar un cambio completado, verificar tareas/specs y archivarlo en `openspec/changes/archive/`. |
+| `/opsx-explore` | Para investigar problemas o clarificar requerimientos antes de redactar un cambio. |
+
+---
+
+### B. Comandos en la Terminal / Consola (`openspec ...`)
+> **¿Dónde se usan?:** En tu **terminal (PowerShell / Bash)**.  
+> **Nivel de carpeta:** Siempre en la **raíz del proyecto** (`d:\proyecto-Web1\paginaWeb`), donde se encuentra la carpeta `openspec/` y el archivo de solución `.slnx`.  
+> **Función:** Consultar estado, listar cambios o validar manualmente sin pedirle a la IA que modifique archivos.
+
+```powershell
+# Ubicación requerida: raíz del repositorio
+cd d:\proyecto-Web1\paginaWeb
+
+# Listar todos los cambios activos y archivados
+openspec list
+
+# Ver el estado detallado de un cambio (artefactos y tareas completadas)
+openspec status --change "nombre-del-cambio"
+
+# Validar que los archivos de especificación cumplan con el formato y esquema
+openspec validate --change "nombre-del-cambio"
+
+# Archivar manualmente un cambio desde la consola (sin pasar por el chat)
+openspec archive "nombre-del-cambio"
+```
+
+---
+
+### Resumen Rápido:
+* **Escribe en el Chat (`/opsx-...`)** cuando quieras que la **IA trabaje en tu código o tus especificaciones**.
+* **Ejecuta en la Terminal (`openspec ...`)** desde la raíz cuando quieras **consultar información tú mismo**.

@@ -38,7 +38,7 @@
                         </div>
 
                         <h2 class="text-2xl sm:text-4xl font-serif font-black text-white leading-tight">
-                            <a href="/articulos/@mainHero.Slug" class="hover:text-[#FFD500] transition">
+                            <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@mainHero.Slug" class="hover:text-[#FFD500] transition">
                                 @mainHero.Title
                             </a>
                         </h2>
@@ -50,7 +50,7 @@
                         <div class="pt-2 flex items-center gap-4 text-xs text-white/90">
                             <span class="font-semibold">Por @mainHero.Author</span>
                             <span>•</span>
-                            <a href="/articulos/@mainHero.Slug" class="inline-flex items-center gap-1.5 font-bold text-[#FDC500] hover:underline">
+                            <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@mainHero.Slug" class="inline-flex items-center gap-1.5 font-bold text-[#FDC500] hover:underline">
                                 Leer artículo completo →
                             </a>
                         </div>
@@ -74,13 +74,13 @@
                                         <span class="text-[11px] text-slate-400">@sec.PublishedAt?.ToString("dd MMM")</span>
                                     </div>
                                     <h3 class="font-serif font-bold text-lg text-slate-900 group-hover:text-[#00509D] transition line-clamp-2">
-                                        <a href="/articulos/@sec.Slug">@sec.Title</a>
+                                        <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@sec.Slug">@sec.Title</a>
                                     </h3>
                                     <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">@sec.Summary</p>
                                 </div>
                                 <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
                                     <span>@sec.Author</span>
-                                    <a href="/articulos/@sec.Slug" class="font-semibold text-[#00509D] hover:underline">Leer más →</a>
+                                    <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@sec.Slug" class="font-semibold text-[#00509D] hover:underline">Leer más →</a>
                                 </div>
                             </div>
                         }
@@ -105,7 +105,7 @@
                 <h3 class="text-2xl font-serif font-black text-[#00296B]">Últimas Publicaciones</h3>
                 <p class="text-xs text-slate-500 mt-1">Crónicas, reportajes e investigaciones recientes</p>
             </div>
-            <a href="/buscar?q=" class="text-xs font-bold text-[#00509D] hover:underline">Ver archivo completo →</a>
+            <a asp-controller="Home" asp-action="Buscar" asp-route-q="" class="text-xs font-bold text-[#00509D] hover:underline">Ver archivo completo →</a>
         </div>
 
         @if (!Model.Any())
