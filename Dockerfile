@@ -8,8 +8,8 @@ WORKDIR /src/frontend
 RUN npm install -g pnpm@12.11.2
 
 # Copiar manifiestos de dependencias para aprovechar caché
-COPY paginaWeb/package.json paginaWeb/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY paginaWeb/package.json paginaWeb/pnpm-lock.yaml paginaWeb/pnpm-workspace.yaml* ./
+RUN pnpm config set dangerously-allow-all-builds true && pnpm install --frozen-lockfile
 
 # Copiar estilos y vistas para que el motor de Tailwind analice las clases CSS
 COPY paginaWeb/Styles ./Styles
