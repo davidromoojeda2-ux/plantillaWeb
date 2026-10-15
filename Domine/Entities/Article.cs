@@ -34,6 +34,18 @@ public class Article
 
     public string Author { get; set; } = string.Empty;
 
+    /// <summary>Biografía o descripción del autor.</summary>
+    public string? AuthorBio { get; set; }
+
+    /// <summary>URL del avatar o foto del autor.</summary>
+    public string? AuthorAvatarUrl { get; set; }
+
+    /// <summary>Rol o cargo editorial del autor, e.g. "Redacción Especial".</summary>
+    public string? AuthorRole { get; set; } = "Redacción Especial";
+
+    /// <summary>Enlace a perfil social o red del autor (X, LinkedIn, web personal).</summary>
+    public string? AuthorSocialUrl { get; set; }
+
     [BsonRepresentation(BsonType.ObjectId)]
     public string? CategoryId { get; set; }
 

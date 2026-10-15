@@ -62,14 +62,14 @@ Dentro del proyecto creado:
    - **Image Name / Docker Image:**  
      `ghcr.io/davidromoojeda2-ux/plantillaweb:latest`
 En 
-   - **Domain** agregar: `tu-dominio.com
+   - **Domain** agregar: `tu-dominio.com` (En esta sección se pone el dominio)
    - **Container Port:** `8080`
 
 ### 💡 Acceso a la Imagen en GitHub Container Registry (GHCR)
 
 Tienes dos alternativas para que Dokploy pueda descargar tu imagen:
 
-#### Alternativa A: Hacer el paquete público en GitHub (Más simple, recomendada)
+#### Alternativa A: Hacer el paquete público en GitHub (Más simple, recomendada Ojo:debe ser creada la imagen para que sea visible en packages y publicarla)
 1. En GitHub, ve a tu perfil ➔ pestaña **"Packages"**.
 2. Haz clic en el paquete **`plantillaweb`**.
 3. En el menú lateral derecho, entra a **"Package settings"**.

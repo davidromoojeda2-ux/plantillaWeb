@@ -82,10 +82,20 @@ public class HomeController : Controller
             coverImage = await _imageService.GetByIdAsync(article.CoverImageId);
         }
 
+        // Artículos recomendados con imágenes
+        var recommended = await _articleService.GetRecommendedAsync(article.Id, article.CategoryId, 3);
+        var recommendedImages = await _imageService.GetVariantsDictAsync(
+            recommended.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
+
         ViewBag.Comments = comments;
         ViewBag.Category = category;
         ViewBag.CoverImage = coverImage;
         ViewBag.ReadingMinutes = article.ReadingTimeMinutes;
+        ViewBag.RecommendedArticles = recommended;
+        ViewBag.RecommendedImages = recommendedImages;
+        ViewBag.RecommendedCategories = category is not null
+            ? new Dictionary<string, string> { { category.Id, category.Name } }
+            : new Dictionary<string, string>();
 
         return View(article);
     }

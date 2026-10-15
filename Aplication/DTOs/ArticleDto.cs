@@ -22,6 +22,11 @@ public class ArticleDto
     [Required(ErrorMessage = "El autor es obligatorio.")]
     public string Author { get; set; } = string.Empty;
 
+    public string? AuthorBio { get; set; }
+    public string? AuthorAvatarUrl { get; set; }
+    public string? AuthorRole { get; set; } = "Redacción Especial";
+    public string? AuthorSocialUrl { get; set; }
+
     public string? CategoryId { get; set; }
     public string? SubcategoryId { get; set; }
     public List<string> Tags { get; set; } = [];
@@ -43,6 +48,10 @@ public class ArticleResponseDto
     public string Summary { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string Author { get; set; } = string.Empty;
+    public string? AuthorBio { get; set; }
+    public string? AuthorAvatarUrl { get; set; }
+    public string? AuthorRole { get; set; }
+    public string? AuthorSocialUrl { get; set; }
     public string? CategoryId { get; set; }
     public string? SubcategoryId { get; set; }
     public List<string> Tags { get; set; } = [];

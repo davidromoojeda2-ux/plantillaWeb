@@ -17,6 +17,7 @@ public interface IArticleService
     Task<ArticleResponseDto> UpdateAsync(string id, ArticleDto dto);
     Task DeleteAsync(string id);
     Task IncrementViewCountAsync(string id);
+    Task<List<ArticleResponseDto>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
 }
 
 public class ArticleService : IArticleService
@@ -98,4 +99,10 @@ public class ArticleService : IArticleService
     }
 
     public Task IncrementViewCountAsync(string id) => _repo.IncrementViewCountAsync(id);
+
+    public async Task<List<ArticleResponseDto>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3)
+    {
+        var items = await _repo.GetRecommendedAsync(currentArticleId, categoryId, take);
+        return ArticleMapper.ToDtoList(items);
+    }
 }

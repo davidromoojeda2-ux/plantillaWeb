@@ -75,4 +75,40 @@ public class ArticleRepository : IArticleRepository
             filter &= Builders<Article>.Filter.Ne(a => a.Id, excludeId);
         return await _col.CountDocumentsAsync(filter) > 0;
     }
+
+    public async Task<List<Article>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3)
+    {
+        var result = new List<Article>();
+
+        if (!string.IsNullOrEmpty(categoryId))
+        {
+            var categoryFilter = Builders<Article>.Filter.Eq(a => a.Status, ArticleStatus.Publicado) &
+                                 Builders<Article>.Filter.Eq(a => a.CategoryId, categoryId) &
+                                 Builders<Article>.Filter.Ne(a => a.Id, currentArticleId);
+
+            var categoryItems = await _col.Find(categoryFilter)
+                                          .SortByDescending(a => a.PublishedAt)
+                                          .Limit(take)
+                                          .ToListAsync();
+            result.AddRange(categoryItems);
+        }
+
+        if (result.Count < take)
+        {
+            var needed = take - result.Count;
+            var excludedIds = new List<string> { currentArticleId };
+            excludedIds.AddRange(result.Select(r => r.Id));
+
+            var fallbackFilter = Builders<Article>.Filter.Eq(a => a.Status, ArticleStatus.Publicado) &
+                                 Builders<Article>.Filter.Nin(a => a.Id, excludedIds);
+
+            var fallbackItems = await _col.Find(fallbackFilter)
+                                          .SortByDescending(a => a.PublishedAt)
+                                          .Limit(needed)
+                                          .ToListAsync();
+            result.AddRange(fallbackItems);
+        }
+
+        return result;
+    }
 }

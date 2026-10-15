@@ -18,6 +18,10 @@ public static class ArticleMapper
             Summary = dto.Summary.Trim(),
             Content = dto.Content,
             Author = dto.Author.Trim(),
+            AuthorBio = NullIfEmpty(dto.AuthorBio),
+            AuthorAvatarUrl = NullIfEmpty(dto.AuthorAvatarUrl),
+            AuthorRole = !string.IsNullOrWhiteSpace(dto.AuthorRole) ? dto.AuthorRole.Trim() : "Redacción Especial",
+            AuthorSocialUrl = NullIfEmpty(dto.AuthorSocialUrl),
             CategoryId = NullIfEmpty(dto.CategoryId),
             SubcategoryId = NullIfEmpty(dto.SubcategoryId),
             Tags = dto.Tags.Select(t => t.Trim()).Where(t => t.Length > 0).ToList(),
@@ -40,6 +44,10 @@ public static class ArticleMapper
         existing.Summary = dto.Summary.Trim();
         existing.Content = dto.Content;
         existing.Author = dto.Author.Trim();
+        existing.AuthorBio = NullIfEmpty(dto.AuthorBio);
+        existing.AuthorAvatarUrl = NullIfEmpty(dto.AuthorAvatarUrl);
+        existing.AuthorRole = !string.IsNullOrWhiteSpace(dto.AuthorRole) ? dto.AuthorRole.Trim() : "Redacción Especial";
+        existing.AuthorSocialUrl = NullIfEmpty(dto.AuthorSocialUrl);
         existing.CategoryId = NullIfEmpty(dto.CategoryId);
         existing.SubcategoryId = NullIfEmpty(dto.SubcategoryId);
         existing.Tags = dto.Tags.Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
@@ -65,6 +73,10 @@ public static class ArticleMapper
         Summary = article.Summary,
         Content = article.Content,
         Author = article.Author,
+        AuthorBio = article.AuthorBio,
+        AuthorAvatarUrl = article.AuthorAvatarUrl,
+        AuthorRole = article.AuthorRole ?? "Redacción Especial",
+        AuthorSocialUrl = article.AuthorSocialUrl,
         CategoryId = article.CategoryId,
         SubcategoryId = article.SubcategoryId,
         Tags = [.. article.Tags],
@@ -90,6 +102,10 @@ public static class ArticleMapper
         Summary = article.Summary,
         Content = article.Content,
         Author = article.Author,
+        AuthorBio = article.AuthorBio,
+        AuthorAvatarUrl = article.AuthorAvatarUrl,
+        AuthorRole = article.AuthorRole,
+        AuthorSocialUrl = article.AuthorSocialUrl,
         CategoryId = article.CategoryId,
         SubcategoryId = article.SubcategoryId,
         Tags = [.. article.Tags],
@@ -107,6 +123,10 @@ public static class ArticleMapper
         Summary = article.Summary,
         Content = article.Content,
         Author = article.Author,
+        AuthorBio = article.AuthorBio,
+        AuthorAvatarUrl = article.AuthorAvatarUrl,
+        AuthorRole = article.AuthorRole,
+        AuthorSocialUrl = article.AuthorSocialUrl,
         CategoryId = article.CategoryId,
         SubcategoryId = article.SubcategoryId,
         Tags = [.. article.Tags],

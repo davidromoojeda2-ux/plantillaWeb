@@ -216,3 +216,161 @@
     animation: fade-up 0.4s ease forwards;
   }
 }
+
+/* ─── Estilos del cuerpo del artículo (article-prose) ────────────────────── */
+@layer components {
+
+  /* Tipografía base del cuerpo */
+  .article-prose {
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    color: #1e293b;
+  }
+
+  .article-prose h2 {
+    font-family: "Merriweather", Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #00296B;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .article-prose h3 {
+    font-family: "Merriweather", Georgia, serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #003F88;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+
+  .article-prose p { margin-bottom: 1.25rem; }
+  .article-prose ul, .article-prose ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+  .article-prose li { margin-bottom: 0.4rem; }
+  .article-prose strong { font-weight: 700; color: #0f172a; }
+  .article-prose a { color: #00509D; text-decoration: underline; text-underline-offset: 3px; }
+  .article-prose a:hover { color: #00296B; }
+  .article-prose img { border-radius: 1rem; max-width: 100%; height: auto; margin: 1.5rem 0; }
+
+  /* ── Citas Destacadas (Blockquote) ───────────────────────────────────── */
+  .article-prose blockquote {
+    position: relative;
+    border-left: 4px solid #FDC500;
+    background: linear-gradient(135deg, #f8faff 0%, #fefce8 100%);
+    border-radius: 0 1rem 1rem 0;
+    padding: 1.5rem 1.75rem 1.5rem 2rem;
+    margin: 2rem 0;
+    font-family: "Merriweather", Georgia, serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: #334155;
+    line-height: 1.7;
+    box-shadow: 0 2px 12px 0 rgb(0 41 107 / 0.07);
+  }
+
+  .article-prose blockquote::before {
+    content: '\201C';
+    position: absolute;
+    top: -0.25rem;
+    left: 0.875rem;
+    font-size: 4rem;
+    line-height: 1;
+    color: #FDC500;
+    font-family: Georgia, serif;
+    opacity: 0.7;
+  }
+
+  .article-prose blockquote cite,
+  .article-prose blockquote footer {
+    display: block;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    font-style: normal;
+    font-weight: 700;
+    color: #00509D;
+    letter-spacing: 0.03em;
+  }
+
+  .article-prose blockquote cite::before { content: '— '; }
+
+  /* ── Callouts / Llamadas de Atención ─────────────────────────────────── */
+  .article-prose .callout {
+    display: flex;
+    gap: 0.875rem;
+    align-items: flex-start;
+    border-radius: 0.75rem;
+    border-left: 4px solid;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
+
+  .article-prose .callout-icon {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.1rem;
+  }
+
+  /* Variante Info (Azul) */
+  .article-prose .callout-info {
+    background-color: #eff6ff;
+    border-color: #3b82f6;
+    color: #1e3a5f;
+  }
+  .article-prose .callout-info .callout-icon { color: #3b82f6; }
+
+  /* Variante Tip / Consejo (Ámbar) */
+  .article-prose .callout-tip {
+    background-color: #fffbeb;
+    border-color: #f59e0b;
+    color: #78350f;
+  }
+  .article-prose .callout-tip .callout-icon { color: #f59e0b; }
+
+  /* Variante Warning / Advertencia (Naranja-Rojo) */
+  .article-prose .callout-warning {
+    background-color: #fff7ed;
+    border-color: #ef4444;
+    color: #7f1d1d;
+  }
+  .article-prose .callout-warning .callout-icon { color: #ef4444; }
+
+  /* Variante Success (Verde) */
+  .article-prose .callout-success {
+    background-color: #f0fdf4;
+    border-color: #22c55e;
+    color: #14532d;
+  }
+  .article-prose .callout-success .callout-icon { color: #22c55e; }
+
+  /* Compatibilidad con clases data-callout generadas por editores */
+  .article-prose [data-callout="info"] {
+    display: flex; gap: 0.875rem; align-items: flex-start;
+    border-radius: 0.75rem; border-left: 4px solid #3b82f6;
+    padding: 1rem 1.25rem; margin: 1.75rem 0; font-size: 0.9375rem; line-height: 1.65;
+    background-color: #eff6ff; color: #1e3a5f;
+  }
+  .article-prose [data-callout="tip"] {
+    display: flex; gap: 0.875rem; align-items: flex-start;
+    border-radius: 0.75rem; border-left: 4px solid #f59e0b;
+    padding: 1rem 1.25rem; margin: 1.75rem 0; font-size: 0.9375rem; line-height: 1.65;
+    background-color: #fffbeb; color: #78350f;
+  }
+  .article-prose [data-callout="warning"] {
+    display: flex; gap: 0.875rem; align-items: flex-start;
+    border-radius: 0.75rem; border-left: 4px solid #ef4444;
+    padding: 1rem 1.25rem; margin: 1.75rem 0; font-size: 0.9375rem; line-height: 1.65;
+    background-color: #fff7ed; color: #7f1d1d;
+  }
+  .article-prose [data-callout="success"] {
+    display: flex; gap: 0.875rem; align-items: flex-start;
+    border-radius: 0.75rem; border-left: 4px solid #22c55e;
+    padding: 1rem 1.25rem; margin: 1.75rem 0; font-size: 0.9375rem; line-height: 1.65;
+    background-color: #f0fdf4; color: #14532d;
+  }
+}
