@@ -1,0 +1,25 @@
+@model List<CommentResponseDto>
+
+<div class="space-y-4">
+    @if (Model == null || !Model.Any())
+    {
+        <div class="text-center py-8 text-slate-400 text-sm italic">
+            Sé el primero en comentar esta publicación.
+        </div>
+    }
+    else
+    {
+        @foreach (var c in Model)
+        {
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-slate-900 text-sm">@c.Name</span>
+                    <span class="text-xs text-slate-400">@c.CreatedAt.ToString("dd MMM yyyy, HH:mm")</span>
+                </div>
+                <p class="text-sm text-slate-700 leading-relaxed font-sans">
+                    @c.Content
+                </p>
+            </div>
+        }
+    }
+</div>

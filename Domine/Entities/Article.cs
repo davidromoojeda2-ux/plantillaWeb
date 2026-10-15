@@ -3,13 +3,6 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Domine.Entities;
 
-/// <summary>Estado de publicación de un artículo.</summary>
-public enum ArticleStatus
-{
-    Borrador,
-    Publicado
-}
-
 /// <summary>
 /// Artículo del portal de noticias. Contiene el contenido editorial completo,
 /// metadatos SEO, referencias a imágenes en R2 y estado de publicación.

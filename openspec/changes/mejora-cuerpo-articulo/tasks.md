@@ -22,4 +22,4 @@
 
 - [x] 4.1 Compilar los assets frontend mediante `pnpm run build:css` y verificar que los estilos y tokens se generen correctamente en `wwwroot/css/tailwind.css`
 - [x] 4.2 Ejecutar `dotnet build` en la solución completa y verificar cero errores y cero advertencias de compilación
-- [ ] 4.3 Registrar commit de punto de control en Git (`feat(article): barra social, bloques enriquecidos, ficha de autor y recomendados`)
+- [x] 4.3 Registrar commit de punto de control en Git (`feat(article): barra social, bloques enriquecidos, ficha de autor y recomendados`)
