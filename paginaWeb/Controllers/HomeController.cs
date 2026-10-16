@@ -1,7 +1,10 @@
 using Aplication.DTOs;
+using Aplication.Mappers;
 using Aplication.Services;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc;
+using paginaWeb.Models;
+using paginaWeb.Models.Home;
 
 namespace paginaWeb.Controllers;
 
@@ -33,13 +36,18 @@ public class HomeController : Controller
         var featured = await _articleService.GetFeaturedAsync(3);
         var (recent, _) = await _articleService.GetPublishedAsync(1, 9);
         var categories = await _categoryService.GetAllAsync();
-
-        ViewBag.Featured = featured;
-        ViewBag.Categories = categories.ToDictionary(c => c.Id, c => c.Name);
-        ViewBag.Images = await _imageService.GetVariantsDictAsync(
+        var images = await _imageService.GetVariantsDictAsync(
             recent.Concat(featured).Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
 
-        return View(recent);
+        var model = HomePageViewModelFactory.Create(
+            recent,
+            featured,
+            categories.ToDictionary(c => c.Id, c => c.Name),
+            images,
+            slug => Url.Action(nameof(Articulo), "Home", new { slug }) ?? "#",
+            Url.Action(nameof(Buscar), "Home"));
+
+        return View(model);
     }
 
     [HttpGet("categoria/{slug}")]
@@ -49,17 +57,29 @@ public class HomeController : Controller
         if (category is null) return NotFound();
 
         var (articles, total) = await _articleService.GetByCategoryAsync(category.Id, page, 9);
-        var categories = await _categoryService.GetAllAsync();
-
-        ViewBag.Category = category;
-        ViewBag.Page = page;
-        ViewBag.TotalPages = (int)Math.Ceiling((double)total / 9);
-        ViewBag.TotalCount = total;
-        ViewBag.Categories = categories.ToDictionary(c => c.Id, c => c.Name);
-        ViewBag.Images = await _imageService.GetVariantsDictAsync(
+        var images = await _imageService.GetVariantsDictAsync(
             articles.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
 
-        return View(articles);
+        var cardItems = articles.Select(art =>
+        {
+            var artCover = art.CoverImageId != null && images.TryGetValue(art.CoverImageId, out var img) ? img : null;
+            var artImgUrl = !string.IsNullOrWhiteSpace(art.CoverImageUrl)
+                ? art.CoverImageUrl
+                : (ImageMapper.GetThumbnailUrl(artCover) ?? ImageMapper.GetBestUrl(artCover));
+
+            return new ArticleCardViewModel(art, artImgUrl, category.Name);
+        }).ToList();
+
+        var totalPages = (int)Math.Ceiling((double)total / 9);
+
+        var viewModel = new CategoryPageViewModel(
+            Category: category,
+            CurrentPage: page,
+            TotalPages: totalPages,
+            TotalCount: total,
+            Articles: cardItems);
+
+        return View(viewModel);
     }
 
     [HttpGet("articulos/{slug}")]
@@ -125,17 +145,35 @@ public class HomeController : Controller
             ? ([], 0L)
             : await _articleService.SearchAsync(query, page, 9);
 
-        var categories = await _categoryService.GetAllAsync();
+        var categories = (await _categoryService.GetAllAsync())
+            .ToDictionary(c => c.Id, c => c.Name);
 
-        ViewBag.Query = query;
-        ViewBag.Page = page;
-        ViewBag.TotalPages = (int)Math.Ceiling((double)total / 9);
-        ViewBag.TotalCount = total;
-        ViewBag.Categories = categories.ToDictionary(c => c.Id, c => c.Name);
-        ViewBag.Images = await _imageService.GetVariantsDictAsync(
+        var images = await _imageService.GetVariantsDictAsync(
             items.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
 
-        return View(items);
+        var cardItems = items.Select(art =>
+        {
+            var artCover = art.CoverImageId != null && images.TryGetValue(art.CoverImageId, out var img) ? img : null;
+            var artImgUrl = !string.IsNullOrWhiteSpace(art.CoverImageUrl)
+                ? art.CoverImageUrl
+                : (ImageMapper.GetThumbnailUrl(artCover) ?? ImageMapper.GetBestUrl(artCover));
+            var artCat = art.CategoryId != null && categories.TryGetValue(art.CategoryId, out var catName)
+                ? catName
+                : "General";
+
+            return new ArticleCardViewModel(art, artImgUrl, artCat);
+        }).ToList();
+
+        var totalPages = (int)Math.Ceiling((double)total / 9);
+
+        var viewModel = new SearchViewModel(
+            Query: query,
+            CurrentPage: page,
+            TotalPages: totalPages,
+            TotalCount: total,
+            Items: cardItems);
+
+        return View(viewModel);
     }
 
     [HttpGet("info/{slug}")]

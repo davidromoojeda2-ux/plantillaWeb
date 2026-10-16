@@ -12,9 +12,9 @@ public class NavbarViewComponent : ViewComponent
         _menuService = menuService;
     }
 
-    public async Task<IViewComponentResult> InvokeAsync()
+    public async Task<IViewComponentResult> InvokeAsync(string viewName = "Default")
     {
         var menu = await _menuService.GetMenuAsync();
-        return View(menu);
+        return View(viewName, menu);
     }
 }

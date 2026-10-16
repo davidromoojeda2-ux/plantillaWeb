@@ -1,132 +1,61 @@
 @model List<Aplication.Services.MenuCategory>
+@{
+    const string contactHref = "mailto:contacto@portalnoticias.com";
+}
 
-<header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-20">
-            <!-- ─── Logotipo Corporativo ────────────────────────────────────── -->
-            <div class="flex items-center gap-8">
-                <a asp-controller="Home" asp-action="Index" class="flex items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-xl bg-[#00296B] text-[#FDC500] font-bold text-2xl flex items-center justify-center shadow-md group-hover:scale-105 transition duration-200">
-                        N
-                    </div>
-                    <div>
-                        <span class="text-xl font-serif font-black tracking-tight text-[#00296B]">PORTAL</span>
-                        <span class="text-xl font-serif font-bold tracking-tight text-[#00509D]">NOTICIAS</span>
-                        <span class="block text-[10px] uppercase tracking-widest text-slate-400 font-sans font-semibold">Información y Análisis</span>
-                    </div>
-                </a>
+<header class="site-nav" id="site-nav" data-nav>
+    <div class="site-nav__inner">
+        <!-- ─── Logotipo de Marca ──────────────────────────────────────────────── -->
+        <a class="site-nav__brand" asp-controller="Home" asp-action="Index" id="nav-brand" aria-label="Portal Noticias, ir al inicio">
+            <span class="site-nav__logo" aria-hidden="true">N</span>
+            <span class="site-nav__name">Portal<strong>Noticias</strong></span>
+        </a>
 
-                <!-- ─── Menú Desktop con Dropdowns ──────────────────────────── -->
-                <nav class="hidden lg:flex items-center gap-1">
-                    <a asp-controller="Home" asp-action="Index" class="px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-[#00296B] hover:bg-slate-100/70 transition">
-                        Inicio
-                    </a>
-
-                    @foreach (var cat in Model)
-                    {
-                        if (cat.Children.Any())
+        <!-- ─── Menú Principal Central ─────────────────────────────────────────── -->
+        <nav class="site-nav__menu" id="site-nav-menu" aria-label="Principal">
+            <ul class="site-nav__links" role="list">
+                <li><a class="site-nav__link" id="nav-inicio" asp-controller="Home" asp-action="Index">Inicio</a></li>
+                <li><a class="site-nav__link" id="nav-publicaciones" asp-controller="Home" asp-action="Buscar">Publicaciones</a></li>
+                <li class="site-nav__dropdown" data-dropdown>
+                    <button type="button" class="site-nav__link site-nav__dropdown-btn" id="nav-categorias-btn"
+                            aria-expanded="false" aria-controls="nav-categorias">
+                        Categorías
+                        <svg class="site-nav__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" focusable="false">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <ul class="dropdown" id="nav-categorias" role="list">
+                        @foreach (var cat in Model)
                         {
-                            <div class="relative group">
-                                <button type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-700 group-hover:text-[#00296B] group-hover:bg-slate-100/70 transition">
-                                    <span>@cat.Name</span>
-                                    <svg class="w-4 h-4 text-slate-400 group-hover:text-[#00296B] group-hover:rotate-180 transition duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-
-                                <div class="absolute left-0 top-full pt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                                    <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-2 space-y-1">
-                                        <a asp-controller="Home" asp-action="Categoria" asp-route-slug="@cat.Slug" class="block px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-[#00296B] hover:bg-blue-50 transition">
-                                            Ver todo @cat.Name →
-                                        </a>
-                                        <div class="h-px bg-slate-100 my-1"></div>
+                            <li>
+                                <a class="dropdown__link" asp-controller="Home" asp-action="Categoria" asp-route-slug="@cat.Slug">@cat.Name</a>
+                                @if (cat.Children.Any())
+                                {
+                                    <ul class="dropdown__sub" role="list">
                                         @foreach (var sub in cat.Children)
                                         {
-                                            <a asp-controller="Home" asp-action="Categoria" asp-route-slug="@sub.Slug" class="block px-3 py-2 rounded-xl text-sm font-medium text-slate-600 hover:text-[#00296B] hover:bg-slate-50 transition">
-                                                @sub.Name
-                                            </a>
+                                            <li><a class="dropdown__link dropdown__link--sub" asp-controller="Home" asp-action="Categoria" asp-route-slug="@sub.Slug">@sub.Name</a></li>
                                         }
-                                    </div>
-                                </div>
-                            </div>
+                                    </ul>
+                                }
+                            </li>
                         }
-                        else
-                        {
-                            <a asp-controller="Home" asp-action="Categoria" asp-route-slug="@cat.Slug" class="px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-[#00296B] hover:bg-slate-100/70 transition">
-                                @cat.Name
-                            </a>
-                        }
-                    }
-                </nav>
-            </div>
+                    </ul>
+                </li>
+                <li><a class="site-nav__link" id="nav-acerca" href="/#acerca-de">Acerca de</a></li>
+            </ul>
+            <a class="btn--nav-cta site-nav__cta--mobile" id="nav-contact-mobile" href="@contactHref">Contacto</a>
+        </nav>
 
-            <!-- ─── Acciones Derecha (Buscar, Login, CTA) ─────────────────────── -->
-            <div class="flex items-center gap-3">
-                <!-- Buscador de cabecera -->
-                <form asp-controller="Home" asp-action="Buscar" method="get" class="hidden sm:flex items-center relative">
-                    <input type="text" name="q" placeholder="Buscar noticias..."
-                           class="w-48 lg:w-60 pl-9 pr-4 py-2 rounded-full border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:w-72 focus:bg-white focus:ring-2 focus:ring-[#00509D] transition-all duration-200" />
-                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                </form>
-
-                <!-- Acceso al Administrador -->
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-blue-50 text-[#00296B] hover:bg-blue-100 transition">
-                        <span>Panel Admin</span>
-                    </a>
-                }
-                else
-                {
-                    <a asp-area="Admin" asp-controller="Auth" asp-action="Login" class="hidden md:inline-flex items-center px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-[#00296B] hover:bg-slate-100 transition">
-                        Iniciar Sesión
-                    </a>
-                }
-
-                <!-- Botón CTA tipo Pill -->
-                <a href="#ultimas-noticias" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow transition transform hover:-translate-y-0.5">
-                    <span>Última Hora</span>
-                    <span class="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
-                </a>
-
-                <!-- Botón Hamburguesa Móvil -->
-                <button type="button" id="mobileMenuBtn" class="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition" aria-label="Abrir menú">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ─── Menú Desplegable Móvil ───────────────────────────────────────────── -->
-    <div id="mobileMenu" class="hidden lg:hidden border-t border-slate-200 bg-white px-4 pt-4 pb-6 space-y-3">
-        <form asp-controller="Home" asp-action="Buscar" method="get" class="relative mb-4">
-            <input type="text" name="q" placeholder="Buscar noticias..."
-                   class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm" />
-            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        </form>
-
-        <a asp-controller="Home" asp-action="Index" class="block py-2 text-sm font-semibold text-slate-800">Inicio</a>
-        @foreach (var cat in Model)
-        {
-            <div class="py-1">
-                <a asp-controller="Home" asp-action="Categoria" asp-route-slug="@cat.Slug" class="block font-semibold text-sm text-[#00296B]">@cat.Name</a>
-                @if (cat.Children.Any())
-                {
-                    <div class="pl-4 mt-1 space-y-1">
-                        @foreach (var sub in cat.Children)
-                        {
-                            <a asp-controller="Home" asp-action="Categoria" asp-route-slug="@sub.Slug" class="block text-xs text-slate-600 py-1">@sub.Name</a>
-                        }
-                    </div>
-                }
-            </div>
-        }
-        <div class="pt-4 border-t border-slate-100 flex flex-col gap-2">
-            <a asp-area="Admin" asp-controller="Auth" asp-action="Login" class="text-center py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">Acceso Admin</a>
+        <!-- ─── Acciones a la Derecha ──────────────────────────────────────────── -->
+        <div class="site-nav__actions">
+            <a class="btn--nav-cta site-nav__cta" id="nav-contact" href="@contactHref">Contacto</a>
+            <button type="button" class="site-nav__toggle" id="nav-toggle"
+                    aria-expanded="false" aria-controls="site-nav-menu" aria-label="Abrir menú">
+                <span class="site-nav__toggle-bar" aria-hidden="true"></span>
+                <span class="site-nav__toggle-bar" aria-hidden="true"></span>
+                <span class="site-nav__toggle-bar" aria-hidden="true"></span>
+            </button>
         </div>
     </div>
 </header>
-
-<script>
-    document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
-        document.getElementById('mobileMenu')?.classList.toggle('hidden');
-    });
-</script>

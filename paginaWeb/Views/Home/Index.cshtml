@@ -1,132 +1,141 @@
-@model List<ArticleResponseDto>
+@model HomePageViewModel
 @{
     ViewData["Title"] = "Noticias Principales y Análisis";
-    var featured = (List<ArticleResponseDto>?)ViewBag.Featured ?? new();
-    var categories = (Dictionary<string, string>?)ViewBag.Categories ?? new();
-    var images = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.Images ?? new();
-    var mainHero = featured.FirstOrDefault() ?? Model.FirstOrDefault();
-    var secondaryFeatured = featured.Skip(1).Take(2).ToList();
+    ViewData["MetaDescription"] = "Últimas noticias, reportajes y análisis en profundidad sobre tecnología, economía y cultura.";
 }
 
-<div class="space-y-16 py-8">
-    <!-- ─── Sección Hero de Noticias Destacadas ───────────────────────────── -->
-    @if (mainHero != null)
-    {
-        var heroCover = mainHero.CoverImageId != null && images.ContainsKey(mainHero.CoverImageId) ? images[mainHero.CoverImageId] : null;
-        var heroImgUrl = !string.IsNullOrWhiteSpace(mainHero.CoverImageUrl) ? mainHero.CoverImageUrl : ImageMapper.GetBestUrl(heroCover);
-        var heroCatName = mainHero.CategoryId != null && categories.ContainsKey(mainHero.CategoryId) ? categories[mainHero.CategoryId] : "Especial";
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+}
 
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                <!-- Noticia Principal (8 columnas) -->
-                <div class="lg:col-span-8 group relative rounded-3xl overflow-hidden shadow-xl bg-slate-900 min-h-[460px] flex flex-col justify-end">
-                    @if (!string.IsNullOrEmpty(heroImgUrl))
-                    {
-                        <img src="@heroImgUrl" alt="@(!string.IsNullOrWhiteSpace(heroCover?.Alt) ? heroCover.Alt : mainHero.Title)"
-                             class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-75 transition duration-700 ease-out" />
-                    }
-                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+<div class="home">
+    <!-- ─── 1. Hero ───────────────────────────────────────────────────────────── -->
+    <section class="hero" id="inicio" aria-labelledby="hero-title">
+        <div class="hero__glow" aria-hidden="true"></div>
 
-                    <div class="relative p-8 sm:p-10 z-10 space-y-4">
-                        <div class="flex items-center gap-3">
-                            <span class="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#FDC500] text-[#00296B] shadow-sm">
-                                @heroCatName
-                            </span>
-                            <span class="text-xs text-white/80 font-mono">
-                                @mainHero.PublishedAt?.ToString("dd MMMM yyyy")
-                            </span>
-                        </div>
+        <div class="container hero__inner">
+            <div class="hero__intro" data-reveal>
+                <p class="hero__kicker">Portal Noticias · Información y análisis</p>
+                <h1 id="hero-title" class="hero__title">@Model.Hero.Title</h1>
+                <p class="hero__subtitle">@Model.Hero.Subtitle</p>
 
-                        <h2 class="text-2xl sm:text-4xl font-serif font-black text-white leading-tight">
-                            <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@mainHero.Slug" class="hover:text-[#FFD500] transition">
-                                @mainHero.Title
-                            </a>
-                        </h2>
-
-                        <p class="text-sm sm:text-base text-slate-200 line-clamp-2 max-w-2xl font-sans leading-relaxed">
-                            @mainHero.Summary
-                        </p>
-
-                        <div class="pt-2 flex items-center gap-4 text-xs text-white/90">
-                            <span class="font-semibold">Por @mainHero.Author</span>
-                            <span>•</span>
-                            <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@mainHero.Slug" class="inline-flex items-center gap-1.5 font-bold text-[#FDC500] hover:underline">
-                                Leer artículo completo →
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Noticias Secundarias Destacadas (4 columnas) -->
-                <div class="lg:col-span-4 flex flex-col gap-6">
-                    @if (secondaryFeatured.Any())
-                    {
-                        @foreach (var sec in secondaryFeatured)
-                        {
-                            var secCover = sec.CoverImageId != null && images.ContainsKey(sec.CoverImageId) ? images[sec.CoverImageId] : null;
-                            var secImgUrl = !string.IsNullOrWhiteSpace(sec.CoverImageUrl) ? sec.CoverImageUrl : (ImageMapper.GetThumbnailUrl(secCover) ?? ImageMapper.GetBestUrl(secCover));
-                            var secCatName = sec.CategoryId != null && categories.ContainsKey(sec.CategoryId) ? categories[sec.CategoryId] : "Actualidad";
-
-                            <div class="flex-1 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-[#00509D]/40 transition group">
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-[11px] font-bold uppercase tracking-wider text-[#003F88]">@secCatName</span>
-                                        <span class="text-[11px] text-slate-400">@sec.PublishedAt?.ToString("dd MMM")</span>
-                                    </div>
-                                    <h3 class="font-serif font-bold text-lg text-slate-900 group-hover:text-[#00509D] transition line-clamp-2">
-                                        <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@sec.Slug">@sec.Title</a>
-                                    </h3>
-                                    <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">@sec.Summary</p>
-                                </div>
-                                <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                                    <span>@sec.Author</span>
-                                    <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@sec.Slug" class="font-semibold text-[#00509D] hover:underline">Leer más →</a>
-                                </div>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="flex-1 bg-gradient-to-br from-[#00296B] to-[#003F88] rounded-3xl p-8 text-white flex flex-col justify-center items-center text-center space-y-3 shadow-md">
-                            <span class="text-3xl">📰</span>
-                            <h3 class="font-serif font-bold text-xl">Periodismo Independiente</h3>
-                            <p class="text-xs text-blue-100 leading-relaxed max-w-xs">Análisis crítico de los sucesos más relevantes de la jornada sin compromisos comerciales.</p>
-                        </div>
-                    }
-                </div>
+                <form class="hero__search" asp-controller="Home" asp-action="Buscar" method="get" role="search">
+                    <label for="hero-search-input" class="sr-only">Buscar noticias</label>
+                    <input id="hero-search-input" class="hero__search-input" type="search" name="q"
+                           placeholder="Buscar noticias, temas o autores…" autocomplete="off" />
+                    <button id="hero-search-btn" type="submit" class="btn btn--accent">Buscar</button>
+                </form>
             </div>
-        </section>
-    }
 
-    <!-- ─── Grid Cronológico de Publicaciones Recientes ───────────────────── -->
-    <section id="ultimas-noticias" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-            <div>
-                <h3 class="text-2xl font-serif font-black text-[#00296B]">Últimas Publicaciones</h3>
-                <p class="text-xs text-slate-500 mt-1">Crónicas, reportajes e investigaciones recientes</p>
-            </div>
-            <a asp-controller="Home" asp-action="Buscar" asp-route-q="" class="text-xs font-bold text-[#00509D] hover:underline">Ver archivo completo →</a>
+            @if (Model.Hero.Cards.Any())
+            {
+                <ul class="card-grid card-grid--hero" role="list">
+                    @foreach (var card in Model.Hero.Cards)
+                    {
+                        <li class="card-grid__item" data-reveal>
+                            <partial name="Partials/Home/_FeatureCard" model="card" />
+                        </li>
+                    }
+                </ul>
+            }
         </div>
 
-        @if (!Model.Any())
+        <svg class="hero__curve" viewBox="0 0 1440 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M0 200V150C240 45 480 22 720 22s480 23 720 128v50H0z" />
+        </svg>
+    </section>
+
+    <!-- ─── 2. Marquesina ─────────────────────────────────────────────────────── -->
+    @{
+        var marqueePhrases = new[]
         {
-            <div class="py-16 text-center text-slate-400">
-                <p class="text-base font-medium">Aún no hay publicaciones en el portal.</p>
-                <p class="text-xs mt-1">Ingresa al panel administrativo para publicar las primeras noticias.</p>
+            "Periodismo independiente",
+            "Análisis en profundidad",
+            "Verificación de hechos",
+            "Tecnología · Economía · Cultura"
+        };
+    }
+    <div class="marquee" role="note" aria-label="@string.Join(". ", marqueePhrases)">
+        <div class="marquee__track">
+            @for (var copy = 0; copy < 2; copy++)
+            {
+                <ul class="marquee__group" role="list" aria-hidden="true">
+                    @foreach (var phrase in marqueePhrases)
+                    {
+                        <li class="marquee__item">@phrase</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <!-- ─── 3. Últimas publicaciones ─────────────────────────────────────────── -->
+    <section class="section container" id="ultimas-publicaciones" aria-labelledby="ultimas-publicaciones-title">
+        <div class="section-header" data-reveal>
+            <div class="section-header__text">
+                <h2 id="@Model.PostsHeader.HeadingId" class="section-header__title">@Model.PostsHeader.Title</h2>
+                @if (!string.IsNullOrWhiteSpace(Model.PostsHeader.Subtitle))
+                {
+                    <p class="section-header__subtitle">@Model.PostsHeader.Subtitle</p>
+                }
             </div>
+            @if (!string.IsNullOrWhiteSpace(Model.PostsHeader.LinkText) && !string.IsNullOrWhiteSpace(Model.PostsHeader.LinkHref))
+            {
+                <a class="link-arrow" href="@Model.PostsHeader.LinkHref" id="@(Model.PostsHeader.HeadingId)-link">
+                    <span>@Model.PostsHeader.LinkText</span>
+                    <svg class="link-arrow__icon" width="28" height="12" viewBox="0 0 28 12" fill="none" aria-hidden="true" focusable="false">
+                        <path d="M0 6h26M21 1l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </a>
+            }
+        </div>
+
+        @if (Model.Posts.Any())
+        {
+            <ul class="card-grid card-grid--posts" role="list">
+                @foreach (var post in Model.Posts)
+                {
+                    <li class="card-grid__item" data-reveal>
+                        <partial name="Partials/Home/_PostCard" model="post" />
+                    </li>
+                }
+            </ul>
         }
         else
         {
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                @foreach (var art in Model)
-                {
-                    var artCover = art.CoverImageId != null && images.ContainsKey(art.CoverImageId) ? images[art.CoverImageId] : null;
-                    var artImgUrl = !string.IsNullOrWhiteSpace(art.CoverImageUrl) ? art.CoverImageUrl : (ImageMapper.GetThumbnailUrl(artCover) ?? ImageMapper.GetBestUrl(artCover));
-                    var artCat = art.CategoryId != null && categories.ContainsKey(art.CategoryId) ? categories[art.CategoryId] : "General";
-
-                    <partial name="Partials/_ArticleCard" model="(Article: art, ImageUrl: artImgUrl, CategoryName: artCat)" />
-                }
+            <div class="empty-state" data-reveal>
+                <p class="empty-state__title">Aún no hay publicaciones en el portal.</p>
+                <p class="empty-state__text">Ingresa al panel administrativo para publicar las primeras noticias.</p>
             </div>
         }
     </section>
+
+    <!-- ─── 4. Destacados ────────────────────────────────────────────────────── -->
+    @if (Model.Featured.Any())
+    {
+        <section class="section container" id="destacados" aria-labelledby="destacados-title">
+            <div class="section-header" data-reveal>
+                <div class="section-header__text">
+                    <h2 id="@Model.FeaturedHeader.HeadingId" class="section-header__title">@Model.FeaturedHeader.Title</h2>
+                    @if (!string.IsNullOrWhiteSpace(Model.FeaturedHeader.Subtitle))
+                    {
+                        <p class="section-header__subtitle">@Model.FeaturedHeader.Subtitle</p>
+                    }
+                </div>
+            </div>
+
+            <ul class="card-grid card-grid--featured" role="list">
+                @foreach (var block in Model.Featured)
+                {
+                    <li class="card-grid__item" data-reveal>
+                        <partial name="Partials/Home/_FeaturedBlock" model="block" />
+                    </li>
+                }
+            </ul>
+        </section>
+    }
 </div>
+
+@section Scripts {
+    <script src="~/js/reveal.js" asp-append-version="true" defer></script>
+}
