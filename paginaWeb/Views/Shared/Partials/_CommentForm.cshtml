@@ -3,21 +3,26 @@
 <div class="space-y-6">
     @if (TempData["CommentSuccess"] != null)
     {
-        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-3">
-            <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <div
+            class="p-4 rounded-none bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-3">
+            <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
             <span>@TempData["CommentSuccess"]</span>
         </div>
     }
     @if (TempData["CommentError"] != null)
     {
-        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center gap-3">
-            <svg class="w-5 h-5 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <div class="p-4 rounded-none bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center gap-3">
+            <svg class="w-5 h-5 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
             <span>@TempData["CommentError"]</span>
         </div>
     }
 
     <!-- Formulario de Envío con Honeypot -->
-    <div class="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs space-y-6">
+    <div class="bg-white rounded-none p-8 border border-slate-200/80 shadow-xs space-y-6">
         <h4 class="font-bold text-slate-800 text-base">Deja tu comentario</h4>
 
         <form method="post" asp-controller="Home" asp-action="Comentar" class="space-y-4">
@@ -39,21 +44,24 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico (No se publicará)</label>
-                    <input type="email" name="Email" required placeholder="tu@correo.com"
-                           class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 focus:ring-2 focus:ring-[#00509D] outline-none" />
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Correo Electrónico (No se
+                        publicará)</label>
+                        <input type="email" name="Email" required placeholder="tu@correo.com"
+                               class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 focus:ring-2 focus:ring-[#00509D] outline-none" />
+                    </div>
                 </div>
-            </div>
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Comentario</label>
-                <textarea name="Content" rows="4" required placeholder="Escribe tu reflexión con respeto y apego al debate público..."
-                          class="w-full text-sm rounded-xl border border-slate-300 p-4 focus:ring-2 focus:ring-[#00509D] outline-none leading-relaxed"></textarea>
-            </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Comentario</label>
+                    <textarea name="Content" rows="4" required
+                              placeholder="Escribe tu reflexión con respeto y apego al debate público..."
+                              class="w-full text-sm rounded-xl border border-slate-300 p-4 focus:ring-2 focus:ring-[#00509D] outline-none leading-relaxed"></textarea>
+                </div>
 
-            <button type="submit" class="px-6 py-3 rounded-full bg-[#00296B] hover:bg-[#003F88] text-white font-bold text-xs uppercase tracking-wider shadow-sm transition">
-                Enviar Comentario
-            </button>
-        </form>
+                <button type="submit"
+                        class="px-6 py-3 rounded-full bg-[#00296B] hover:bg-[#003F88] text-white font-bold text-xs uppercase tracking-wider shadow-sm transition">
+                    Enviar Comentario
+                </button>
+            </form>
+        </div>
     </div>
-</div>

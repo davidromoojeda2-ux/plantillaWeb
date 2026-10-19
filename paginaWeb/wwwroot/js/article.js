@@ -27,7 +27,7 @@
 
         var headings = body.querySelectorAll('h2, h3');
         if (headings.length === 0) {
-            toc.innerHTML = '<span class="text-slate-400 italic">Lectura corrida continua</span>';
+            toc.innerHTML = '<span class="text-white/70 italic text-sm">Lectura corrida continua</span>';
             return;
         }
 
@@ -39,8 +39,8 @@
             var link = document.createElement('a');
             link.href = '#' + id;
             link.innerText = h.innerText;
-            link.className = 'block py-1 hover:text-[#00296B] transition ' +
-                (h.tagName === 'H3' ? 'pl-3 text-slate-500' : 'font-semibold text-slate-700');
+            link.className = 'block py-1.5 transition text-sm leading-snug rounded-none ' +
+                (h.tagName === 'H3' ? 'pl-3 text-white/80 hover:text-white' : 'font-medium text-white hover:text-amber-100');
 
             toc.appendChild(link);
         });
@@ -51,10 +51,12 @@
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
                     allLinks.forEach(function (l) {
-                        l.classList.remove('text-[#00296B]', '!font-black');
+                        l.classList.remove('bg-black/15', 'px-2', '!font-bold', 'border-l-2', 'border-white');
                     });
                     var activeLink = toc.querySelector('a[href="#' + entry.target.id + '"]');
-                    if (activeLink) activeLink.classList.add('text-[#00296B]', '!font-black');
+                    if (activeLink) {
+                        activeLink.classList.add('bg-black/15', 'px-2', '!font-bold', 'border-l-2', 'border-white');
+                    }
                 }
             });
         }, { rootMargin: '-20% 0px -70% 0px' });
