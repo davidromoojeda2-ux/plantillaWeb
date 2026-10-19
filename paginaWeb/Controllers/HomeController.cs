@@ -34,7 +34,7 @@ public class HomeController : Controller
     public async Task<IActionResult> Index()
     {
         var featured = await _articleService.GetFeaturedAsync(3);
-        var (recent, _) = await _articleService.GetPublishedAsync(1, 9);
+        var (recent, _) = await _articleService.GetPublishedAsync(1, 15);
         var categories = await _categoryService.GetAllAsync();
         var images = await _imageService.GetVariantsDictAsync(
             recent.Concat(featured).Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);

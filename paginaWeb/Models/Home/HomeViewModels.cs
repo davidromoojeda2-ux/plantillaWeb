@@ -68,7 +68,7 @@ public sealed record HomePageViewModel(
 public static class HomePageViewModelFactory
 {
     public const int HeroCardCount = 3;
-    public const int PostCount = 4;
+    public const int PostCount = 9;
     public const int FeaturedCount = 3;
 
     private const int CardImageWidth = 800;
@@ -107,7 +107,7 @@ public static class HomePageViewModelFactory
             HeadingId: "ultimas-publicaciones-title",
             Title: "Últimas publicaciones",
             Subtitle: "Crónicas, reportajes e investigaciones recientes",
-            LinkText: "Ver todas las publicaciones",
+            LinkText: "Ver más",
             LinkHref: searchHref);
 
         var posts = postSource.Select(a => new PostCardViewModel(

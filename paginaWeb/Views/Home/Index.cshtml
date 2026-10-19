@@ -10,6 +10,8 @@
 
 <div class="home">
     <!-- ─── 1. Hero ───────────────────────────────────────────────────────────── -->
+    
+    
     <section class="hero" id="inicio" aria-labelledby="hero-title">
         <div class="hero__glow" aria-hidden="true"></div>
 
@@ -27,7 +29,7 @@
                 </form>
             </div>
 
-            @if (Model.Hero.Cards.Any())
+            @* @if (Model.Hero.Cards.Any())
             {
                 <ul class="card-grid card-grid--hero" role="list">
                     @foreach (var card in Model.Hero.Cards)
@@ -37,15 +39,17 @@
                         </li>
                     }
                 </ul>
-            }
+            } *@
         </div>
 
         <svg class="hero__curve" viewBox="0 0 1440 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
             <path d="M0 200V150C240 45 480 22 720 22s480 23 720 128v50H0z" />
         </svg>
     </section>
+     
 
     <!-- ─── 2. Marquesina ─────────────────────────────────────────────────────── -->
+    <!-- 
     @{
         var marqueePhrases = new[]
         {
@@ -68,6 +72,7 @@
             }
         </div>
     </div>
+    -->
 
     <!-- ─── 3. Últimas publicaciones ─────────────────────────────────────────── -->
     <section class="section container" id="ultimas-publicaciones" aria-labelledby="ultimas-publicaciones-title">
@@ -79,12 +84,15 @@
                     <p class="section-header__subtitle">@Model.PostsHeader.Subtitle</p>
                 }
             </div>
-            @if (!string.IsNullOrWhiteSpace(Model.PostsHeader.LinkText) && !string.IsNullOrWhiteSpace(Model.PostsHeader.LinkHref))
+            @if (!string.IsNullOrWhiteSpace(Model.PostsHeader.LinkText) &&
+            !string.IsNullOrWhiteSpace(Model.PostsHeader.LinkHref))
             {
                 <a class="link-arrow" href="@Model.PostsHeader.LinkHref" id="@(Model.PostsHeader.HeadingId)-link">
                     <span>@Model.PostsHeader.LinkText</span>
-                    <svg class="link-arrow__icon" width="28" height="12" viewBox="0 0 28 12" fill="none" aria-hidden="true" focusable="false">
-                        <path d="M0 6h26M21 1l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    <svg class="link-arrow__icon" width="28" height="12" viewBox="0 0 28 12" fill="none" aria-hidden="true"
+                         focusable="false">
+                        <path d="M0 6h26M21 1l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                              stroke-linejoin="round" />
                     </svg>
                 </a>
             }
