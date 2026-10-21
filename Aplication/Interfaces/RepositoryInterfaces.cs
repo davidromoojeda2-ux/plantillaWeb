@@ -37,6 +37,7 @@ public interface IArticleRepository
     Task IncrementViewCountAsync(string id);
     Task<bool> SlugExistsAsync(string slug, string? excludeId = null);
     Task<List<Article>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
+    Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
 }
 
 // ─── Comment Repository Interface ─────────────────────────────────────────────

@@ -15,7 +15,7 @@ public class CategoryRepository : ICategoryRepository
         await _col.Find(_ => true).SortBy(c => c.Order).ToListAsync();
 
     public async Task<List<Category>> GetMenuCategoriesAsync() =>
-        await _col.Find(c => c.IsActive && c.ShowInMenu).SortBy(c => c.Order).ToListAsync();
+        await _col.Find(c => c.IsActive && (c.ShowInMenu || c.ParentId != null)).SortBy(c => c.Order).ToListAsync();
 
     public async Task<Category?> GetByIdAsync(string id) =>
         await _col.Find(c => c.Id == id).FirstOrDefaultAsync();

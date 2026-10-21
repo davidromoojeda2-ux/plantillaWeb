@@ -1,0 +1,160 @@
+@model CategoryPageViewModel
+@using paginaWeb.Models.Home
+@{
+    var title = Model.ParentCategory != null
+        ? $"{Model.Category.Name} - {Model.ParentCategory.Name}"
+        : Model.Category.Name;
+    ViewData["Title"] = title;
+    ViewData["MetaDescription"] = Model.Category.Description ?? $"Noticias y artículos de {Model.Category.Name}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+    <!-- ─── Cabecera de Categoría ────────────────────────────────────────────── -->
+    <div class="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/80 shadow-xs space-y-4">
+        <!-- Breadcrumbs: Muestra Categoría y Subcategoría cuando haya -->
+        <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <a asp-controller="Home" asp-action="Index"
+               class="hover:underline hover:text-slate-600 transition">Inicio</a>
+            <span>/</span>
+            <a asp-controller="Home" asp-action="Index"
+               class="hover:underline hover:text-slate-600 transition">Categorías</a>
+            <span>/</span>
+            @if (Model.ParentCategory != null)
+            {
+                <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.ParentCategory.Slug"
+                   class="hover:underline text-[#00509D] font-bold transition">@Model.ParentCategory.Name</a>
+                <span>/</span>
+            }
+            <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.Category.Slug"
+               class="hover:underline text-slate-700 font-bold">@Model.Category.Name</a>
+            @if (Model.CurrentPage > 1)
+            {
+                <span>/</span>
+                <span>Página @Model.CurrentPage</span>
+            }
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-3xl sm:text-5xl font-serif font-black text-[#00296B]">@Model.Category.Name</h1>
+            @if (Model.ParentCategory != null)
+            {
+                <span
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#00509D]/10 text-[#00509D]">
+                    Subcategoría de <a asp-controller="Category" asp-action="Categoria"
+                                       asp-route-slug="@Model.ParentCategory.Slug"
+                                       class="underline font-bold hover:text-[#00296B]">@Model.ParentCategory.Name</a>
+                </span>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Category.Description))
+        {
+            <p class="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed">
+                @Model.Category.Description
+            </p>
+        }
+
+        <!-- Pestañas y enlaces rápidos de Subcategorías cuando existan -->
+        @if (Model.Subcategories != null && Model.Subcategories.Any())
+        {
+            <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">
+                    @(Model.ParentCategory != null ? "Otras subcategorías:" : "Subcategorías:")
+                </span>
+                @if (Model.ParentCategory != null)
+                {
+                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.ParentCategory.Slug"
+                       class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                        Todas en @Model.ParentCategory.Name
+                    </a>
+                }
+                @foreach (var sub in Model.Subcategories)
+                {
+                    var isCurrent = sub.Slug == Model.Category.Slug;
+                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@sub.Slug"
+                       class="px-3 py-1 rounded-full text-xs font-semibold transition @(isCurrent ? "bg-[#00296B] text-white shadow-xs" : "bg-slate-100 text-slate-700 hover:bg-[#00509D] hover:text-white")">
+                        @sub.Name
+                    </a>
+                }
+            </div>
+        }
+
+        <div class="pt-1 text-xs font-semibold text-[#00509D]">
+            @Model.TotalCount publicaciones en esta sección
+        </div>
+    </div>
+
+    <!-- ─── Grid de Artículos ────────────────────────────────────────────────── -->
+    @if (!Model.Articles.Any())
+    {
+        <div class="bg-white rounded-3xl p-16 text-center text-slate-400 border border-slate-200/80">
+            <p class="text-lg font-semibold text-slate-700">No hay artículos publicados en esta categoría todavía.</p>
+            <p class="text-xs text-slate-400 mt-2">Vuelve pronto para consultar nuevas coberturas.</p>
+            <a asp-controller="Home" asp-action="Index"
+               class="mt-6 inline-block px-5 py-2.5 rounded-full bg-[#00296B] text-white text-xs font-bold">
+                Volver al inicio
+            </a>
+        </div>
+    }
+    else
+    {
+        <ul class="card-grid card-grid--posts" role="list">
+            @foreach (var art in Model.Articles)
+            {
+                var postCard = new PostCardViewModel(
+                    Title: art.Article.Title,
+                    Excerpt: art.Article.Summary,
+                    Category: art.CategoryName,
+                    PublishedAt: art.Article.PublishedAt,
+                    Href: Url.Action("Articulo", "Home", new { slug = art.Article.Slug }) ?? "#",
+                    Image: new CardImage(
+                        Url: art.ImageUrl ?? art.Article.CoverImageUrl,
+                        Alt: art.Article.Title,
+                        Width: 800,
+                        Height: 500)
+                );
+                <li class="card-grid__item" data-reveal>
+                    <partial name="Partials/Home/_PostCard" model="postCard" />
+                </li>
+            }
+        </ul>
+
+        <!-- ─── Paginación ──────────────────────────────────────────────────── -->
+        @if (Model.TotalPages > 1)
+        {
+            <div class="flex items-center justify-center gap-2 pt-8">
+                @if (Model.CurrentPage > 1)
+                {
+                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.Category.Slug"
+                       asp-route-page="@(Model.CurrentPage - 1)"
+                       class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                        ← Anterior
+                    </a>
+                }
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.Category.Slug" asp-route-page="@p"
+                       class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold transition @(p == Model.CurrentPage ? "bg-[#00296B] text-white" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50")">
+                        @p
+                    </a>
+                }
+                @if (Model.CurrentPage < Model.TotalPages)
+                {
+                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.Category.Slug"
+                       asp-route-page="@(Model.CurrentPage + 1)"
+                       class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                        Siguiente →
+                    </a>
+                }
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/reveal.js" asp-append-version="true" defer></script>
+}

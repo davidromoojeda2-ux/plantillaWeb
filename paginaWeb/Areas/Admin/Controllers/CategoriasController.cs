@@ -35,7 +35,7 @@ public class CategoriasController : Controller
     }
 
     [HttpGet("nueva")]
-    public async Task<IActionResult> Create()
+    public async Task<IActionResult> Create([FromQuery] string? parentId = null)
     {
         var parents = await GetParentsAsync();
         var model = new CategoryFormViewModel
@@ -43,6 +43,7 @@ public class CategoriasController : Controller
             Order = 1,
             ShowInMenu = true,
             IsActive = true,
+            ParentId = parentId,
             Parents = parents
         };
         return View(model);
@@ -136,9 +137,19 @@ public class CategoriasController : Controller
     {
         try
         {
+            var all = await _categoryService.GetAllAsync();
+            var subs = all.Where(s => s.ParentId == id).ToList();
+            foreach (var sub in subs)
+            {
+                await _categoryService.DeleteAsync(sub.Id);
+            }
+
             await _categoryService.DeleteAsync(id);
             _menuService.InvalidateMenu();
-            TempData["Success"] = "Categoría eliminada con éxito.";
+
+            TempData["Success"] = subs.Count > 0
+                ? $"Categoría principal y sus {subs.Count} subcategorías asociadas fueron eliminadas con éxito."
+                : "Categoría eliminada con éxito.";
             return RedirectToAction(nameof(Index));
         }
         catch (NotFoundException)
@@ -155,4 +166,65 @@ public class CategoriasController : Controller
             .OrderBy(c => c.Order)
             .ToList();
     }
+
+    [HttpPost("crear-rapida")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> QuickCreate([FromBody] QuickCategoryRequest request)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.Name))
+            return BadRequest(new { success = false, message = "El nombre de la categoría es obligatorio." });
+
+        var trimmedName = request.Name.Trim();
+        var slug = trimmedName.ToLowerInvariant()
+            .Normalize(System.Text.NormalizationForm.FormD)
+            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .Aggregate(new System.Text.StringBuilder(), (sb, c) => sb.Append(c))
+            .ToString();
+        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9]+", "-").Trim('-');
+        var baseSlug = string.IsNullOrEmpty(slug) ? "categoria" : slug;
+
+        var finalSlug = baseSlug;
+        var count = 1;
+        while (await _categoryService.SlugExistsAsync(finalSlug))
+        {
+            finalSlug = $"{baseSlug}-{count++}";
+        }
+
+        var dto = new CategoryDto
+        {
+            Name = trimmedName,
+            Slug = finalSlug,
+            ParentId = string.IsNullOrWhiteSpace(request.ParentId) ? null : request.ParentId.Trim(),
+            Description = request.Description?.Trim(),
+            Order = 99,
+            ShowInMenu = true,
+            IsActive = true
+        };
+
+        try
+        {
+            var created = await _categoryService.CreateAsync(dto);
+            _menuService.InvalidateMenu();
+
+            return Ok(new
+            {
+                success = true,
+                id = created.Id,
+                name = created.Name,
+                slug = created.Slug,
+                parentId = created.ParentId
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+}
+
+public class QuickCategoryRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string? ParentId { get; set; }
+    public string? Description { get; set; }
 }

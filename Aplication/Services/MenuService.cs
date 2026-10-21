@@ -30,11 +30,16 @@ public class MenuService : IMenuService
     private const string CacheKey = "nav_menu";
     private readonly IMemoryCache _cache;
     private readonly ICategoryRepository _categoryRepo;
+    private readonly IArticleRepository _articleRepo;
 
-    public MenuService(IMemoryCache cache, ICategoryRepository categoryRepo)
+    public MenuService(
+        IMemoryCache cache,
+        ICategoryRepository categoryRepo,
+        IArticleRepository articleRepo)
     {
         _cache = cache;
         _categoryRepo = categoryRepo;
+        _articleRepo = articleRepo;
     }
 
     public async Task<List<MenuCategory>> GetMenuAsync()
@@ -45,16 +50,27 @@ public class MenuService : IMenuService
         try
         {
             var all = await _categoryRepo.GetMenuCategoriesAsync();
-            var menu = all.Where(c => c.ParentId is null).Select(r => new MenuCategory
-            {
-                Id = r.Id,
-                Name = r.Name,
-                Slug = r.Slug,
-                Children = all
-                    .Where(c => c.ParentId == r.Id)
-                    .Select(c => new MenuCategory { Id = c.Id, Name = c.Name, Slug = c.Slug })
-                    .ToList()
-            }).ToList();
+
+            var menu = all
+                .Where(c => c.ParentId is null && c.IsActive && c.ShowInMenu)
+                .OrderBy(c => c.Order)
+                .Select(r => new MenuCategory
+                {
+                    Id = r.Id,
+                    Name = r.Name,
+                    Slug = r.Slug,
+                    Children = all
+                        .Where(c => c.ParentId == r.Id && c.IsActive)
+                        .OrderBy(c => c.Order)
+                        .Select(c => new MenuCategory
+                        {
+                            Id = c.Id,
+                            Name = c.Name,
+                            Slug = c.Slug
+                        })
+                        .ToList()
+                })
+                .ToList();
 
             _cache.Set(CacheKey, menu, TimeSpan.FromMinutes(5));
             return menu;

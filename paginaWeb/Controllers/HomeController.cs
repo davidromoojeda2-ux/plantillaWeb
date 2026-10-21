@@ -3,7 +3,7 @@ using Aplication.Mappers;
 using Aplication.Services;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc;
-using paginaWeb.Models;
+using paginaWeb.Models.Category;
 using paginaWeb.Models.Home;
 
 namespace paginaWeb.Controllers;
@@ -42,7 +42,7 @@ public class HomeController : Controller
         var model = HomePageViewModelFactory.Create(
             recent,
             featured,
-            categories.ToDictionary(c => c.Id, c => c.Name),
+            categories,
             images,
             slug => Url.Action(nameof(Articulo), "Home", new { slug }) ?? "#",
             Url.Action(nameof(Buscar), "Home"));
@@ -50,37 +50,6 @@ public class HomeController : Controller
         return View(model);
     }
 
-    [HttpGet("categoria/{slug}")]
-    public async Task<IActionResult> Categoria(string slug, int page = 1)
-    {
-        var category = await _categoryService.GetBySlugAsync(slug);
-        if (category is null) return NotFound();
-
-        var (articles, total) = await _articleService.GetByCategoryAsync(category.Id, page, 9);
-        var images = await _imageService.GetVariantsDictAsync(
-            articles.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
-
-        var cardItems = articles.Select(art =>
-        {
-            var artCover = art.CoverImageId != null && images.TryGetValue(art.CoverImageId, out var img) ? img : null;
-            var artImgUrl = !string.IsNullOrWhiteSpace(art.CoverImageUrl)
-                ? art.CoverImageUrl
-                : (ImageMapper.GetThumbnailUrl(artCover) ?? ImageMapper.GetBestUrl(artCover));
-
-            return new ArticleCardViewModel(art, artImgUrl, category.Name);
-        }).ToList();
-
-        var totalPages = (int)Math.Ceiling((double)total / 9);
-
-        var viewModel = new CategoryPageViewModel(
-            Category: category,
-            CurrentPage: page,
-            TotalPages: totalPages,
-            TotalCount: total,
-            Articles: cardItems);
-
-        return View(viewModel);
-    }
 
     [HttpGet("articulos/{slug}")]
     public async Task<IActionResult> Articulo(string slug)
@@ -96,6 +65,10 @@ public class HomeController : Controller
             ? await _categoryService.GetByIdAsync(article.CategoryId)
             : null;
 
+        var subcategory = !string.IsNullOrEmpty(article.SubcategoryId)
+            ? await _categoryService.GetByIdAsync(article.SubcategoryId)
+            : null;
+
         ImageMetadataResponseDto? coverImage = null;
         if (!string.IsNullOrEmpty(article.CoverImageId))
         {
@@ -109,6 +82,7 @@ public class HomeController : Controller
 
         ViewBag.Comments = comments;
         ViewBag.Category = category;
+        ViewBag.Subcategory = subcategory;
         ViewBag.CoverImage = coverImage;
         ViewBag.ReadingMinutes = article.ReadingTimeMinutes;
         ViewBag.RecommendedArticles = recommended;
@@ -142,7 +116,7 @@ public class HomeController : Controller
     {
         var query = q?.Trim() ?? string.Empty;
         var (items, total) = string.IsNullOrEmpty(query)
-            ? ([], 0L)
+            ? await _articleService.GetPublishedAsync(page, 9)
             : await _articleService.SearchAsync(query, page, 9);
 
         var categories = (await _categoryService.GetAllAsync())

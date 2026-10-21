@@ -4,8 +4,10 @@
     ViewData["MetaDescription"] = Model.Summary;
     var comments = (List<CommentResponseDto>?)ViewBag.Comments ?? new();
     var category = (CategoryResponseDto?)ViewBag.Category;
+    var subcategory = (CategoryResponseDto?)ViewBag.Subcategory;
     var coverImage = (ImageMetadataResponseDto?)ViewBag.CoverImage;
-    var coverUrl = !string.IsNullOrWhiteSpace(Model.CoverImageUrl) ? Model.CoverImageUrl : ImageMapper.GetBestUrl(coverImage);
+    var coverUrl = !string.IsNullOrWhiteSpace(Model.CoverImageUrl) ? Model.CoverImageUrl :
+ImageMapper.GetBestUrl(coverImage);
     var recommended = (List<ArticleResponseDto>?)ViewBag.RecommendedArticles ?? new();
     var recommendedImages = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.RecommendedImages ?? new();
     var pageUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/articulos/{Model.Slug}";
@@ -15,9 +17,12 @@
 <div id="readingProgress" class="fixed top-0 left-0 h-1.5 bg-[#FDC500] z-50 w-0 transition-all duration-75"></div>
 
 <!-- ─── Toast de copia de enlace ─────────────────────────────────────────── -->
-<div id="copyToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 opacity-0 pointer-events-none transition-all duration-300">
+<div id="copyToast"
+     class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 opacity-0 pointer-events-none transition-all duration-300">
     <div class="flex items-center gap-2 bg-[#00296B] text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl">
-        <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
         <span>Enlace copiado al portapapeles</span>
     </div>
 </div>
@@ -25,13 +30,21 @@
 <article class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
     <!-- ─── Cabecera Editorial ──────────────────────────────────────────────── -->
     <header class="max-w-4xl mx-auto space-y-6 text-center">
-        <!-- Breadcrumbs y Categoría -->
-        <div class="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <!-- Breadcrumbs y Categoría / Subcategoría -->
+        <div
+            class="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
             <a asp-controller="Home" asp-action="Index" class="hover:underline">Inicio</a>
             <span>/</span>
             @if (category != null)
             {
-                <a asp-controller="Home" asp-action="Categoria" asp-route-slug="@category.Slug" class="text-[#00509D] hover:underline">@category.Name</a>
+                <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@category.Slug"
+                   class="text-[#00509D] hover:underline font-bold">@category.Name</a>
+                <span>/</span>
+            }
+            @if (subcategory != null)
+            {
+                <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@subcategory.Slug"
+                   class="text-[#00509D] hover:underline font-bold">@subcategory.Name</a>
                 <span>/</span>
             }
             <span class="text-slate-400">Lectura</span>
@@ -48,7 +61,8 @@
         </p>
 
         <!-- Ficha de Autor, Fecha y Tiempo de Lectura -->
-        <div class="pt-4 flex items-center justify-center gap-6 text-xs text-slate-500 border-t border-b border-slate-200 py-4 max-w-xl mx-auto">
+        <div
+            class="pt-4 flex items-center justify-center gap-6 text-xs text-slate-500 border-t border-b border-slate-200 py-4 max-w-xl mx-auto">
             <div class="flex items-center gap-2.5">
                 @if (!string.IsNullOrWhiteSpace(Model.AuthorAvatarUrl))
                 {
@@ -56,7 +70,8 @@
                 }
                 else
                 {
-                    <div class="w-8 h-8 rounded-full bg-[#00296B] text-[#FDC500] flex items-center justify-center font-bold text-xs">
+                    <div
+                        class="w-8 h-8 rounded-full bg-[#00296B] text-[#FDC500] flex items-center justify-center font-bold text-xs">
                         @(Model.Author.Length > 0 ? Model.Author.Substring(0, 1).ToUpper() : "A")
                     </div>
                 }
@@ -76,7 +91,10 @@
             <div class="h-6 w-px bg-slate-200"></div>
 
             <div class="flex items-center gap-1.5 text-[#003F88] font-bold">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <span>@Model.ReadingTimeMinutes min de lectura</span>
             </div>
         </div>
@@ -87,7 +105,7 @@
     {
         <div class="max-w-5xl mx-auto rounded-none overflow-hidden shadow-2xl border border-slate-200">
             <img src="@coverUrl" alt="@(!string.IsNullOrWhiteSpace(coverImage?.Alt) ? coverImage.Alt : Model.Title)"
-                 class="w-full h-[400px] sm:h-[520px] object-cover" />
+                 class="w-full h-[340px] sm:h-[420px] lg:h-[500px] object-cover" />
         </div>
     }
 
@@ -99,9 +117,13 @@
     <!-- ─── Layout a Dos Columnas (Índice Adhesivo + Contenido) ─────────────── -->
     <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start pt-6">
         <!-- Columna Izquierda Adhesiva (Índice "En esta página") -->
-        <aside class="hidden lg:block lg:col-span-4 sticky top-28 bg-[#D97706] text-white p-6 rounded-none shadow-md space-y-4">
-            <h4 class="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2 border-b border-white/20 pb-3">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+        <aside
+            class="hidden lg:block lg:col-span-4 sticky top-28 bg-[#D97706] text-white p-6 rounded-none shadow-md space-y-4">
+            <h4
+                class="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2 border-b border-white/20 pb-3">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                </svg>
                 En esta página
             </h4>
             <nav id="tableOfContents" class="space-y-2 text-sm text-white/90">
@@ -122,7 +144,8 @@
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-400 mr-2">Temas:</span>
                     @foreach (var tag in Model.Tags)
                     {
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                        <span
+                            class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
                             #@tag
                         </span>
                     }
@@ -137,7 +160,8 @@
     </div>
 
     <!-- ─── Sección de Artículos Recomendados (Componente Modular) ─────────── -->
-    <partial name="Partials/_RecommendedArticles" model="(Articles: recommended, Images: recommendedImages, CategoryName: category?.Name)" />
+    <partial name="Partials/_RecommendedArticles"
+             model="(Articles: recommended, Images: recommendedImages, CategoryName: category?.Name)" />
 
     <!-- ─── Sección de Comentarios y Discusión (Componentes Modulares) ─────── -->
     <section class="max-w-3xl mx-auto pt-12 space-y-10 border-t border-slate-200">

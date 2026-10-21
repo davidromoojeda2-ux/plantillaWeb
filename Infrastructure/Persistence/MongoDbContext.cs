@@ -14,8 +14,15 @@ public class MongoDbContext
 
     public MongoDbContext(IOptions<MongoDbSettings> settings)
     {
-        var client = new MongoClient(settings.Value.ConnectionString);
-        _database = client.GetDatabase(settings.Value.DatabaseName);
+        var connStr = string.IsNullOrWhiteSpace(settings.Value.ConnectionString)
+            ? "mongodb://localhost:27017"
+            : settings.Value.ConnectionString;
+        var dbName = string.IsNullOrWhiteSpace(settings.Value.DatabaseName)
+            ? "portal_noticias"
+            : settings.Value.DatabaseName;
+
+        var client = new MongoClient(connStr);
+        _database = client.GetDatabase(dbName);
     }
 
     public IMongoCollection<Category> Categories =>

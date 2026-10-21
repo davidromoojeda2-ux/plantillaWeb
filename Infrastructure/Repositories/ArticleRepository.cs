@@ -20,11 +20,11 @@ public class ArticleRepository : IArticleRepository
                   .SortByDescending(a => a.PublishedAt).Limit(take).ToListAsync();
 
     public async Task<List<Article>> GetByCategoryAsync(string categoryId, int skip = 0, int take = 9) =>
-        await _col.Find(a => a.Status == ArticleStatus.Publicado && a.CategoryId == categoryId)
+        await _col.Find(a => a.Status == ArticleStatus.Publicado && (a.CategoryId == categoryId || a.SubcategoryId == categoryId))
                   .SortByDescending(a => a.PublishedAt).Skip(skip).Limit(take).ToListAsync();
 
     public async Task<long> CountByCategoryAsync(string categoryId) =>
-        await _col.CountDocumentsAsync(a => a.Status == ArticleStatus.Publicado && a.CategoryId == categoryId);
+        await _col.CountDocumentsAsync(a => a.Status == ArticleStatus.Publicado && (a.CategoryId == categoryId || a.SubcategoryId == categoryId));
 
     public async Task<long> CountPublishedAsync() =>
         await _col.CountDocumentsAsync(a => a.Status == ArticleStatus.Publicado);
@@ -110,5 +110,32 @@ public class ArticleRepository : IArticleRepository
         }
 
         return result;
+    }
+
+    public async Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync()
+    {
+        var filter = Builders<Article>.Filter.Eq(a => a.Status, ArticleStatus.Publicado);
+        var projection = Builders<Article>.Projection
+            .Include(a => a.CategoryId)
+            .Include(a => a.SubcategoryId);
+
+        var list = await _col.Find(filter).Project(projection).ToListAsync();
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var doc in list)
+        {
+            if (doc.TryGetValue("CategoryId", out var catVal) && !catVal.IsBsonNull)
+            {
+                var catId = catVal.AsString;
+                if (!string.IsNullOrWhiteSpace(catId)) set.Add(catId);
+            }
+            if (doc.TryGetValue("SubcategoryId", out var subVal) && !subVal.IsBsonNull)
+            {
+                var subId = subVal.AsString;
+                if (!string.IsNullOrWhiteSpace(subId)) set.Add(subId);
+            }
+        }
+
+        return set;
     }
 }

@@ -24,15 +24,18 @@
         </div>
 
         <div>
-            <label asp-for="ParentId" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Categoría Padre (Dejar vacío para categoría raíz)</label>
-            <select asp-for="ParentId" class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 bg-white">
-                <option value="">-- Ninguna (Categoría Principal) --</option>
+            <label asp-for="ParentId" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Nivel Jerárquico / Categoría Padre</label>
+            <select asp-for="ParentId" id="parentSelect" class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none">
+                <option value="">-- Ninguna (Crear como Categoría Principal) --</option>
                 @foreach (var p in Model.Parents)
                 {
-                    <option value="@p.Id">@p.Name</option>
+                    <option value="@p.Id" selected="@(p.Id == Model.ParentId)">Subcategoría de: @p.Name</option>
                 }
             </select>
             <span asp-validation-for="ParentId" class="text-xs text-rose-600 mt-1 block"></span>
+            <div id="parentHelper" class="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
+                <!-- Se actualiza dinámicamente con JS -->
+            </div>
         </div>
 
         <div>
@@ -78,6 +81,25 @@
     <script>
         const nameInput = document.getElementById('nameInput');
         const slugInput = document.getElementById('slugInput');
+        const parentSelect = document.getElementById('parentSelect');
+        const parentHelper = document.getElementById('parentHelper');
+
+        function updateParentHelper() {
+            if (!parentSelect || !parentHelper) return;
+            const val = parentSelect.value;
+            if (val) {
+                const text = parentSelect.options[parentSelect.selectedIndex]?.text || '';
+                parentHelper.innerHTML = `<span class="text-amber-600 font-bold">↳ Creando como Subcategoría:</span> Esta entidad se anidará directamente dentro de <strong class="text-slate-800">${text.replace('Subcategoría de: ', '')}</strong>.`;
+                parentHelper.className = "mt-2 text-xs font-medium px-3 py-2 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-800";
+            } else {
+                parentHelper.innerHTML = `<span class="text-[#00509D] font-bold">★ Creando como Categoría Principal:</span> Aparecerá en el nivel raíz de la navegación y portal.`;
+                parentHelper.className = "mt-2 text-xs font-medium px-3 py-2 rounded-xl bg-blue-50/80 border border-blue-200 text-[#003F88]";
+            }
+        }
+
+        parentSelect?.addEventListener('change', updateParentHelper);
+        updateParentHelper();
+
         nameInput.addEventListener('input', () => {
             if (!slugInput.dataset.manual) {
                 slugInput.value = nameInput.value

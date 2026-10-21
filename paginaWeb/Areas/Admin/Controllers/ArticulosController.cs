@@ -19,15 +19,18 @@ public class ArticulosController : Controller
     private readonly IArticleService _articleService;
     private readonly ICategoryService _categoryService;
     private readonly ImageService _imageService;
+    private readonly IMenuService _menuService;
 
     public ArticulosController(
         IArticleService articleService,
         ICategoryService categoryService,
-        ImageService imageService)
+        ImageService imageService,
+        IMenuService menuService)
     {
         _articleService = articleService;
         _categoryService = categoryService;
         _imageService = imageService;
+        _menuService = menuService;
     }
 
     [HttpGet("")]
@@ -67,6 +70,7 @@ public class ArticulosController : Controller
         try
         {
             await _articleService.CreateAsync(model.ToDto());
+            _menuService.InvalidateMenu();
             TempData["Success"] = "Artículo publicado exitosamente.";
             return RedirectToAction(nameof(Index));
         }
@@ -124,6 +128,7 @@ public class ArticulosController : Controller
         try
         {
             await _articleService.UpdateAsync(id, model.ToDto());
+            _menuService.InvalidateMenu();
             TempData["Success"] = "Artículo actualizado exitosamente.";
             return RedirectToAction(nameof(Index));
         }
@@ -152,6 +157,7 @@ public class ArticulosController : Controller
         try
         {
             await _articleService.DeleteAsync(id);
+            _menuService.InvalidateMenu();
             TempData["Success"] = "Artículo eliminado correctamente.";
             return RedirectToAction(nameof(Index));
         }

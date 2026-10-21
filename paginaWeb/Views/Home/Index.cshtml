@@ -9,9 +9,7 @@
 }
 
 <div class="home">
-    <!-- ─── 1. Hero ───────────────────────────────────────────────────────────── -->
-    
-    
+    <!-- ─── 1. Hero: Título + Barra de búsqueda + Curva ───────────────────────── -->
     <section class="hero" id="inicio" aria-labelledby="hero-title">
         <div class="hero__glow" aria-hidden="true"></div>
 
@@ -28,120 +26,295 @@
                     <button id="hero-search-btn" type="submit" class="btn btn--accent">Buscar</button>
                 </form>
             </div>
-
-            @* @if (Model.Hero.Cards.Any())
-            {
-                <ul class="card-grid card-grid--hero" role="list">
-                    @foreach (var card in Model.Hero.Cards)
-                    {
-                        <li class="card-grid__item" data-reveal>
-                            <partial name="Partials/Home/_FeatureCard" model="card" />
-                        </li>
-                    }
-                </ul>
-            } *@
         </div>
 
         <svg class="hero__curve" viewBox="0 0 1440 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
             <path d="M0 200V150C240 45 480 22 720 22s480 23 720 128v50H0z" />
         </svg>
     </section>
-     
 
-    <!-- ─── 2. Marquesina ─────────────────────────────────────────────────────── -->
-    <!-- 
-    @{
-        var marqueePhrases = new[]
-        {
-            "Periodismo independiente",
-            "Análisis en profundidad",
-            "Verificación de hechos",
-            "Tecnología · Economía · Cultura"
-        };
-    }
-    <div class="marquee" role="note" aria-label="@string.Join(". ", marqueePhrases)">
-        <div class="marquee__track">
-            @for (var copy = 0; copy < 2; copy++)
-            {
-                <ul class="marquee__group" role="list" aria-hidden="true">
-                    @foreach (var phrase in marqueePhrases)
-                    {
-                        <li class="marquee__item">@phrase</li>
-                    }
-                </ul>
-            }
-        </div>
-    </div>
-    -->
-
-    <!-- ─── 3. Últimas publicaciones ─────────────────────────────────────────── -->
-    <section class="section container" id="ultimas-publicaciones" aria-labelledby="ultimas-publicaciones-title">
+    <!-- ─── 2. Últimas entradas (Dos columnas: Destacadas y Recientes) ───────── -->
+    <section class="section container" id="ultimas-entradas" aria-labelledby="ultimas-entradas-title">
         <div class="section-header" data-reveal>
             <div class="section-header__text">
-                <h2 id="@Model.PostsHeader.HeadingId" class="section-header__title">@Model.PostsHeader.Title</h2>
-                @if (!string.IsNullOrWhiteSpace(Model.PostsHeader.Subtitle))
+                <h2 id="@Model.EntriesHeader.HeadingId" class="section-header__title">@Model.EntriesHeader.Title</h2>
+                @if (!string.IsNullOrWhiteSpace(Model.EntriesHeader.Subtitle))
                 {
-                    <p class="section-header__subtitle">@Model.PostsHeader.Subtitle</p>
+                    <p class="section-header__subtitle">@Model.EntriesHeader.Subtitle</p>
                 }
             </div>
-            @if (!string.IsNullOrWhiteSpace(Model.PostsHeader.LinkText) &&
-            !string.IsNullOrWhiteSpace(Model.PostsHeader.LinkHref))
+            @if (!string.IsNullOrWhiteSpace(Model.EntriesHeader.LinkText) &&
+                 !string.IsNullOrWhiteSpace(Model.EntriesHeader.LinkHref))
             {
-                <a class="link-arrow" href="@Model.PostsHeader.LinkHref" id="@(Model.PostsHeader.HeadingId)-link">
-                    <span>@Model.PostsHeader.LinkText</span>
-                    <svg class="link-arrow__icon" width="28" height="12" viewBox="0 0 28 12" fill="none" aria-hidden="true"
-                         focusable="false">
-                        <path d="M0 6h26M21 1l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                              stroke-linejoin="round" />
+                <a class="link-arrow" href="@Model.EntriesHeader.LinkHref" id="@(Model.EntriesHeader.HeadingId)-link">
+                    <span>@Model.EntriesHeader.LinkText</span>
+                    <svg class="link-arrow__icon" width="28" height="12" viewBox="0 0 28 12" fill="none" aria-hidden="true" focusable="false">
+                        <path d="M0 6h26M21 1l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 </a>
             }
         </div>
 
-        @if (Model.Posts.Any())
-        {
-            <ul class="card-grid card-grid--posts" role="list">
-                @foreach (var post in Model.Posts)
-                {
-                    <li class="card-grid__item" data-reveal>
-                        <partial name="Partials/Home/_PostCard" model="post" />
-                    </li>
-                }
-            </ul>
-        }
-        else
-        {
-            <div class="empty-state" data-reveal>
-                <p class="empty-state__title">Aún no hay publicaciones en el portal.</p>
-                <p class="empty-state__text">Ingresa al panel administrativo para publicar las primeras noticias.</p>
-            </div>
-        }
-    </section>
+        <div class="entries-grid" data-reveal>
+            <!-- ── Columna Izquierda: Principales / Destacadas (Matiz Verde) ── -->
+            <div class="entries-panel entries-panel--featured">
+                <div class="entries-panel__header">
+                    <span class="entries-panel__tag">
+                        <span class="entries-panel__dot" aria-hidden="true"></span>
+                        <span>Noticias Principales</span>
+                    </span>
+                    <span class="text-xs font-semibold text-emerald-800">Destacados</span>
+                </div>
 
-    <!-- ─── 4. Destacados ────────────────────────────────────────────────────── -->
-    @if (Model.Featured.Any())
-    {
-        <section class="section container" id="destacados" aria-labelledby="destacados-title">
-            <div class="section-header" data-reveal>
-                <div class="section-header__text">
-                    <h2 id="@Model.FeaturedHeader.HeadingId" class="section-header__title">@Model.FeaturedHeader.Title</h2>
-                    @if (!string.IsNullOrWhiteSpace(Model.FeaturedHeader.Subtitle))
+                <div class="entries-list">
+                    @foreach (var entry in Model.FeaturedEntries)
                     {
-                        <p class="section-header__subtitle">@Model.FeaturedHeader.Subtitle</p>
+                        <a class="card-h" href="@entry.Href" aria-label="Leer @entry.Title">
+                            <div class="card-h__media">
+                                @if (entry.Image.HasUrl)
+                                {
+                                    <img class="card-h__img" src="@entry.Image.Url" alt="@entry.Image.Alt"
+                                         width="@entry.Image.Width" height="@entry.Image.Height" loading="lazy" decoding="async" />
+                                }
+                                else
+                                {
+                                    <div class="card-h__fallback">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                                        </svg>
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-h__body">
+                                <span class="card-h__cat">@entry.Category</span>
+                                <h3 class="card-h__title">@entry.Title</h3>
+                                <div class="card-h__meta">
+                                    @if (entry.PublishedAt is DateTime date)
+                                    {
+                                        <time datetime="@date.ToString("yyyy-MM-dd")">@date.ToString("dd MMM yyyy")</time>
+                                    }
+                                    else
+                                    {
+                                        <span>Cobertura</span>
+                                    }
+                                </div>
+                            </div>
+                            <span class="card-h__arrow" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                                    <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                            </span>
+                        </a>
                     }
                 </div>
             </div>
 
-            <ul class="card-grid card-grid--featured" role="list">
-                @foreach (var block in Model.Featured)
-                {
-                    <li class="card-grid__item" data-reveal>
-                        <partial name="Partials/Home/_FeaturedBlock" model="block" />
-                    </li>
-                }
-            </ul>
-        </section>
-    }
+            <!-- ── Columna Derecha: Recientes (Matiz Grisáceo / Pizarra) ── -->
+            <div class="entries-panel entries-panel--recent">
+                <div class="entries-panel__header">
+                    <span class="entries-panel__tag">
+                        <span class="entries-panel__dot" aria-hidden="true"></span>
+                        <span>Más Recientes</span>
+                    </span>
+                    <span class="text-xs font-semibold text-slate-500">Al minuto</span>
+                </div>
+
+                <div class="entries-list">
+                    @foreach (var entry in Model.RecentEntries)
+                    {
+                        <a class="card-h" href="@entry.Href" aria-label="Leer @entry.Title">
+                            <div class="card-h__media">
+                                @if (entry.Image.HasUrl)
+                                {
+                                    <img class="card-h__img" src="@entry.Image.Url" alt="@entry.Image.Alt"
+                                         width="@entry.Image.Width" height="@entry.Image.Height" loading="lazy" decoding="async" />
+                                }
+                                else
+                                {
+                                    <div class="card-h__fallback">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                                        </svg>
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-h__body">
+                                <span class="card-h__cat">@entry.Category</span>
+                                <h3 class="card-h__title">@entry.Title</h3>
+                                <div class="card-h__meta">
+                                    @if (entry.PublishedAt is DateTime date)
+                                    {
+                                        <time datetime="@date.ToString("yyyy-MM-dd")">@date.ToString("dd MMM yyyy")</time>
+                                    }
+                                    else
+                                    {
+                                        <span>Última hora</span>
+                                    }
+                                </div>
+                            </div>
+                            <span class="card-h__arrow" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                                    <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                            </span>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── 3. Sección: Encuentra el tema de tu interés (Bento Grid Amarillo) ─ -->
+    <section class="bento-section" id="temas-interes" aria-labelledby="temas-interes-title">
+        <div class="container">
+            <div class="section-header" data-reveal>
+                <div class="section-header__text">
+                    <h2 id="temas-interes-title" class="section-header__title">@Model.CategorySection.Title</h2>
+                    <p class="section-header__subtitle">@Model.CategorySection.Subtitle</p>
+                </div>
+            </div>
+
+            <!-- Bento Grid 2 Columnas -->
+            <div class="bento-grid" data-reveal>
+                <!-- ── Columna Izquierda: Card Grande (Salud y Bienestar) + Card Compacto (Subcategoría) ── -->
+                <div class="bento-col">
+                    <!-- Tarjeta Grande Superior: Salud y Bienestar -->
+                    <div class="bento-card bento-card--large">
+                        <div>
+                            <div class="bento-card__header">
+                                <div>
+                                    <span class="bento-card__parent-badge">Categoría Principal</span>
+                                    <h3 class="bento-card__title">@Model.CategorySection.MainCard.Name</h3>
+                                </div>
+                                <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.CategorySection.MainCard.Slug">
+                                    <span>Ver más</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </a>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(Model.CategorySection.MainCard.Description))
+                            {
+                                <p class="bento-card__desc">@Model.CategorySection.MainCard.Description</p>
+                            }
+                        </div>
+
+                        @if (Model.CategorySection.MainCard.Subcategories.Any())
+                        {
+                            <div class="bento-card__tags">
+                                <span class="text-xs font-bold text-slate-400 self-center mr-1">Subcategorías:</span>
+                                @foreach (var sub in Model.CategorySection.MainCard.Subcategories)
+                                {
+                                    <a class="bento-card__tag" asp-controller="Category" asp-action="Categoria" asp-route-slug="@sub.Slug">
+                                        <span>@sub.Name</span>
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg>
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Tarjeta Compacta Inferior: Subcategoría (ej: Neurociencia) -->
+                    <div class="bento-card bento-card--compact">
+                        <div>
+                            <div class="bento-card__header">
+                                <div>
+                                    <span class="bento-card__parent-badge">Subcategoría</span>
+                                    <h3 class="bento-card__title">@Model.CategorySection.SubCardLeft.Name</h3>
+                                </div>
+                                <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.CategorySection.SubCardLeft.Slug">
+                                    <span>Explorar</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </a>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft.Description))
+                            {
+                                <p class="bento-card__desc">@Model.CategorySection.SubCardLeft.Description</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Columna Derecha: Card Compacto (Subcategoría) + Card Grande ── -->
+                <div class="bento-col">
+                    <!-- Tarjeta Compacta Superior: Subcategoría (ej: Nutrición y Longevidad) -->
+                    <div class="bento-card bento-card--compact">
+                        <div>
+                            <div class="bento-card__header">
+                                <div>
+                                    <span class="bento-card__parent-badge">Subcategoría</span>
+                                    <h3 class="bento-card__title">@Model.CategorySection.SubCardRightTop.Name</h3>
+                                </div>
+                                <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.CategorySection.SubCardRightTop.Slug">
+                                    <span>Explorar</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </a>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop.Description))
+                            {
+                                <p class="bento-card__desc">@Model.CategorySection.SubCardRightTop.Description</p>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta Grande Inferior: Otra Categoría / Subcategoría destacada -->
+                    <div class="bento-card bento-card--large">
+                        <div>
+                            <div class="bento-card__header">
+                                <div>
+                                    <span class="bento-card__parent-badge">
+                                        @(Model.CategorySection.SubCardRightBottom.IsMainCategory ? "Categoría Destacada" : "Subcategoría")
+                                    </span>
+                                    <h3 class="bento-card__title">@Model.CategorySection.SubCardRightBottom.Name</h3>
+                                </div>
+                                <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.CategorySection.SubCardRightBottom.Slug">
+                                    <span>Ver más</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </a>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom.Description))
+                            {
+                                <p class="bento-card__desc">@Model.CategorySection.SubCardRightBottom.Description</p>
+                            }
+                        </div>
+
+                        @if (Model.CategorySection.SubCardRightBottom.Subcategories.Any())
+                        {
+                            <div class="bento-card__tags">
+                                <span class="text-xs font-bold text-slate-400 self-center mr-1">Especialidades:</span>
+                                @foreach (var sub in Model.CategorySection.SubCardRightBottom.Subcategories)
+                                {
+                                    <a class="bento-card__tag" asp-controller="Category" asp-action="Categoria" asp-route-slug="@sub.Slug">
+                                        <span>@sub.Name</span>
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg>
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accesos rápidos a todas las categorías -->
+            @if (Model.CategorySection.AllCategories.Any())
+            {
+                <div class="mt-8 pt-6 border-t border-amber-300/60 flex flex-wrap items-center justify-center gap-2" data-reveal>
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-900/70 mr-2">Todas las áreas:</span>
+                    @foreach (var cat in Model.CategorySection.AllCategories.Where(c => string.IsNullOrEmpty(c.ParentId)))
+                    {
+                        <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@cat.Slug"
+                           class="px-4 py-1.5 rounded-full text-xs font-bold bg-white/90 text-[#00296B] hover:bg-[#00296B] hover:text-white border border-amber-200/80 shadow-xs transition">
+                            @cat.Name
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </section>
 </div>
 
 @section Scripts {

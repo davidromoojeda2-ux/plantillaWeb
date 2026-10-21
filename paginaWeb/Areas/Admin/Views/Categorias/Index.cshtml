@@ -1,99 +1,187 @@
 @model List<CategoryResponseDto>
 @{
-    ViewData["Title"] = "Gestión de Categorías";
+    ViewData["Title"] = "Gestión de Categorías y Subcategorías";
     var subs = (List<CategoryResponseDto>?)ViewBag.Subs ?? new();
+    var parentIds = Model.Select(m => m.Id).ToHashSet();
+    var orphanSubs = subs.Where(s => !string.IsNullOrEmpty(s.ParentId) && !parentIds.Contains(s.ParentId)).ToList();
 }
 
 @section HeaderActions {
-    <a asp-area="Admin" asp-controller="Categorias" asp-action="Create" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Nueva Categoría
-    </a>
+    <div class="flex items-center gap-2">
+        <a asp-area="Admin" asp-controller="Categorias" asp-action="Create" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            + Categoría Principal
+        </a>
+    </div>
 }
 
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-    <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-        <div>
-            <h3 class="font-bold text-slate-800 text-base">Estructura y Menú del Portal</h3>
-            <p class="text-xs text-slate-400 mt-0.5">El orden y visibilidad impactan directamente en la barra de navegación pública.</p>
+<div class="space-y-6">
+    <!-- Panel Principal de Jerarquía -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base">Estructura Jerárquica del Portal y Menú</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Gestiona las categorías principales y sus respectivas subcategorías. Los cambios se sincronizan en vivo en la barra de navegación.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#003F88]">
+                    @Model.Count Categorías Principales
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800">
+                    @subs.Count Subcategorías
+                </span>
+            </div>
         </div>
-    </div>
 
-    @if (!Model.Any())
-    {
-        <div class="p-12 text-center text-slate-400">
-            <p class="font-medium text-slate-600">No hay categorías registradas.</p>
-            <a asp-area="Admin" asp-controller="Categorias" asp-action="Create" class="mt-2 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear primera categoría →</a>
-        </div>
-    }
-    else
-    {
-        <div class="divide-y divide-slate-100">
-            @foreach (var parent in Model)
-            {
-                var children = subs.Where(s => s.ParentId == parent.Id).OrderBy(s => s.Order).ToList();
-                <div class="p-5 hover:bg-slate-50/50 transition">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="w-8 h-8 rounded-lg bg-blue-50 text-[#003F88] font-bold text-xs flex items-center justify-center">
-                                @parent.Order
-                            </span>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h4 class="font-bold text-slate-800 text-base">@parent.Name</h4>
-                                    <span class="text-xs text-slate-400 font-mono">/@parent.Slug</span>
+        @if (!Model.Any() && !subs.Any())
+        {
+            <div class="p-12 text-center text-slate-400">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                </div>
+                <p class="font-semibold text-slate-700">No hay categorías configuradas.</p>
+                <p class="text-xs text-slate-400 mt-1 mb-4">Comienza creando tu primera categoría principal para estructurar tus noticias.</p>
+                <a asp-area="Admin" asp-controller="Categorias" asp-action="Create" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-xs shadow-sm transition">
+                    Crear primera categoría →
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="divide-y divide-slate-100">
+                @foreach (var parent in Model)
+                {
+                    var children = subs.Where(s => s.ParentId == parent.Id).OrderBy(s => s.Order).ToList();
+                    <div class="p-5 hover:bg-slate-50/50 transition">
+                        <!-- Fila de Categoría Principal -->
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <span class="w-9 h-9 rounded-xl bg-[#00296B]/10 text-[#00296B] font-bold text-xs flex items-center justify-center shrink-0">
+                                    #@parent.Order
+                                </span>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h4 class="font-bold text-slate-800 text-base">@parent.Name</h4>
+                                        <span class="text-xs text-slate-400 font-mono bg-slate-100 px-2 py-0.5 rounded-md">/@parent.Slug</span>
+                                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#00509D]/10 text-[#00509D]">
+                                            Categoría Principal
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                                        <span class="flex items-center gap-1">
+                                            <span class="w-1.5 h-1.5 rounded-full @(parent.ShowInMenu ? "bg-emerald-500" : "bg-slate-300")"></span>
+                                            @(parent.ShowInMenu ? "Visible en barra de menú" : "Oculto de barra de menú")
+                                        </span>
+                                        <span>•</span>
+                                        <span class="@(parent.IsActive ? "text-emerald-600 font-semibold" : "text-slate-400")">
+                                            @(parent.IsActive ? "Activa" : "Inactiva")
+                                        </span>
+                                        <span>•</span>
+                                        <span class="text-slate-500 font-medium">@children.Count subcategoría(s)</span>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                                    <span>@(parent.ShowInMenu ? "✓ Visible en menú" : "Oculto de menú")</span>
-                                    <span>•</span>
-                                    <span class="@(parent.IsActive ? "text-emerald-600 font-semibold" : "text-slate-400")">
-                                        @(parent.IsActive ? "Activa" : "Inactiva")
-                                    </span>
-                                </div>
+                            </div>
+
+                            <!-- Acciones Categoría Principal -->
+                            <div class="flex items-center gap-2">
+                                <a asp-area="Admin" asp-controller="Categorias" asp-action="Create" asp-route-parentId="@parent.Id"
+                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#003F88] font-bold text-xs transition"
+                                   title="Añadir una subcategoría directamente bajo @parent.Name">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                                    + Subcategoría
+                                </a>
+                                <a asp-area="Admin" asp-controller="Categorias" asp-action="Edit" asp-route-id="@parent.Id"
+                                   class="p-2 text-slate-500 hover:text-[#00509D] hover:bg-slate-100 rounded-lg transition" title="Editar categoría principal">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </a>
+                                <form method="post" asp-area="Admin" asp-controller="Categorias" asp-action="Delete" asp-route-id="@parent.Id" onsubmit="return confirm('¿Eliminar esta categoría principal y todas sus subcategorías asociadas?');" class="inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Eliminar categoría">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </form>
                             </div>
                         </div>
 
+                        <!-- Subcategorías anidadas -->
+                        @if (children.Any())
+                        {
+                            <div class="ml-6 sm:ml-12 mt-4 pl-4 border-l-2 border-blue-200/60 space-y-2.5">
+                                @foreach (var child in children)
+                                {
+                                    <div class="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50/70 hover:bg-blue-50/40 border border-slate-100 transition group">
+                                        <div class="flex items-center gap-3">
+                                            <span class="w-6 h-6 rounded-md bg-white border border-slate-200 text-slate-500 font-bold text-[10px] flex items-center justify-center">
+                                                #@child.Order
+                                            </span>
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="font-semibold text-slate-800 text-sm">@child.Name</span>
+                                                    <span class="text-xs text-slate-400 font-mono">/@child.Slug</span>
+                                                    <span class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">Subcategoría</span>
+                                                </div>
+                                                <div class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                                                    <span>@(child.ShowInMenu ? "✓ En menú" : "Oculto de menú")</span>
+                                                    <span>•</span>
+                                                    <span class="@(child.IsActive ? "text-emerald-600 font-semibold" : "text-slate-400")">
+                                                        @(child.IsActive ? "Activa" : "Inactiva")
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-1">
+                                            <a asp-area="Admin" asp-controller="Categorias" asp-action="Edit" asp-route-id="@child.Id"
+                                               class="p-1.5 text-slate-400 hover:text-[#00509D] hover:bg-white rounded-lg transition" title="Editar subcategoría">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            </a>
+                                            <form method="post" asp-area="Admin" asp-controller="Categorias" asp-action="Delete" asp-route-id="@child.Id"
+                                                  onsubmit="return confirm('¿Eliminar la subcategoría @child.Name?');" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition" title="Eliminar subcategoría">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Subcategorías Huérfanas (si las hubiera) -->
+    @if (orphanSubs.Any())
+    {
+        <div class="bg-amber-50/70 rounded-2xl border border-amber-200 p-6 space-y-4">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">⚠</span>
+                <div>
+                    <h4 class="font-bold text-amber-900 text-sm">Subcategorías sin Padre Asociado</h4>
+                    <p class="text-xs text-amber-700">Estas subcategorías tienen un Id de padre que no existe. Edítalas para asignarlas a una categoría principal válida.</p>
+                </div>
+            </div>
+
+            <div class="divide-y divide-amber-200/60 bg-white rounded-xl border border-amber-200/80 overflow-hidden">
+                @foreach (var orphan in orphanSubs)
+                {
+                    <div class="p-3.5 flex items-center justify-between text-sm">
                         <div class="flex items-center gap-2">
-                            <a asp-area="Admin" asp-controller="Categorias" asp-action="Edit" asp-route-id="@parent.Id" class="p-2 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            <span class="font-bold text-slate-800">@orphan.Name</span>
+                            <span class="text-xs text-slate-400 font-mono">/@orphan.Slug</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a asp-area="Admin" asp-controller="Categorias" asp-action="Edit" asp-route-id="@orphan.Id"
+                               class="text-xs font-bold text-[#00509D] hover:underline">
+                                Asignar Padre →
                             </a>
-                            <form method="post" asp-area="Admin" asp-controller="Categorias" asp-action="Delete" asp-route-id="@parent.Id" onsubmit="return confirm('¿Eliminar esta categoría principal y sus subcategorías?');" class="inline">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Eliminar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
-                            </form>
                         </div>
                     </div>
-
-                    @if (children.Any())
-                    {
-                        <div class="ml-11 mt-3 pl-4 border-l-2 border-slate-200 space-y-2">
-                            @foreach (var child in children)
-                            {
-                                <div class="flex items-center justify-between py-1.5 text-sm">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs text-slate-400 font-mono">#@child.Order</span>
-                                        <span class="font-medium text-slate-700">@child.Name</span>
-                                        <span class="text-xs text-slate-400 font-mono">/@child.Slug</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <a asp-area="Admin" asp-controller="Categorias" asp-action="Edit" asp-route-id="@child.Id" class="p-1 text-slate-400 hover:text-slate-700 rounded transition" title="Editar subcategoría">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        </a>
-                                        <form method="post" asp-area="Admin" asp-controller="Categorias" asp-action="Delete" asp-route-id="@child.Id" onsubmit="return confirm('¿Eliminar esta subcategoría?');" class="inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="p-1 text-slate-400 hover:text-rose-600 rounded transition" title="Eliminar">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
-            }
+                }
+            </div>
         </div>
     }
 </div>

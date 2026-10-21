@@ -114,62 +114,7 @@ public static class MongoDbIndexer
             await context.Users.InsertOneAsync(adminUser);
         }
 
-        // ─── Categorías Iniciales ──────────────────────────────────────────────
-        var catCount = await context.Categories.CountDocumentsAsync(Builders<Domine.Entities.Category>.Filter.Empty);
-        if (catCount == 0)
-        {
-            var tecnologia = new Domine.Entities.Category
-            {
-                Name = "Tecnología",
-                Slug = "tecnologia",
-                Description = "Noticias de innovación, software y gadgets",
-                Order = 1,
-                ShowInMenu = true,
-                IsActive = true
-            };
-            var economia = new Domine.Entities.Category
-            {
-                Name = "Economía",
-                Slug = "economia",
-                Description = "Finanzas, mercados y negocios globales",
-                Order = 2,
-                ShowInMenu = true,
-                IsActive = true
-            };
-            var cultura = new Domine.Entities.Category
-            {
-                Name = "Cultura",
-                Slug = "cultura",
-                Description = "Arte, cine, literatura y sociedad",
-                Order = 3,
-                ShowInMenu = true,
-                IsActive = true
-            };
-
-            await context.Categories.InsertManyAsync([tecnologia, economia, cultura]);
-
-            var iaSub = new Domine.Entities.Category
-            {
-                Name = "Inteligencia Artificial",
-                Slug = "inteligencia-artificial",
-                ParentId = tecnologia.Id,
-                Order = 1,
-                ShowInMenu = true,
-                IsActive = true
-            };
-            var ciberSub = new Domine.Entities.Category
-            {
-                Name = "Ciberseguridad",
-                Slug = "ciberseguridad",
-                ParentId = tecnologia.Id,
-                Order = 2,
-                ShowInMenu = true,
-                IsActive = true
-            };
-            await context.Categories.InsertManyAsync([iaSub, ciberSub]);
-        }
-
-        // ─── Páginas Informativas Iniciales ───────────────────────────────────
+        // ─── Páginas Informativas Básicas ─────────────────────────────────────
         var pageCount = await context.Pages.CountDocumentsAsync(Builders<Domine.Entities.InformativePage>.Filter.Empty);
         if (pageCount == 0)
         {
@@ -177,7 +122,7 @@ public static class MongoDbIndexer
             {
                 Title = "Políticas de Calidad y Ética Editorial",
                 Slug = "politicas-de-calidad",
-                Content = "<h2>1. Compromiso con la Veracidad</h2><p>Nuestro portal se rige por principios de rigor periodístico, verificación exhaustiva de hechos y separación clara entre información y opinión.</p><h2>2. Independencia Editorial</h2><p>Las decisiones editoriales son completamente autónomas e inmunes a presiones comerciales o partidarias.</p>",
+                Content = "<h2>1. Compromiso con la Veracidad</h2><p>Nuestro portal se rige por principios de rigor informativo, verificación exhaustiva de hechos y separación clara entre información y opinión.</p><h2>2. Independencia Editorial</h2><p>Las decisiones editoriales son completamente autónomas e independientes.</p>",
                 Order = 1,
                 ShowInFooter = true
             };
@@ -192,70 +137,76 @@ public static class MongoDbIndexer
             await context.Pages.InsertManyAsync([politicas, privacidad]);
         }
 
-        // ─── Artículos Iniciales ──────────────────────────────────────────────
-        var articleCount = await context.Articles.CountDocumentsAsync(Builders<Domine.Entities.Article>.Filter.Empty);
-        if (articleCount == 0)
+        // ─── Siembra de Artículos de Prueba (Mínimo 10 completos de temas variados) ───
+        await SeedArticlesData.SeedAsync(context);
+
+        // ─── Auto-vincular artículos huérfanos sin categoría (CategoryId == null) ───
+        await EnsureOrphanArticlesLinkedAsync(context);
+    }
+
+    public static async Task EnsureOrphanArticlesLinkedAsync(MongoDbContext context)
+    {
+        // Filtro seguro para ObjectId opcional
+        var orphanFilter = Builders<Domine.Entities.Article>.Filter.Eq(a => a.CategoryId, null);
+
+        var orphanArticles = await context.Articles.Find(orphanFilter).ToListAsync();
+        if (!orphanArticles.Any()) return;
+
+        var allCategories = await context.Categories.Find(_ => true).ToListAsync();
+        if (!allCategories.Any()) return;
+
+        var defaultRootCategory = allCategories.FirstOrDefault(c => c.ParentId == null && c.IsActive)
+                               ?? allCategories.FirstOrDefault(c => c.ParentId == null)
+                               ?? allCategories.First();
+
+        foreach (var art in orphanArticles)
         {
-            var catTec = await context.Categories.Find(c => c.Slug == "tecnologia").FirstOrDefaultAsync();
-            var catEco = await context.Categories.Find(c => c.Slug == "economia").FirstOrDefaultAsync();
-            var catCul = await context.Categories.Find(c => c.Slug == "cultura").FirstOrDefaultAsync();
+            Domine.Entities.Category? matchedCategory = null;
+            Domine.Entities.Category? matchedSubcategory = null;
 
-            var articles = new List<Domine.Entities.Article>
+            // Vinculación dinámica agnóstica: compara los Tags y título del artículo con las categorías existentes en BD
+            foreach (var cat in allCategories)
             {
-                new Domine.Entities.Article
-                {
-                    Title = "Revolución de la Inteligencia Artificial y la Nueva Era de la Automatización",
-                    Slug = "revolucion-inteligencia-artificial-nueva-era",
-                    Summary = "Un análisis exhaustivo sobre cómo los nuevos modelos generativos y la computación en la nube transforman la industria global.",
-                    Content = "<h2>1. El Estado Actual del Ecosistema Tecnológico</h2><p>El ritmo de avance en modelos fundacionales ha sobrepasado las estimaciones iniciales. Las organizaciones aceleran su migración hacia arquitecturas híbridas y seguras.</p><h2>2. Desafíos y Gobernanza de Datos</h2><p>La seguridad de la infraestructura y el cumplimiento regulatorio son pilares críticos para garantizar operaciones confiables a escala.</p>",
-                    Author = "Redacción de Tecnología",
-                    CategoryId = catTec?.Id,
-                    Tags = ["Tecnología", "IA", "Innovación"],
-                    Featured = true,
-                    Status = Domine.Entities.ArticleStatus.Publicado,
-                    PublishedAt = DateTime.UtcNow.AddHours(-2),
-                    CreatedAt = DateTime.UtcNow.AddHours(-2),
-                    UpdatedAt = DateTime.UtcNow.AddHours(-2),
-                    ReadingTimeMinutes = 4,
-                    ViewCount = 145
-                },
-                new Domine.Entities.Article
-                {
-                    Title = "Mercados Globales y Nuevas Perspectivas Financieras para este Trimestre",
-                    Slug = "mercados-globales-perspectivas-financieras",
-                    Summary = "Evaluación macroeconómica sobre las tasas de interés, comercio internacional y flujo de inversiones sostenibles.",
-                    Content = "<h2>Comercio y Política Monetaria</h2><p>Los bancos centrales ajustan sus políticas ante la desaceleración de la inflación, impulsando la confianza en mercados emergentes.</p>",
-                    Author = "Análisis Económico",
-                    CategoryId = catEco?.Id,
-                    Tags = ["Economía", "Finanzas", "Mercados"],
-                    Featured = false,
-                    Status = Domine.Entities.ArticleStatus.Publicado,
-                    PublishedAt = DateTime.UtcNow.AddHours(-5),
-                    CreatedAt = DateTime.UtcNow.AddHours(-5),
-                    UpdatedAt = DateTime.UtcNow.AddHours(-5),
-                    ReadingTimeMinutes = 3,
-                    ViewCount = 89
-                },
-                new Domine.Entities.Article
-                {
-                    Title = "Preservación del Patrimonio y Nuevos Espacios Culturales Contemporáneos",
-                    Slug = "preservacion-patrimonio-espacios-culturales",
-                    Summary = "Iniciativas comunitarias e institucionales rescatan centros históricos y fomentan el diálogo artístico multidisciplinario.",
-                    Content = "<h2>Encuentro entre Historia y Modernidad</h2><p>La integración de técnicas digitales permite documentar y difundir expresiones culturales en formatos interactivos para nuevas generaciones.</p>",
-                    Author = "Redacción Cultural",
-                    CategoryId = catCul?.Id,
-                    Tags = ["Cultura", "Arte", "Sociedad"],
-                    Featured = false,
-                    Status = Domine.Entities.ArticleStatus.Publicado,
-                    PublishedAt = DateTime.UtcNow.AddHours(-8),
-                    CreatedAt = DateTime.UtcNow.AddHours(-8),
-                    UpdatedAt = DateTime.UtcNow.AddHours(-8),
-                    ReadingTimeMinutes = 3,
-                    ViewCount = 62
-                }
-            };
+                var matchesTag = art.Tags.Any(t =>
+                    string.Equals(t.Trim(), cat.Name.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(t.Trim(), cat.Slug.Trim(), StringComparison.OrdinalIgnoreCase));
 
-            await context.Articles.InsertManyAsync(articles);
+                if (matchesTag)
+                {
+                    if (cat.ParentId is not null)
+                    {
+                        matchedSubcategory = cat;
+                        matchedCategory = allCategories.FirstOrDefault(c => c.Id == cat.ParentId);
+                    }
+                    else
+                    {
+                        matchedCategory = cat;
+                    }
+                    break;
+                }
+            }
+
+            var chosenCategory = matchedCategory ?? defaultRootCategory;
+            string categoryId;
+            string? subcategoryId;
+
+            if (chosenCategory.ParentId is not null)
+            {
+                categoryId = chosenCategory.ParentId;
+                subcategoryId = chosenCategory.Id;
+            }
+            else
+            {
+                categoryId = chosenCategory.Id;
+                subcategoryId = matchedSubcategory?.Id;
+            }
+
+            var updateDef = Builders<Domine.Entities.Article>.Update
+                .Set(a => a.CategoryId, categoryId)
+                .Set(a => a.SubcategoryId, subcategoryId)
+                .Set(a => a.UpdatedAt, DateTime.UtcNow);
+
+            await context.Articles.UpdateOneAsync(a => a.Id == art.Id, updateDef);
         }
     }
 }

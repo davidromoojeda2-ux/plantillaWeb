@@ -19,13 +19,22 @@ public interface IArticleService
     Task DeleteAsync(string id);
     Task IncrementViewCountAsync(string id);
     Task<List<ArticleResponseDto>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
+    Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
 }
 
 public class ArticleService : IArticleService
 {
     private readonly IArticleRepository _repo;
+    private readonly ICategoryRepository _categoryRepo;
 
-    public ArticleService(IArticleRepository repo) => _repo = repo;
+    public ArticleService(IArticleRepository repo, ICategoryRepository categoryRepo)
+    {
+        _repo = repo;
+        _categoryRepo = categoryRepo;
+    }
+
+    public Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync() =>
+        _repo.GetCategoriesWithPublishedArticlesAsync();
 
     public async Task<(List<ArticleResponseDto> Items, long Total)> GetPublishedAsync(int page = 1, int pageSize = 9)
     {
@@ -71,6 +80,8 @@ public class ArticleService : IArticleService
 
     public async Task<ArticleResponseDto> CreateAsync(ArticleDto dto)
     {
+        await EnforceCategoryIntegrityAsync(dto);
+
         var article = ArticleMapper.ToEntity(dto);
         article.ValidarInvariantes();
 
@@ -83,6 +94,8 @@ public class ArticleService : IArticleService
 
     public async Task<ArticleResponseDto> UpdateAsync(string id, ArticleDto dto)
     {
+        await EnforceCategoryIntegrityAsync(dto);
+
         var existing = await _repo.GetByIdAsync(id)
             ?? throw new NotFoundException("Artículo", id);
 
@@ -94,6 +107,44 @@ public class ArticleService : IArticleService
 
         await _repo.UpdateAsync(existing);
         return ArticleMapper.ToDto(existing);
+    }
+
+    private async Task EnforceCategoryIntegrityAsync(ArticleDto dto)
+    {
+        if (!string.IsNullOrWhiteSpace(dto.SubcategoryId))
+        {
+            var subcat = await _categoryRepo.GetByIdAsync(dto.SubcategoryId.Trim());
+            if (subcat != null)
+            {
+                if (!string.IsNullOrWhiteSpace(subcat.ParentId))
+                {
+                    dto.CategoryId = subcat.ParentId;
+                    dto.SubcategoryId = subcat.Id;
+                }
+                else
+                {
+                    dto.CategoryId = subcat.Id;
+                    dto.SubcategoryId = null;
+                }
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(dto.CategoryId))
+        {
+            var cat = await _categoryRepo.GetByIdAsync(dto.CategoryId.Trim());
+            if (cat != null)
+            {
+                if (!string.IsNullOrWhiteSpace(cat.ParentId))
+                {
+                    dto.CategoryId = cat.ParentId;
+                    dto.SubcategoryId = cat.Id;
+                }
+                else
+                {
+                    dto.CategoryId = cat.Id;
+                    dto.SubcategoryId = null;
+                }
+            }
+        }
     }
 
     public async Task DeleteAsync(string id)
