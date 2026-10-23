@@ -396,8 +396,17 @@ body {
 }
 
 @keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.85); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.85);
+    }
 }
 
 .hero-dynamic__badge-text {
@@ -484,6 +493,8 @@ body {
     width: 100%;
     overflow: hidden;
     min-height: 380px;
+    display: flex;
+    flex-direction: column;
 }
 
 @media (min-width: 768px) {
@@ -501,7 +512,9 @@ body {
 .hero-dynamic__track {
     position: relative;
     width: 100%;
-    height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .hero-dynamic__slide {
@@ -521,6 +534,7 @@ body {
     visibility: visible;
     pointer-events: auto;
     position: relative;
+    flex: 1;
 }
 
 /* Media y Scrim */
@@ -557,22 +571,18 @@ body {
 .hero-dynamic__scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-        180deg,
-        rgba(0, 20, 50, 0.2) 0%,
-        rgba(0, 25, 65, 0.75) 50%,
-        rgba(0, 20, 50, 0.96) 100%
-    );
+    background: linear-gradient(180deg,
+            rgba(0, 20, 50, 0.2) 0%,
+            rgba(0, 25, 65, 0.75) 50%,
+            rgba(0, 20, 50, 0.96) 100%);
 }
 
 @media (min-width: 768px) {
     .hero-dynamic__scrim {
-        background: linear-gradient(
-            90deg,
-            rgba(0, 20, 50, 0.96) 0%,
-            rgba(0, 30, 75, 0.88) 50%,
-            rgba(0, 25, 65, 0.35) 100%
-        );
+        background: linear-gradient(90deg,
+                rgba(0, 20, 50, 0.96) 0%,
+                rgba(0, 30, 75, 0.88) 50%,
+                rgba(0, 25, 65, 0.35) 100%);
     }
 }
 
@@ -1622,6 +1632,7 @@ body {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    justify-items: end;
 }
 
 @media (min-width: 1024px) {
@@ -1646,18 +1657,26 @@ body {
     .entries-panel {
         padding: 1.75rem;
     }
+
+    .entries-panel--recent {
+        width: 50%;
+    }
 }
 
 .entries-panel--featured {
     border-top: 4px solid #00296B;
     background: #FDC500;
     box-shadow: 0 2px 10px rgba(0, 41, 107, 0.05);
+    border-radius: 35px 0px 35px 0px;
 }
 
 .entries-panel--recent {
     border-top: 4px solid #00509D;
     background: #FFFFFF;
     box-shadow: 0 2px 10px rgba(0, 41, 107, 0.05);
+    border-radius: 0px 35px 0px 35px;
+    width: 40%;
+    min-width: 420px;
 }
 
 .entries-panel__header {
@@ -1716,7 +1735,7 @@ body {
     padding: 0.875rem 1rem;
     background: #FFFFFF;
     border-radius: 12px;
-    border: 1px solid #E2E5EA;
+    border: 1px solid #f3f4f7;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     text-decoration: none;
     color: inherit;
@@ -1731,15 +1750,7 @@ body {
     box-shadow: 0 8px 20px -4px rgba(0, 41, 107, 0.12);
 }
 
-.card-h__media {
-    width: 100px;
-    height: 80px;
-    border-radius: 8px;
-    overflow: hidden;
-    flex-shrink: 0;
-    position: relative;
-    background: #E2E5EA;
-}
+
 
 @media (min-width: 640px) {
     .card-h__media {

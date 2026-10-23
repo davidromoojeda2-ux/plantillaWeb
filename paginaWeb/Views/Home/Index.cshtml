@@ -20,7 +20,8 @@
                 <p class="hero__subtitle">@Model.Hero.Subtitle</p>
 
                 <!-- Componente Parcial de Búsqueda Modular -->
-                <partial name="Partials/_SearchBar" model="new paginaWeb.Models.Publicaciones.SearchBarViewModel(IsHeroSearch: true)" />
+                <partial name="Partials/_SearchBar"
+                         model="new paginaWeb.Models.Publicaciones.SearchBarViewModel(IsHeroSearch: true)" />
             </div>
 
             <!-- Hero Dinámico y Moderno (Carrusel Showcase de Noticias en Portada) -->
@@ -127,24 +128,6 @@
                     @foreach (var entry in Model.RecentEntries)
                     {
                         <a class="card-h" href="@entry.Href" aria-label="Leer @entry.Title">
-                            <div class="card-h__media">
-                                @if (entry.Image.HasUrl)
-                                {
-                                    <img class="card-h__img" src="@entry.Image.Url" alt="@entry.Image.Alt"
-                                         width="@entry.Image.Width" height="@entry.Image.Height" loading="lazy"
-                                         decoding="async" />
-                                }
-                                else
-                                {
-                                    <div class="card-h__fallback">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                             stroke-width="1.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                  d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                                        </svg>
-                                    </div>
-                                }
-                            </div>
                             <div class="card-h__body">
                                 <span class="card-h__cat">@entry.Category</span>
                                 <h3 class="card-h__title">@entry.Title</h3>
@@ -188,11 +171,13 @@
                 <!-- ── Columna Izquierda: Card Grande (Salud y Bienestar) + Card Compacto (Subcategoría) ── -->
                 <div class="bento-col">
                     <!-- Tarjeta Grande Superior: Salud y Bienestar (Acento Dorado Base) -->
-                    <div class="bento-card bento-card--large bento-card--primary @(!string.IsNullOrEmpty(Model.CategorySection.MainCard.ImageUrl) ? "bento-card--has-bg" : "")">
+                    <div
+                        class="bento-card bento-card--large bento-card--primary @(!string.IsNullOrEmpty(Model.CategorySection.MainCard.ImageUrl) ? "bento-card--has-bg" : "")">
                         @if (!string.IsNullOrEmpty(Model.CategorySection.MainCard.ImageUrl))
                         {
                             <div class="bento-card__bg" aria-hidden="true">
-                                <img class="bento-card__bg-img" src="@Model.CategorySection.MainCard.ImageUrl" alt="" loading="lazy" />
+                                <img class="bento-card__bg-img" src="@Model.CategorySection.MainCard.ImageUrl" alt=""
+                                     loading="lazy" />
                                 <div class="bento-card__scrim"></div>
                             </div>
                         }
@@ -206,8 +191,9 @@
                                     <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria"
                                        asp-route-slug="@Model.CategorySection.MainCard.Slug">
                                         <span>Ver más</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                             stroke-linejoin="round">
                                             <path d="M5 12h14M12 5l7 7-7 7" />
                                         </svg>
                                     </a>
@@ -240,11 +226,13 @@
                     </div>
 
                     <!-- Tarjeta Compacta Inferior: Subcategoría (ej: Neurociencia) -->
-                    <div class="bento-card bento-card--compact @(!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft.ImageUrl) ? "bento-card--has-bg" : "")">
+                    <div
+                        class="bento-card bento-card--compact @(!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft.ImageUrl) ? "bento-card--has-bg" : "")">
                         @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft.ImageUrl))
                         {
                             <div class="bento-card__bg" aria-hidden="true">
-                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardLeft.ImageUrl" alt="" loading="lazy" />
+                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardLeft.ImageUrl" alt=""
+                                     loading="lazy" />
                                 <div class="bento-card__scrim"></div>
                             </div>
                         }
@@ -259,8 +247,9 @@
                                        asp-controller="Category" asp-action="Categoria"
                                        asp-route-slug="@Model.CategorySection.SubCardLeft.Slug">
                                         <span>Explorar</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                             stroke-linejoin="round">
                                             <path d="M5 12h14M12 5l7 7-7 7" />
                                         </svg>
                                     </a>
@@ -278,11 +267,13 @@
                 <!-- ── Columna Derecha: Card Compacto (Subcategoría) + Card Grande ── -->
                 <div class="bento-col">
                     <!-- Tarjeta Compacta Superior: Subcategoría (ej: Nutrición y Longevidad) -->
-                    <div class="bento-card bento-card--compact @(!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop.ImageUrl) ? "bento-card--has-bg" : "")">
+                    <div
+                        class="bento-card bento-card--compact @(!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop.ImageUrl) ? "bento-card--has-bg" : "")">
                         @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop.ImageUrl))
                         {
                             <div class="bento-card__bg" aria-hidden="true">
-                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightTop.ImageUrl" alt="" loading="lazy" />
+                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightTop.ImageUrl" alt=""
+                                     loading="lazy" />
                                 <div class="bento-card__scrim"></div>
                             </div>
                         }
@@ -297,8 +288,9 @@
                                        asp-controller="Category" asp-action="Categoria"
                                        asp-route-slug="@Model.CategorySection.SubCardRightTop.Slug">
                                         <span>Explorar</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                             stroke-linejoin="round">
                                             <path d="M5 12h14M12 5l7 7-7 7" />
                                         </svg>
                                     </a>
@@ -313,11 +305,13 @@
                     </div>
 
                     <!-- Tarjeta Grande Inferior: Otra Categoría / Subcategoría destacada -->
-                    <div class="bento-card bento-card--large @(!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom.ImageUrl) ? "bento-card--has-bg" : "")">
+                    <div
+                        class="bento-card bento-card--large @(!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom.ImageUrl) ? "bento-card--has-bg" : "")">
                         @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom.ImageUrl))
                         {
                             <div class="bento-card__bg" aria-hidden="true">
-                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightBottom.ImageUrl" alt="" loading="lazy" />
+                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightBottom.ImageUrl"
+                                     alt="" loading="lazy" />
                                 <div class="bento-card__scrim"></div>
                             </div>
                         }
@@ -328,13 +322,15 @@
                                         <span class="bento-card__parent-badge">
                                             @(Model.CategorySection.SubCardRightBottom.IsMainCategory ? "Categoría Destacada" : "Subcategoría")
                                         </span>
-                                        <h3 class="bento-card__title">@Model.CategorySection.SubCardRightBottom.Name</h3>
+                                        <h3 class="bento-card__title">@Model.CategorySection.SubCardRightBottom.Name
+                                        </h3>
                                     </div>
                                     <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria"
                                        asp-route-slug="@Model.CategorySection.SubCardRightBottom.Slug">
                                         <span>Ver más</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                             stroke-linejoin="round">
                                             <path d="M5 12h14M12 5l7 7-7 7" />
                                         </svg>
                                     </a>

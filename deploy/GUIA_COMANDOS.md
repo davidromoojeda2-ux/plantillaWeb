@@ -94,6 +94,19 @@ git restore --staged .
 git commit --amend -m "nuevo mensaje para el commit"
 ```
 
+### Creación de ramas y cambiarse a esa rama de trabajo
+git switch -c feature/hero-nuevo      # funcionalidad nueva
+git switch -c fix/boton-roto          # corrección de un error
+git switch -c hotfix/error-pago       # corrección urgente en producción
+git switch -c refactor/navbar         # reestructurar código sin cambiar comportamiento
+git switch -c docs/readme             # documentación
+git switch -c chore/actualizar-deps   # mantenimiento
+git switch -c test/login              # pruebas
+git switch -c UI/mejora-de-hero     
+```
+### Cambiarse de rama 
+git switch main
+git switch feature/hero-nuevo
 ---
 
 ## 3. Comandos Esenciales para Servidor Ubuntu (Linux)

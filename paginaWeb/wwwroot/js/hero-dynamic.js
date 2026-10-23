@@ -14,13 +14,8 @@
         if (!root) return;
 
         var slides = Array.prototype.slice.call(root.querySelectorAll('.hero-dynamic__slide'));
-        var tabs = Array.prototype.slice.call(root.querySelectorAll('.hero-dynamic__tab'));
         var timerBar = root.querySelector('[data-timer-bar]');
         var counterCurr = root.querySelector('[data-slide-current]');
-        var playPauseBtn = root.querySelector('[data-action="toggle-play"]');
-        var prevBtn = root.querySelector('[data-action="prev"]');
-        var nextBtn = root.querySelector('[data-action="next"]');
-
         var total = slides.length;
         if (total <= 1) return;
 
@@ -66,14 +61,6 @@
                 slide.setAttribute('aria-hidden', active ? 'false' : 'true');
             });
 
-            // Actualizar pestañas interactivas
-            tabs.forEach(function (tab, i) {
-                var active = i === currentIndex;
-                tab.classList.toggle('is-active', active);
-                tab.setAttribute('aria-selected', active ? 'true' : 'false');
-                tab.setAttribute('tabindex', active ? '0' : '-1');
-            });
-
             // Actualizar contador
             if (counterCurr) {
                 counterCurr.textContent = pad(currentIndex + 1);
@@ -111,59 +98,6 @@
             var elapsed = Date.now() - startTime;
             remainingTime = Math.max(0, remainingTime - elapsed);
         }
-
-        function updatePlayPauseState() {
-            if (!playPauseBtn) return;
-            var pauseIcon = playPauseBtn.querySelector('.icon-pause');
-            var playIcon = playPauseBtn.querySelector('.icon-play');
-
-            if (isPlaying) {
-                playPauseBtn.setAttribute('aria-label', 'Pausar rotación automática');
-                playPauseBtn.setAttribute('title', 'Pausar rotación automática');
-                if (pauseIcon) pauseIcon.style.display = '';
-                if (playIcon) playIcon.style.display = 'none';
-            } else {
-                playPauseBtn.setAttribute('aria-label', 'Reanudar rotación automática');
-                playPauseBtn.setAttribute('title', 'Reanudar rotación automática');
-                if (pauseIcon) pauseIcon.style.display = 'none';
-                if (playIcon) playIcon.style.display = '';
-            }
-        }
-
-        // Eventos de controles
-        if (nextBtn) {
-            nextBtn.addEventListener('click', function () {
-                nextSlide();
-            });
-        }
-
-        if (prevBtn) {
-            prevBtn.addEventListener('click', function () {
-                prevSlide();
-            });
-        }
-
-        if (playPauseBtn) {
-            playPauseBtn.addEventListener('click', function () {
-                isPlaying = !isPlaying;
-                updatePlayPauseState();
-                if (isPlaying) {
-                    startAutoplay(remainingTime > 500 ? remainingTime : AUTOPLAY_DELAY);
-                } else {
-                    stopAutoplay();
-                }
-            });
-        }
-
-        // Clics en tabs
-        tabs.forEach(function (tab) {
-            tab.addEventListener('click', function () {
-                var targetIdx = parseInt(tab.getAttribute('data-tab-index'), 10);
-                if (!isNaN(targetIdx) && targetIdx !== currentIndex) {
-                    goToSlide(targetIdx);
-                }
-            });
-        });
 
         // Pausa en hover y foco
         root.addEventListener('mouseenter', function () {

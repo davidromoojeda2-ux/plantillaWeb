@@ -62,9 +62,10 @@ class BlockEditor {
         this.typeDropdownMenu = null;
         this.slashMenu = null;
 
+        // Toolbar visibility: tracked via a single reference to the block being hovered
         this.toolbarTimeout = null;
-        this.isMouseOverToolbar = false;
-        this.isMouseOverBlock = false;
+        this._hoveredBlockEl = null;  // block element the pointer is currently over
+        this._toolbarHovered = false; // pointer is over the toolbar itself
 
         this.init();
     }
@@ -183,15 +184,15 @@ class BlockEditor {
             }
         });
 
-        // Eventos hover sobre la barra para no ocultarse mientras el usuario interactúa
-        tb.addEventListener('mouseenter', () => {
-            this.isMouseOverToolbar = true;
+        // Pointer over toolbar keeps it visible; leaving triggers hide
+        tb.addEventListener('pointerenter', () => {
+            this._toolbarHovered = true;
             clearTimeout(this.toolbarTimeout);
         });
 
-        tb.addEventListener('mouseleave', () => {
-            this.isMouseOverToolbar = false;
-            this.hideToolbar(250);
+        tb.addEventListener('pointerleave', () => {
+            this._toolbarHovered = false;
+            this._scheduleHide(200);
         });
     }
 
@@ -210,13 +211,12 @@ class BlockEditor {
             tb.querySelector('#blockTypeLabel').innerText = BLOCK_LABELS[block.type] || 'Párrafo';
         }
 
-        // Posicionar suavemente justo encima del bloque activo
+        // Posicionar justo encima del bloque activo
         tb.style.display = 'flex';
         tb.classList.remove('hidden');
 
         const tbHeight = 40;
         let top = rect.top - tbHeight + window.scrollY;
-        // Si no hay espacio arriba, posicionarlo dentro o justo debajo
         if (rect.top < 60) {
             top = rect.top + 6 + window.scrollY;
         }
@@ -226,14 +226,25 @@ class BlockEditor {
         tb.style.left = `${left}px`;
     }
 
-    hideToolbar(delay = 200) {
+    /**
+     * Schedules toolbar hide after `delay` ms.
+     * Cancelled if the pointer re-enters a block or the toolbar before the timer fires.
+     */
+    _scheduleHide(delay = 200) {
         clearTimeout(this.toolbarTimeout);
         this.toolbarTimeout = setTimeout(() => {
-            if (!this.isMouseOverToolbar && !this.isMouseOverBlock && this.floatingToolbar) {
+            // Only hide when neither block nor toolbar is hovered and no dropdown is open
+            const dropdownOpen = this.typeDropdownMenu && !this.typeDropdownMenu.classList.contains('hidden');
+            if (!this._hoveredBlockEl && !this._toolbarHovered && !dropdownOpen && this.floatingToolbar) {
                 this.floatingToolbar.classList.add('hidden');
                 if (this.typeDropdownMenu) this.typeDropdownMenu.classList.add('hidden');
             }
         }, delay);
+    }
+
+    hideToolbar(delay = 200) {
+        this._hoveredBlockEl = null;
+        this._scheduleHide(delay);
     }
 
     /* ─── Carga Inicial y Parseo ─────────────────────────────────────────── */
@@ -911,27 +922,48 @@ class BlockEditor {
         if (blockEl) {
             blockEl.classList.remove('is-block-active');
         }
-        this.hideToolbar(250);
+        // Only clear tracked block if it matches the one leaving
+        if (this._hoveredBlockEl === blockEl) {
+            this._hoveredBlockEl = null;
+        }
+        this._scheduleHide(220);
     }
 
     bindBlockEvents(blockEl, contentEl, type) {
-        blockEl.addEventListener('mouseenter', () => {
-            this.isMouseOverBlock = true;
+        blockEl.addEventListener('pointerenter', () => {
+            this._hoveredBlockEl = blockEl;
+            clearTimeout(this.toolbarTimeout);
             this.setActiveBlock(blockEl);
         });
 
-        blockEl.addEventListener('mouseleave', () => {
-            this.isMouseOverBlock = false;
-            this.deactivateBlock(blockEl);
+        blockEl.addEventListener('pointerleave', (e) => {
+            // Only deactivate if pointer truly left the block (not entering a child element outside the block)
+            if (!blockEl.contains(e.relatedTarget)) {
+                this.deactivateBlock(blockEl);
+            }
         });
 
         blockEl.addEventListener('touchstart', () => {
-            this.isMouseOverBlock = true;
+            this._hoveredBlockEl = blockEl;
             this.setActiveBlock(blockEl);
         }, { passive: true });
 
         contentEl.addEventListener('focusin', () => {
+            this._hoveredBlockEl = blockEl;
+            clearTimeout(this.toolbarTimeout);
             this.setActiveBlock(blockEl);
+        });
+
+        contentEl.addEventListener('focusout', (e) => {
+            // Only hide if focus truly left the block and toolbar
+            setTimeout(() => {
+                const active = document.activeElement;
+                const inBlock = blockEl.contains(active);
+                const inToolbar = this.floatingToolbar?.contains(active);
+                if (!inBlock && !inToolbar && !this._hoveredBlockEl && !this._toolbarHovered) {
+                    this.deactivateBlock(blockEl);
+                }
+            }, 80);
         });
 
         // Drag & Drop
@@ -1088,8 +1120,18 @@ class BlockEditor {
             }
             if (!this.container.contains(e.target) && !this.floatingToolbar?.contains(e.target)) {
                 document.querySelectorAll('.editor-block-item').forEach(b => b.classList.remove('is-block-active'));
-                this.isMouseOverBlock = false;
+                this._hoveredBlockEl = null;
+                this._toolbarHovered = false;
                 this.hideToolbar(0);
+            }
+        });
+
+        // Hide toolbar when pointer moves over the canvas empty area (between blocks)
+        this.canvas?.addEventListener('pointermove', (e) => {
+            const overBlock = e.target.closest('.editor-block-item');
+            if (!overBlock && !this._toolbarHovered) {
+                this._hoveredBlockEl = null;
+                this._scheduleHide(300);
             }
         });
     }

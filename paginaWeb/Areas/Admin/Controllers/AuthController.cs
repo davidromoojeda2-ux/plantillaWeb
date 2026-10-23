@@ -51,6 +51,7 @@ public class AuthController : Controller
         }
 
         var user = await _authService.GetUserAsync(model.Username);
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user?.Id ?? model.Username),

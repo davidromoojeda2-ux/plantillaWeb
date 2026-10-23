@@ -55,7 +55,7 @@
                 <div>
                     <label asp-for="Username"
                            class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Usuario</label>
-                    <input asp-for="Username" type="text" autocomplete="username" required
+                    <input asp-for="Username" type="text" autocomplete="username"
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] focus:border-transparent transition-all text-sm"
                            placeholder="ej: admin" />
                     <span asp-validation-for="Username" class="text-xs text-rose-600 mt-1 block"></span>
@@ -64,7 +64,7 @@
                 <div>
                     <label asp-for="Password"
                            class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Contraseña</label>
-                    <input asp-for="Password" type="password" autocomplete="current-password" required
+                    <input asp-for="Password" type="password" autocomplete="current-password"
                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] focus:border-transparent transition-all text-sm"
                            placeholder="••••••••" />
                     <span asp-validation-for="Password" class="text-xs text-rose-600 mt-1 block"></span>
@@ -99,5 +99,9 @@
     </div>
 
 </body>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
 
 </html>
