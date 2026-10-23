@@ -34,7 +34,7 @@ public class HomeController : Controller
     public async Task<IActionResult> Index()
     {
         var featured = await _articleService.GetFeaturedAsync(3);
-        var (recent, _) = await _articleService.GetPublishedAsync(1, 15);
+        var (recent, _) = await _articleService.GetPublishedAsync(1, 50);
         var categories = await _categoryService.GetAllAsync();
         var images = await _imageService.GetVariantsDictAsync(
             recent.Concat(featured).Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
@@ -45,7 +45,7 @@ public class HomeController : Controller
             categories,
             images,
             slug => Url.Action(nameof(Articulo), "Home", new { slug }) ?? "#",
-            Url.Action(nameof(Buscar), "Home"));
+            Url.Action("Index", "Publicaciones"));
 
         return View(model);
     }
@@ -112,43 +112,8 @@ public class HomeController : Controller
     }
 
     [HttpGet("buscar")]
-    public async Task<IActionResult> Buscar(string? q, int page = 1)
-    {
-        var query = q?.Trim() ?? string.Empty;
-        var (items, total) = string.IsNullOrEmpty(query)
-            ? await _articleService.GetPublishedAsync(page, 9)
-            : await _articleService.SearchAsync(query, page, 9);
-
-        var categories = (await _categoryService.GetAllAsync())
-            .ToDictionary(c => c.Id, c => c.Name);
-
-        var images = await _imageService.GetVariantsDictAsync(
-            items.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
-
-        var cardItems = items.Select(art =>
-        {
-            var artCover = art.CoverImageId != null && images.TryGetValue(art.CoverImageId, out var img) ? img : null;
-            var artImgUrl = !string.IsNullOrWhiteSpace(art.CoverImageUrl)
-                ? art.CoverImageUrl
-                : (ImageMapper.GetThumbnailUrl(artCover) ?? ImageMapper.GetBestUrl(artCover));
-            var artCat = art.CategoryId != null && categories.TryGetValue(art.CategoryId, out var catName)
-                ? catName
-                : "General";
-
-            return new ArticleCardViewModel(art, artImgUrl, artCat);
-        }).ToList();
-
-        var totalPages = (int)Math.Ceiling((double)total / 9);
-
-        var viewModel = new SearchViewModel(
-            Query: query,
-            CurrentPage: page,
-            TotalPages: totalPages,
-            TotalCount: total,
-            Items: cardItems);
-
-        return View(viewModel);
-    }
+    public IActionResult Buscar(string? q, int page = 1)
+        => RedirectToAction("Index", "Publicaciones", new { q, page });
 
     [HttpGet("info/{slug}")]
     public async Task<IActionResult> Info(string slug)

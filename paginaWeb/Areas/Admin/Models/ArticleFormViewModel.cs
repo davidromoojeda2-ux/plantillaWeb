@@ -12,15 +12,15 @@ public class ArticleFormViewModel
     public string? Id { get; set; }
 
     [Required(ErrorMessage = "El título es obligatorio.")]
-    [StringLength(300, ErrorMessage = "El título no puede superar los 300 caracteres.")]
+    [StringLength(250, MinimumLength = 5, ErrorMessage = "El título debe tener entre 5 y 250 caracteres.")]
     public string Title { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "El slug es obligatorio.")]
     [StringLength(200, ErrorMessage = "El slug no puede superar los 200 caracteres.")]
     public string Slug { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "El resumen o bajada es obligatorio.")]
-    [StringLength(500, ErrorMessage = "El resumen no puede superar los 500 caracteres.")]
+    [Required(ErrorMessage = "El resumen es obligatorio.")]
+    [StringLength(500, MinimumLength = 20, ErrorMessage = "El resumen debe tener entre 20 y 500 caracteres.")]
     public string Summary { get; set; } = string.Empty;
 
     public string Content { get; set; } = string.Empty;

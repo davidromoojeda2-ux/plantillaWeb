@@ -10,6 +10,7 @@ public static class PageMapper
         Title = dto.Title.Trim(),
         Slug = dto.Slug.Trim().ToLowerInvariant(),
         Content = dto.Content,
+        Subtitle = dto.Subtitle.Trim(),
         Order = dto.Order,
         ShowInFooter = dto.ShowInFooter
     };
@@ -19,6 +20,7 @@ public static class PageMapper
         existing.Title = dto.Title.Trim();
         existing.Slug = dto.Slug.Trim().ToLowerInvariant();
         existing.Content = dto.Content;
+        existing.Subtitle = dto.Subtitle.Trim();
         existing.Order = dto.Order;
         existing.ShowInFooter = dto.ShowInFooter;
         existing.UpdatedAt = DateTime.UtcNow;
@@ -31,6 +33,7 @@ public static class PageMapper
         Title = page.Title,
         Slug = page.Slug,
         Content = page.Content,
+        Subtitle = page.Subtitle,
         Order = page.Order,
         ShowInFooter = page.ShowInFooter,
         CreatedAt = page.CreatedAt,
@@ -45,6 +48,7 @@ public static class PageMapper
         Title = page.Title,
         Slug = page.Slug,
         Content = page.Content,
+        Subtitle = page.Subtitle,
         Order = page.Order,
         ShowInFooter = page.ShowInFooter
     };
@@ -54,6 +58,7 @@ public static class PageMapper
         Title = page.Title,
         Slug = page.Slug,
         Content = page.Content,
+        Subtitle = page.Subtitle,
         Order = page.Order,
         ShowInFooter = page.ShowInFooter
     };

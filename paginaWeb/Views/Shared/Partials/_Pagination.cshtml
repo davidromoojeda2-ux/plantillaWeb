@@ -1,0 +1,53 @@
+@model paginaWeb.Models.PaginationViewModel
+@{
+    if (Model == null || !Model.ShouldRender)
+    {
+        return;
+    }
+}
+
+<nav class="pagination-container" aria-label="@Model.AriaLabel">
+    @if (Model.HasPrevious)
+    {
+        <a asp-controller="@Model.Controller"
+           asp-action="@Model.Action"
+           asp-all-route-data="@Model.GetRouteData(Model.PreviousPage)"
+           class="pagination-btn pagination-btn--default"
+           rel="prev"
+           aria-label="Página anterior">
+            ← Anterior
+        </a>
+    }
+
+    @foreach (var item in Model.GetPages())
+    {
+        if (item.IsEllipsis)
+        {
+            <span class="pagination-btn pagination-btn--page pagination-btn--ellipsis" aria-hidden="true">…</span>
+        }
+        else
+        {
+            var pageNum = item.PageNumber!.Value;
+            <a asp-controller="@Model.Controller"
+               asp-action="@Model.Action"
+               asp-all-route-data="@Model.GetRouteData(pageNum)"
+               class="pagination-btn pagination-btn--page @(item.IsCurrent ? "pagination-btn--active" : "pagination-btn--default")"
+               aria-current="@(item.IsCurrent ? "page" : null)"
+               aria-label="Página @pageNum">
+                @pageNum
+            </a>
+        }
+    }
+
+    @if (Model.HasNext)
+    {
+        <a asp-controller="@Model.Controller"
+           asp-action="@Model.Action"
+           asp-all-route-data="@Model.GetRouteData(Model.NextPage)"
+           class="pagination-btn pagination-btn--default"
+           rel="next"
+           aria-label="Página siguiente">
+            Siguiente →
+        </a>
+    }
+</nav>

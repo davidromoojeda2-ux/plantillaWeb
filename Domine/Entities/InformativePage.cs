@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using Domine.Exceptions;
 
 namespace Domine.Entities;
 
@@ -21,6 +22,9 @@ public class InformativePage
     /// <summary>Contenido HTML sanitizado de la sección.</summary>
     public string Content { get; set; } = string.Empty;
 
+    /// <summary>Subtítulo descriptivo que aparece en el hero de la página pública.</summary>
+    public string Subtitle { get; set; } = string.Empty;
+
     /// <summary>Orden de aparición en el footer (ascendente).</summary>
     public int Order { get; set; } = 0;
 
@@ -29,4 +33,21 @@ public class InformativePage
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Valida las invariantes de la página informativa según las reglas del dominio.
+    /// Lanza <see cref="DomainValidationException"/> si el estado es inconsistente.
+    /// </summary>
+    public void ValidarInvariantes()
+    {
+        if (string.IsNullOrWhiteSpace(Title))
+            throw new DomainValidationException("El título de la página es obligatorio.", nameof(Title));
+
+        if (string.IsNullOrWhiteSpace(Slug))
+            throw new DomainValidationException("El slug de la página es obligatorio.", nameof(Slug));
+
+        if (string.IsNullOrWhiteSpace(Content))
+            throw new DomainValidationException("El contenido de la página es obligatorio.", nameof(Content));
+    }
 }
+

@@ -4,30 +4,52 @@
     var otherPages = (List<PageResponseDto>?)ViewBag.OtherPages ?? new();
 }
 
-<div class="space-y-12">
-    <!-- ─── Hero Institucional Oscuro de Alto Contraste ──────────────────────── -->
-    <section class="bg-gradient-to-br from-[#001D4A] via-[#00296B] to-[#003F88] text-white py-16 sm:py-24 border-b border-white/10">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[#FDC500] text-[11px] font-bold tracking-wider uppercase backdrop-blur-xs">
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+}
+
+<div class="public-page">
+    <!-- ─── 1. Cabecera Hero de Extremo a Extremo (Full Width) ───────────────── -->
+    <header class="page-hero">
+        <div class="page-hero__glow" aria-hidden="true"></div>
+
+        <div class="container page-hero__inner">
+            <!-- Breadcrumb -->
+            <nav class="page-hero__breadcrumb" aria-label="Migas de pan">
+                <a asp-controller="Home" asp-action="Index">Inicio</a>
+                <span>/</span>
+                <span class="text-white/80">Institucional</span>
+                <span>/</span>
+                <span class="page-hero__breadcrumb-current">@Model.Title</span>
+            </nav>
+
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[#FDC500] text-xs font-bold tracking-wider uppercase backdrop-blur-xs border border-white/10 w-fit">
                 <span>ACTUALIZACIÓN:</span>
                 <span>@Model.UpdatedAt.ToString("dd MMMM yyyy")</span>
             </div>
 
-            <h1 class="text-3xl sm:text-5xl font-serif font-black tracking-tight leading-tight">
+            <h1 class="page-hero__title">
                 @Model.Title
             </h1>
 
-            <p class="text-sm sm:text-base text-blue-100 max-w-2xl leading-relaxed">
-                Lineamientos, compromisos editoriales y bases éticas que rigen nuestro ejercicio periodístico e institucional.
+            <p class="page-hero__subtitle">
+                @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+                {
+                    @Model.Subtitle
+                }
+                else
+                {
+                    <span class="opacity-50 italic">Sin descripción. Edita esta sección desde el panel de administración.</span>
+                }
             </p>
         </div>
-    </section>
+    </header>
 
-    <!-- ─── Cuerpo del Documento + Menú de Secciones ─────────────────────────── -->
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+    <!-- ─── 2. Contenido de Extremo a Extremo (Mismo contenedor de la Home) ─── -->
+    <main class="page-content-section container">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
             <!-- Menú Lateral Institucional -->
-            <aside class="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-3 sticky top-28">
+            <aside class="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs space-y-3 sticky top-28">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 pb-2 border-b border-slate-100">
                     Documentos Institucionales
                 </h4>
@@ -35,7 +57,7 @@
                     @foreach (var pageItem in otherPages)
                     {
                         <a asp-controller="Home" asp-action="Info" asp-route-slug="@pageItem.Slug"
-                           class="block px-3 py-2 rounded-xl transition font-medium @(pageItem.Slug == Model.Slug ? "bg-[#00296B] text-white font-bold" : "text-slate-700 hover:bg-slate-100")">
+                           class="block px-3 py-2 rounded-xl transition font-medium @(pageItem.Slug == Model.Slug ? "bg-[#00296B] text-white font-bold shadow-xs" : "text-slate-700 hover:bg-slate-100")">
                             @pageItem.Title
                         </a>
                     }
@@ -43,11 +65,11 @@
             </aside>
 
             <!-- Contenido Estructurado -->
-            <main class="lg:col-span-8 bg-white p-8 sm:p-12 rounded-3xl border border-slate-200/80 shadow-xs">
+            <article class="lg:col-span-8 bg-white p-8 sm:p-12 rounded-2xl border border-slate-200/90 shadow-xs">
                 <div class="prose prose-slate prose-lg max-w-none font-sans leading-relaxed text-slate-800 space-y-6">
                     @Html.Raw(Model.Content)
                 </div>
-            </main>
+            </article>
         </div>
-    </div>
+    </main>
 </div>

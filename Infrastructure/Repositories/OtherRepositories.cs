@@ -32,6 +32,14 @@ public class InformativePageRepository : IInformativePageRepository
     }
 
     public async Task DeleteAsync(string id) => await _col.DeleteOneAsync(p => p.Id == id);
+
+    public async Task<bool> SlugExistsAsync(string slug, string? excludeId = null)
+    {
+        var filter = Builders<InformativePage>.Filter.Eq(p => p.Slug, slug);
+        if (excludeId is not null)
+            filter &= Builders<InformativePage>.Filter.Ne(p => p.Id, excludeId);
+        return await _col.CountDocumentsAsync(filter) > 0;
+    }
 }
 
 public class ImageMetadataRepository : IImageMetadataRepository

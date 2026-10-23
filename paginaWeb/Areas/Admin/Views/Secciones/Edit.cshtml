@@ -28,6 +28,16 @@
         </div>
 
         <div>
+            <label asp-for="Subtitle" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                Subtítulo <span class="text-slate-400 normal-case font-normal">(aparece bajo el título en la página pública)</span>
+            </label>
+            <input asp-for="Subtitle"
+                   placeholder="ej: Lineamientos y compromisos que rigen nuestro ejercicio periodístico."
+                   class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+            <span asp-validation-for="Subtitle" class="text-xs text-rose-600 mt-1 block"></span>
+        </div>
+
+        <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Contenido Estructurado (Editor por Bloques)</label>
             <div id="editorCanvas"></div>
             <textarea asp-for="Content" id="ContentInput" class="hidden"></textarea>

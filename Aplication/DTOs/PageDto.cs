@@ -15,6 +15,10 @@ public class PageDto
     [Required(ErrorMessage = "El contenido es obligatorio.")]
     public string Content { get; set; } = string.Empty;
 
+    /// <summary>Texto breve que aparece bajo el título en la cabecera de la página pública.</summary>
+    [StringLength(300)]
+    public string Subtitle { get; set; } = string.Empty;
+
     public int Order { get; set; } = 0;
     public bool ShowInFooter { get; set; } = true;
 }

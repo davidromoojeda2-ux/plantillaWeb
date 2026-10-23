@@ -122,6 +122,7 @@ public static class MongoDbIndexer
             {
                 Title = "Políticas de Calidad y Ética Editorial",
                 Slug = "politicas-de-calidad",
+                Subtitle = "Lineamientos, compromisos editoriales y bases éticas que rigen nuestro ejercicio periodístico e institucional.",
                 Content = "<h2>1. Compromiso con la Veracidad</h2><p>Nuestro portal se rige por principios de rigor informativo, verificación exhaustiva de hechos y separación clara entre información y opinión.</p><h2>2. Independencia Editorial</h2><p>Las decisiones editoriales son completamente autónomas e independientes.</p>",
                 Order = 1,
                 ShowInFooter = true
@@ -130,6 +131,7 @@ public static class MongoDbIndexer
             {
                 Title = "Política de Privacidad y Cookies",
                 Slug = "politica-de-privacidad",
+                Subtitle = "Cómo recopilamos, usamos y protegemos tus datos personales al visitar nuestro portal.",
                 Content = "<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>",
                 Order = 2,
                 ShowInFooter = true

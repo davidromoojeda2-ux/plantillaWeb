@@ -5,15 +5,16 @@ namespace Aplication.DTOs;
 /// <summary>DTO de entrada para crear o editar un articulo editorial.</summary>
 public class ArticleDto
 {
-    [Required(ErrorMessage = "El titulo es obligatorio.")]
-    [StringLength(250, MinimumLength = 5)]
+    [Required(ErrorMessage = "El título es obligatorio.")]
+    [StringLength(250, MinimumLength = 5, ErrorMessage = "El título debe tener entre 5 y 250 caracteres.")]
     public string Title { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "El slug es obligatorio.")]
+    [StringLength(200, ErrorMessage = "El slug no puede superar los 200 caracteres.")]
     public string Slug { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "El resumen es obligatorio.")]
-    [StringLength(500, MinimumLength = 20)]
+    [StringLength(500, MinimumLength = 20, ErrorMessage = "El resumen debe tener entre 20 y 500 caracteres.")]
     public string Summary { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "El contenido es obligatorio.")]

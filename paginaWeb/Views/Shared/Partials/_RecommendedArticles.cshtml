@@ -2,25 +2,30 @@
 
 @if (Model.Articles != null && Model.Articles.Any())
 {
-    <section class="max-w-5xl mx-auto space-y-6">
+    <section class="w-full space-y-6 pt-4">
         <div class="flex items-center gap-3">
             <div class="h-px flex-1 bg-slate-200"></div>
             <h3 class="font-serif font-black text-xl text-[#00296B] whitespace-nowrap flex items-center gap-2">
-                <svg class="w-5 h-5 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <svg class="w-5 h-5 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
                 También te puede interesar
             </h3>
             <div class="h-px flex-1 bg-slate-200"></div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 ">
             @foreach (var rec in Model.Articles)
             {
-                var recImage = rec.CoverImageId != null && Model.Images != null && Model.Images.TryGetValue(rec.CoverImageId, out var ri) ? ri : null;
-                var recUrl = !string.IsNullOrWhiteSpace(rec.CoverImageUrl) ? rec.CoverImageUrl : ImageMapper.GetBestUrl(recImage);
+                var recImage = rec.CoverImageId != null && Model.Images != null && Model.Images.TryGetValue(rec.CoverImageId,
+        out var ri) ? ri : null;
+                var recUrl = !string.IsNullOrWhiteSpace(rec.CoverImageUrl) ? rec.CoverImageUrl :
+        ImageMapper.GetBestUrl(recImage);
                 <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@rec.Slug"
-                   class="group block bg-white rounded-none border border-slate-200/80 shadow-xs hover:shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1">
+                   class="group block bg-white border border-slate-200/90 shadow-xs hover:shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col">
                     <!-- Imagen -->
-                    <div class="h-64 sm:h-48 lg:h-44 bg-slate-100 overflow-hidden">
+                    <div class="aspect-video bg-slate-100 overflow-hidden">
                         @if (!string.IsNullOrEmpty(recUrl))
                         {
                             <img src="@recUrl" alt="@rec.Title"
@@ -28,27 +33,36 @@
                         }
                         else
                         {
-                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00296B]/10 to-[#FDC500]/10">
-                                <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <div
+                                class="w-full h-full aspect-video flex items-center justify-center bg-gradient-to-br from-[#00296B]/10 to-[#FDC500]/10">
+                                <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                             </div>
                         }
                     </div>
                     <!-- Contenido -->
                     <div class="p-6 sm:p-5 space-y-3 sm:space-y-2">
-                        <p class="text-xs sm:text-[10px] font-bold uppercase tracking-widest text-[#00509D]">@(Model.CategoryName ?? "Artículo")</p>
-                        <h4 class="font-serif font-bold text-slate-900 text-base sm:text-sm leading-snug line-clamp-2 group-hover:text-[#00296B] transition-colors">
-                            @rec.Title
-                        </h4>
-                        <div class="flex items-center gap-3 text-xs sm:text-[10px] text-slate-400 pt-1">
-                            <span class="flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                @rec.ReadingTimeMinutes min
-                            </span>
-                            <span>@rec.PublishedAt?.ToString("dd MMM yyyy")</span>
+                        <p class="text-sm sm:text-base md:text-lg font-bold uppercase tracking-widest text-[#00509D]">
+                            @(Model.CategoryName ?? "Artículo")</p>
+                            <h4
+                                class="font-serif font-bold text-slate-900 text-base sm:text-lg md:text-xl leading-snug line-clamp-2 group-hover:text-[#00296B] transition-colors">
+                                @rec.Title
+                            </h4>
+                            <div class="flex items-center gap-3 text-sm sm:text-base md:text-lg text-slate-400 pt-1">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    @rec.ReadingTimeMinutes min
+                                </span>
+                                <span>@rec.PublishedAt?.ToString("dd MMM yyyy")</span>
+                            </div>
                         </div>
-                    </div>
-                </a>
-            }
-        </div>
-    </section>
-}
+                    </a>
+                }
+            </div>
+        </section>
+    }

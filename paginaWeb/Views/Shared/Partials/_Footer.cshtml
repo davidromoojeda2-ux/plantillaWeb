@@ -5,29 +5,36 @@
 
 <footer class="bg-[#00296B] text-white pt-16 pb-12 mt-20 border-t border-white/10" id="acerca-de">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-white/10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-white/10">
             <!-- Columna Marca (ancho 2) -->
             <div class="lg:col-span-2 space-y-4">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-[#FDC500] text-[#00296B] font-bold text-2xl flex items-center justify-center shadow-lg">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-[#FDC500] text-[#00296B] font-bold text-2xl flex items-center justify-center shadow-lg">
                         N
                     </div>
                     <div>
-                        <span class="text-xl font-serif font-black tracking-tight text-white">PORTAL</span>
-                        <span class="text-xl font-serif font-bold tracking-tight text-[#FFD500]">NOTICIAS</span>
+                        <span class="text-xl font-serif font-black tracking-tight text-white">LOGO</span>
+                        <span class="text-xl font-serif font-bold tracking-tight text-[#FFD500]">WEB</span>
                     </div>
                 </div>
                 <p class="text-sm text-blue-100/80 leading-relaxed max-w-sm">
-                    Comprometidos con el periodismo riguroso, la verificación exhaustiva de los hechos y la cobertura en profundidad de los sucesos que transforman nuestro mundo.
+                    Slogan para la paginaWeb.
                 </p>
                 <div class="flex items-center gap-3 pt-2">
-                    <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" aria-label="X Twitter">
+                    <a href="#"
+                       class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+                       aria-label="X Twitter">
                         <span class="font-bold text-xs">𝕏</span>
                     </a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" aria-label="Facebook">
+                    <a href="#"
+                       class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+                       aria-label="Facebook">
                         <span class="font-bold text-xs">f</span>
                     </a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" aria-label="Instagram">
+                    <a href="#"
+                       class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
+                       aria-label="Instagram">
                         <span class="font-bold text-xs">📸</span>
                     </a>
                 </div>
@@ -37,44 +44,50 @@
             <div>
                 <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Secciones</h4>
                 <ul class="space-y-2.5 text-sm text-blue-100/90">
-                    <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="tecnologia" class="hover:text-white transition">Tecnología</a></li>
-                    <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="economia" class="hover:text-white transition">Economía</a></li>
-                    <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="cultura" class="hover:text-white transition">Cultura</a></li>
-                    <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="inteligencia-artificial" class="hover:text-white transition">Inteligencia Artificial</a></li>
-                </ul>
-            </div>
+                    <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="tecnologia"
+                               class="text-blue-200/70 hover:text-white transition">Tecnología</a></li>
+                        <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="economia"
+                                   class="text-blue-200/70 hover:text-white transition">Economía</a></li>
+                            <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="cultura"
+                                       class="text-blue-200/70 hover:text-white transition">Cultura</a></li>
+                                <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="inteligencia-artificial"
+                                           class="text-blue-200/70 hover:text-white transition">Inteligencia Artificial</a></li>
+                                </ul>
+                            </div>
 
-            <!-- Columna Institucional -->
-            <div>
-                <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Institucional</h4>
-                <ul class="space-y-2.5 text-sm text-blue-100/90">
-                    @foreach (var pageItem in footerPages)
-                    {
-                        <li>
-                            <a asp-controller="Home" asp-action="Info" asp-route-slug="@pageItem.Slug" class="hover:text-white transition">@pageItem.Title</a>
-                        </li>
-                    }
-                </ul>
-            </div>
+                            <!-- Columna Contacto / Redacción -->
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Redacción</h4>
+                                <ul class="space-y-2.5 text-sm text-blue-100/90">
+                                    <li><a asp-area="Admin" asp-controller="Auth" asp-action="Login"
+                                           class="text-blue-200 hover:text-white transition flex items-center gap-1.5 font-medium"><span>Acceso
+                                        a Redacción</span> →</a></li>
+                                        <li><span class="text-xs text-blue-200/70">contacto@portalnoticias.com</span></li>
+                                    </ul>
+                                </div>
+                            </div>
 
-            <!-- Columna Contacto / Redacción -->
-            <div>
-                <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Redacción</h4>
-                <ul class="space-y-2.5 text-sm text-blue-100/90">
-                    <li><a asp-area="Admin" asp-controller="Auth" asp-action="Login" class="text-blue-200 hover:text-white transition flex items-center gap-1.5 font-medium"><span>Acceso a Redacción</span> →</a></li>
-                    <li><span class="text-xs text-blue-200/70">contacto@portalnoticias.com</span></li>
-                    <li><span class="text-xs text-blue-200/70">Bogotá, Colombia</span></li>
-                </ul>
-            </div>
-        </div>
+                            <!-- Fila Inferior: Copyright ← → Institucional -->
+                            <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-200/70">
+                                <p>© @DateTime.UtcNow.Year Portal Noticias. Todos los derechos reservados.</p>
 
-        <!-- Fila Inferior de Copyright -->
-        <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-200/70">
-            <p>© @DateTime.UtcNow.Year Portal Noticias. Todos los derechos reservados.</p>
-            <div class="flex items-center gap-6">
-                <a asp-controller="Home" asp-action="Info" asp-route-slug="politica-de-privacidad" class="hover:text-white transition">Privacidad y Cookies</a>
-                <a asp-controller="Home" asp-action="Info" asp-route-slug="politicas-de-calidad" class="hover:text-white transition">Ética Editorial</a>
-            </div>
-        </div>
-    </div>
-</footer>
+                                <!-- Links Institucionales dinámicos al extremo derecho -->
+                                @if (footerPages.Any())
+                                {
+                                    <nav aria-label="Páginas institucionales"
+                                         class="flex items-center flex-wrap gap-x-6 gap-y-2 justify-center">
+                                        @foreach (var pageItem in footerPages)
+                                        {
+                                            <a asp-controller="Home" asp-action="Info" asp-route-slug="@pageItem.Slug"
+                                               class="text-blue-200/70 hover:text-white transition">@pageItem.Title</a>
+                                            @if (pageItem.Slug != footerPages.Last().Slug)
+                                            {
+                                                <span class="text-blue-200/40 px-2">|</span>
+                                            }
+                                        }
+                                    </nav>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </footer>

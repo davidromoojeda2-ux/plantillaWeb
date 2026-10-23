@@ -71,6 +71,7 @@ public interface IInformativePageRepository
     Task<List<InformativePage>> GetFooterPagesAsync();
     Task<InformativePage?> GetBySlugAsync(string slug);
     Task<InformativePage?> GetByIdAsync(string id);
+    Task<bool> SlugExistsAsync(string slug, string? excludeId = null);
     Task InsertAsync(InformativePage page);
     Task UpdateAsync(InformativePage page);
     Task DeleteAsync(string id);

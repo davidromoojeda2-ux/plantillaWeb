@@ -1,19 +1,10 @@
 using Aplication.DTOs;
 using Aplication.Mappers;
-using paginaWeb.Models.Category;
 
 namespace paginaWeb.Models.Home;
 
 // ─── View models de presentación de la Home ──────────────────────────────────
 // Son exclusivos de la capa de vista: no alteran DTOs, servicios ni la API.
-
-/// <summary>ViewModel fuertemente tipado para los resultados y estado de la búsqueda.</summary>
-public sealed record SearchViewModel(
-    string Query,
-    int CurrentPage,
-    int TotalPages,
-    long TotalCount,
-    IReadOnlyList<ArticleCardViewModel> Items);
 
 /// <summary>Imagen de tarjeta con dimensiones explícitas para evitar saltos de layout (CLS).</summary>
 public sealed record CardImage(string? Url, string Alt, int Width, int Height)
@@ -27,16 +18,78 @@ public sealed record FeatureCardViewModel(
     string Text,
     string Category,
     string Href,
-    CardImage Image);
+    CardImage Image,
+    DateTime? PublishedAt = null,
+    string? Author = null,
+    int ReadingMinutes = 3);
 
-/// <summary>Tarjeta de la cuadrícula "Últimas publicaciones".</summary>
+/// <summary>Tarjeta de la cuadrícula "Últimas publicaciones" y catálogo general de artículos.</summary>
 public sealed record PostCardViewModel(
     string Title,
     string Excerpt,
     string Category,
     DateTime? PublishedAt,
     string Href,
-    CardImage Image);
+    CardImage Image,
+    bool AsGridItem = true,
+    string? CustomClass = null)
+{
+    public static PostCardViewModel FromArticle(
+        paginaWeb.Models.Category.ArticleCardViewModel item,
+        string? href = null,
+        bool asGridItem = true)
+    {
+        var slug = item.Article?.Slug ?? string.Empty;
+        var finalHref = !string.IsNullOrWhiteSpace(href) ? href : $"/articulos/{slug}";
+        var title = item.Article?.Title ?? "Publicación";
+        var excerpt = item.Article?.Summary ?? string.Empty;
+        var category = !string.IsNullOrWhiteSpace(item.CategoryName) ? item.CategoryName : "Actualidad";
+        var imageUrl = !string.IsNullOrWhiteSpace(item.ImageUrl) ? item.ImageUrl : item.Article?.CoverImageUrl;
+
+        return new PostCardViewModel(
+            Title: title,
+            Excerpt: excerpt,
+            Category: category,
+            PublishedAt: item.Article?.PublishedAt,
+            Href: finalHref,
+            Image: new CardImage(
+                Url: imageUrl,
+                Alt: title,
+                Width: 800,
+                Height: 500),
+            AsGridItem: asGridItem
+        );
+    }
+
+    public static PostCardViewModel FromDto(
+        Aplication.DTOs.ArticleResponseDto? article,
+        string? categoryName = null,
+        string? imageUrl = null,
+        string? href = null,
+        bool asGridItem = true)
+    {
+        var slug = article?.Slug ?? string.Empty;
+        var finalHref = !string.IsNullOrWhiteSpace(href) ? href : $"/articulos/{slug}";
+        var title = article?.Title ?? "Publicación";
+        var excerpt = article?.Summary ?? string.Empty;
+        var category = !string.IsNullOrWhiteSpace(categoryName) ? categoryName : "Actualidad";
+        var finalImageUrl = !string.IsNullOrWhiteSpace(imageUrl) ? imageUrl : article?.CoverImageUrl;
+
+        return new PostCardViewModel(
+            Title: title,
+            Excerpt: excerpt,
+            Category: category,
+            PublishedAt: article?.PublishedAt,
+            Href: finalHref,
+            Image: new CardImage(
+                Url: finalImageUrl,
+                Alt: title,
+                Width: 800,
+                Height: 500),
+            AsGridItem: asGridItem
+        );
+    }
+}
 
 /// <summary>Bloque de la fila "Destacados".</summary>
 public sealed record FeaturedBlockViewModel(
@@ -71,7 +124,8 @@ public sealed record CategoryBentoCardViewModel(
     string? ParentName,
     string? ParentSlug,
     IReadOnlyList<CategoryResponseDto> Subcategories,
-    int ArticleCount = 0);
+    int ArticleCount = 0,
+    string? ImageUrl = null);
 
 /// <summary>Sección 'Encuentra el tema de tu interés' estructurada en formato Bento de 2 columnas.</summary>
 public sealed record CategorySectionViewModel(
@@ -117,16 +171,19 @@ public static class HomePageViewModelFactory
         var catDict = allCategories.ToDictionary(c => c.Id, c => c.Name);
 
         // 1. Hero
-        var heroSource = (featured.Count > 0 ? featured : recent).Take(3).ToList();
+        var heroSource = (featured.Count > 0 ? featured : recent).Take(5).ToList();
         var hero = new HeroViewModel(
-            Title: "Periodismo que explica el mundo",
+            Title: "TITULO DE LA PAGINA WEB",
             Subtitle: "Noticias verificadas, análisis en profundidad y coberturas especiales de actualidad.",
             Cards: heroSource.Select(a => new FeatureCardViewModel(
                 a.Title,
                 a.Summary,
                 CategoryName(a, catDict, "Especial"),
                 articleHref(a.Slug),
-                ResolveImage(a, images))).ToList());
+                ResolveImage(a, images),
+                a.PublishedAt,
+                a.Author,
+                EstimateReadingMinutes(a.Content ?? a.Summary))).ToList());
 
         // 2. Últimas entradas en dos columnas (3 principales/destacadas a la izquierda, 3 recientes a la derecha)
         var featuredEntriesSource = (featured.Count >= 3 ? featured : recent).Take(ColumnEntryCount).ToList();
@@ -162,6 +219,8 @@ public static class HomePageViewModelFactory
             LinkHref: searchHref);
 
         // 3. Sección Bento: 'Encuentra el tema de tu interés'
+        var allArticles = recent.Concat(featured).DistinctBy(a => a.Id).ToList();
+
         var mainCategories = allCategories
             .Where(c => string.IsNullOrEmpty(c.ParentId) && c.IsActive)
             .OrderBy(c => c.Order)
@@ -180,43 +239,29 @@ public static class HomePageViewModelFactory
 
         // SubCard 1 (Izquierda abajo - ej: Neurociencia)
         var sub1 = mainSubs.ElementAtOrDefault(0);
-        var subCardLeft = sub1 != null
-            ? new CategoryBentoCardViewModel(
-                Name: sub1.Name,
-                Slug: sub1.Slug,
-                Description: sub1.Description ?? "Explora avances, investigaciones y perspectivas científicas especializadas.",
-                IsMainCategory: false,
-                ParentName: mainCat.Name,
-                ParentSlug: mainCat.Slug,
-                Subcategories: [])
-            : new CategoryBentoCardViewModel(
-                Name: "Neurociencia",
-                Slug: "neurociencia",
-                Description: "Plasticidad cerebral, cognición y salud mental.",
-                IsMainCategory: false,
-                ParentName: mainCat.Name,
-                ParentSlug: mainCat.Slug,
-                Subcategories: []);
+        var sub1Cat = sub1 ?? new CategoryResponseDto { Name = "Neurociencia", Slug = "neurociencia", Description = "Plasticidad cerebral, cognición y salud mental." };
+        var subCardLeft = new CategoryBentoCardViewModel(
+            Name: sub1Cat.Name,
+            Slug: sub1Cat.Slug,
+            Description: sub1Cat.Description ?? "Explora avances, investigaciones y perspectivas científicas especializadas.",
+            IsMainCategory: false,
+            ParentName: mainCat.Name,
+            ParentSlug: mainCat.Slug,
+            Subcategories: [],
+            ImageUrl: GetRandomImageForCategory(sub1Cat, allArticles, images, allCategories));
 
         // SubCard 2 (Derecha arriba - ej: Nutrición y Longevidad)
         var sub2 = mainSubs.ElementAtOrDefault(1);
-        var subCardRightTop = sub2 != null
-            ? new CategoryBentoCardViewModel(
-                Name: sub2.Name,
-                Slug: sub2.Slug,
-                Description: sub2.Description ?? "Artículos de divulgación y hábitos orientados a la longevidad saludable.",
-                IsMainCategory: false,
-                ParentName: mainCat.Name,
-                ParentSlug: mainCat.Slug,
-                Subcategories: [])
-            : new CategoryBentoCardViewModel(
-                Name: "Nutrición y Longevidad",
-                Slug: "nutricion-longevidad",
-                Description: "Metabolismo, microbioma y hábitos para una vida longeva.",
-                IsMainCategory: false,
-                ParentName: mainCat.Name,
-                ParentSlug: mainCat.Slug,
-                Subcategories: []);
+        var sub2Cat = sub2 ?? new CategoryResponseDto { Name = "Nutrición y Longevidad", Slug = "nutricion-longevidad", Description = "Metabolismo, microbioma y hábitos para una vida longeva." };
+        var subCardRightTop = new CategoryBentoCardViewModel(
+            Name: sub2Cat.Name,
+            Slug: sub2Cat.Slug,
+            Description: sub2Cat.Description ?? "Artículos de divulgación y hábitos orientados a la longevidad saludable.",
+            IsMainCategory: false,
+            ParentName: mainCat.Name,
+            ParentSlug: mainCat.Slug,
+            Subcategories: [],
+            ImageUrl: GetRandomImageForCategory(sub2Cat, allArticles, images, allCategories));
 
         // SubCard 3 (Derecha abajo grande - segunda categoría principal o subcategoría hermana)
         var secondMainCat = mainCategories.FirstOrDefault(c => c.Id != mainCat.Id)
@@ -224,24 +269,17 @@ public static class HomePageViewModelFactory
         var secondSubs = secondMainCat != null
             ? allCategories.Where(c => c.ParentId == secondMainCat.Id && c.IsActive).Take(4).ToList()
             : new List<CategoryResponseDto>();
+        var secondCat = secondMainCat ?? new CategoryResponseDto { Name = "Ciencia y Exploración", Slug = "ciencia-exploracion", Description = "Descubrimientos del universo, física, biotecnología y avances de frontera." };
 
-        var subCardRightBottom = secondMainCat != null
-            ? new CategoryBentoCardViewModel(
-                Name: secondMainCat.Name,
-                Slug: secondMainCat.Slug,
-                Description: secondMainCat.Description ?? "Descubrimientos del universo, física, biotecnología y ciencias biológicas.",
-                IsMainCategory: string.IsNullOrEmpty(secondMainCat.ParentId),
-                ParentName: null,
-                ParentSlug: null,
-                Subcategories: secondSubs)
-            : new CategoryBentoCardViewModel(
-                Name: "Ciencia y Exploración",
-                Slug: "ciencia-exploracion",
-                Description: "Descubrimientos del universo, física, biotecnología y avances de frontera.",
-                IsMainCategory: true,
-                ParentName: null,
-                ParentSlug: null,
-                Subcategories: []);
+        var subCardRightBottom = new CategoryBentoCardViewModel(
+            Name: secondCat.Name,
+            Slug: secondCat.Slug,
+            Description: secondCat.Description ?? "Descubrimientos del universo, física, biotecnología y ciencias biológicas.",
+            IsMainCategory: string.IsNullOrEmpty(secondCat.ParentId),
+            ParentName: null,
+            ParentSlug: null,
+            Subcategories: secondSubs,
+            ImageUrl: GetRandomImageForCategory(secondCat, allArticles, images, allCategories));
 
         var mainBentoCard = new CategoryBentoCardViewModel(
             Name: mainCat.Name,
@@ -250,7 +288,8 @@ public static class HomePageViewModelFactory
             IsMainCategory: true,
             ParentName: null,
             ParentSlug: null,
-            Subcategories: mainSubs);
+            Subcategories: mainSubs,
+            ImageUrl: GetRandomImageForCategory(mainCat, allArticles, images, allCategories));
 
         var categorySection = new CategorySectionViewModel(
             Title: "Encuentra el tema de tu interés",
@@ -271,6 +310,90 @@ public static class HomePageViewModelFactory
             Posts: recentEntries,
             FeaturedHeader: entriesHeader,
             Featured: []);
+    }
+
+    private static string? GetRandomImageForCategory(
+        CategoryResponseDto? category,
+        IReadOnlyList<ArticleResponseDto> articles,
+        IReadOnlyDictionary<string, ImageMetadataResponseDto> images,
+        IReadOnlyList<CategoryResponseDto>? allCategories = null)
+    {
+        if (category is null) return FallbackImageForSlug(null);
+
+        // Subcategorías de esta categoría si es padre
+        var childCatIds = allCategories != null
+            ? allCategories.Where(c => c.ParentId == category.Id).Select(c => c.Id).ToHashSet()
+            : new HashSet<string>();
+
+        // Artículos que pertenecen a la categoría o a sus subcategorías
+        var candidateArticles = articles.Where(a =>
+            (!string.IsNullOrEmpty(category.Id) && (a.CategoryId == category.Id || a.SubcategoryId == category.Id)) ||
+            (!string.IsNullOrEmpty(a.CategoryId) && childCatIds.Contains(a.CategoryId)) ||
+            (!string.IsNullOrEmpty(a.SubcategoryId) && childCatIds.Contains(a.SubcategoryId))
+        ).ToList();
+
+        if (candidateArticles.Count == 0 && !string.IsNullOrEmpty(category.Slug))
+        {
+            var slugKey = category.Slug.Replace("-", " ");
+            candidateArticles = articles.Where(a =>
+                (a.Slug != null && a.Slug.Contains(category.Slug, StringComparison.OrdinalIgnoreCase)) ||
+                (a.Title != null && a.Title.Contains(slugKey, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
+        var candidateUrls = candidateArticles
+            .Select(a => ResolveArticleImageUrl(a, images))
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .Distinct()
+            .ToList();
+
+        if (candidateUrls.Count > 0)
+        {
+            var idx = Random.Shared.Next(candidateUrls.Count);
+            return candidateUrls[idx];
+        }
+
+        return FallbackImageForSlug(category.Slug);
+    }
+
+    private static string? ResolveArticleImageUrl(
+        ArticleResponseDto article,
+        IReadOnlyDictionary<string, ImageMetadataResponseDto> images)
+    {
+        if (!string.IsNullOrWhiteSpace(article.CoverImageUrl))
+            return article.CoverImageUrl;
+
+        if (article.CoverImageId != null && images.TryGetValue(article.CoverImageId, out var cover))
+        {
+            return ImageMapper.GetUrlForWidth(cover, 1200) ?? ImageMapper.GetBestUrl(cover);
+        }
+
+        return null;
+    }
+
+    private static string FallbackImageForSlug(string? slug)
+    {
+        var s = slug?.ToLowerInvariant() ?? string.Empty;
+        if (s.Contains("neuro"))
+            return "https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=1200&q=80";
+        if (s.Contains("nutri") || s.Contains("longevidad"))
+            return "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=1200&q=80";
+        if (s.Contains("salud") || s.Contains("bienestar") || s.Contains("medicina"))
+            return "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1200&q=80";
+        if (s.Contains("astro") || s.Contains("espacio") || s.Contains("universo"))
+            return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80";
+        if (s.Contains("bio"))
+            return "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80";
+        if (s.Contains("ciencia"))
+            return "https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=1200&q=80";
+        if (s.Contains("habitat") || s.Contains("sostenib") || s.Contains("energia") || s.Contains("arqui"))
+            return "https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1200&q=80";
+        if (s.Contains("cultura") || s.Contains("cine") || s.Contains("musica") || s.Contains("arte"))
+            return "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80";
+        if (s.Contains("gastro") || s.Contains("cafe") || s.Contains("cocina"))
+            return "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80";
+
+        return "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80";
     }
 
     private static string CategoryName(
@@ -297,5 +420,12 @@ public static class HomePageViewModelFactory
         var alt = !string.IsNullOrWhiteSpace(cover?.Alt) ? cover!.Alt : article.Title;
 
         return new CardImage(url, alt, CardImageWidth, CardImageHeight);
+    }
+
+    private static int EstimateReadingMinutes(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 3;
+        var words = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+        return Math.Max(2, (int)Math.Ceiling(words / 200.0));
     }
 }

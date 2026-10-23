@@ -1,0 +1,49 @@
+@model paginaWeb.Models.Publicaciones.SearchBarViewModel
+@{
+    var vm = Model ?? new paginaWeb.Models.Publicaciones.SearchBarViewModel();
+    var isSearch = vm.IsSearch;
+    var inputId = vm.InputId ?? (vm.IsHeroSearch ? "hero-search-input" : "search-input");
+}
+
+@if (vm.IsHeroSearch)
+{
+    <form class="@(vm.FormClass ?? "hero__search")" asp-controller="@vm.Controller" asp-action="@vm.Action" method="get" role="search">
+        <label for="@inputId" class="sr-only">Buscar noticias</label>
+        <input id="@inputId" class="@(vm.InputClass ?? "hero__search-input")" type="search" name="q" value="@vm.Query"
+               placeholder="@vm.Placeholder" autocomplete="off" />
+        <button id="hero-search-btn" type="submit" class="@(vm.ButtonClass ?? "btn btn--accent")">Buscar</button>
+    </form>
+}
+else
+{
+    <div class="page-hero__search-box">
+        <form method="get" asp-controller="@vm.Controller" asp-action="@vm.Action" class="@(vm.FormClass ?? "page-hero__search-form")" role="search">
+            <label for="@inputId" class="sr-only">Buscar publicaciones</label>
+            <input id="@inputId" type="search" name="q" value="@vm.Query" placeholder="@vm.Placeholder"
+                   class="@(vm.InputClass ?? "page-hero__search-input")" autocomplete="off" aria-label="Buscar publicaciones" />
+            <button type="submit" class="@(vm.ButtonClass ?? "page-hero__search-btn")">
+                Buscar
+            </button>
+            @if (isSearch)
+            {
+                <a asp-controller="@vm.Controller" asp-action="@vm.Action" class="page-hero__clear-btn">
+                    Limpiar
+                </a>
+            }
+        </form>
+
+        @if (vm.ShowCount && vm.TotalCount.HasValue)
+        {
+            <div class="page-hero__count" aria-live="polite">
+                @if (isSearch)
+                {
+                    <span>Se encontraron <strong class="text-[#FDC500]">@vm.TotalCount.Value</strong> resultados para "<strong class="text-white">@vm.Query</strong>"</span>
+                }
+                else
+                {
+                    <span>Mostrando <strong class="text-[#FDC500]">@vm.TotalCount.Value</strong> publicaciones disponibles</span>
+                }
+            </div>
+        }
+    </div>
+}

@@ -121,6 +121,11 @@ public class PageService : IPageService
     public async Task<PageResponseDto> CreateAsync(PageDto dto)
     {
         var page = PageMapper.ToEntity(dto);
+        page.ValidarInvariantes();
+
+        if (await _repo.SlugExistsAsync(page.Slug))
+            throw new DuplicateSlugException(page.Slug);
+
         await _repo.InsertAsync(page);
         return PageMapper.ToDto(page);
     }
@@ -131,6 +136,11 @@ public class PageService : IPageService
             ?? throw new NotFoundException("Sección", id);
 
         PageMapper.ApplyUpdate(page, dto);
+        page.ValidarInvariantes();
+
+        if (await _repo.SlugExistsAsync(page.Slug, id))
+            throw new DuplicateSlugException(page.Slug);
+
         await _repo.UpdateAsync(page);
         return PageMapper.ToDto(page);
     }

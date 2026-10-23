@@ -209,8 +209,8 @@ html {
     visibility: hidden;
     transform: translateY(-8px);
     transition: opacity var(--nav-dur-hover) var(--nav-ease-out),
-                transform var(--nav-dur-hover) var(--nav-ease-out),
-                visibility 0s linear var(--nav-dur-hover);
+        transform var(--nav-dur-hover) var(--nav-ease-out),
+        visibility 0s linear var(--nav-dur-hover);
 }
 
 .site-nav.is-open .site-nav__menu {
@@ -285,7 +285,7 @@ html {
     transform: none;
 }
 
-.site-nav__dropdown.is-open > .dropdown.mega-menu {
+.site-nav__dropdown.is-open>.dropdown.mega-menu {
     display: block;
 }
 
@@ -423,15 +423,29 @@ html {
     transition: transform var(--nav-dur-link) var(--nav-ease-out), opacity var(--nav-dur-link) var(--nav-ease-out);
 }
 
-.site-nav__toggle-bar:nth-child(1) { transform: translateY(-7px); }
-.site-nav__toggle-bar:nth-child(3) { transform: translateY(7px); }
+.site-nav__toggle-bar:nth-child(1) {
+    transform: translateY(-7px);
+}
 
-.site-nav.is-open .site-nav__toggle-bar:nth-child(1) { transform: rotate(45deg); }
-.site-nav.is-open .site-nav__toggle-bar:nth-child(2) { opacity: 0; }
-.site-nav.is-open .site-nav__toggle-bar:nth-child(3) { transform: rotate(-45deg); }
+.site-nav__toggle-bar:nth-child(3) {
+    transform: translateY(7px);
+}
+
+.site-nav.is-open .site-nav__toggle-bar:nth-child(1) {
+    transform: rotate(45deg);
+}
+
+.site-nav.is-open .site-nav__toggle-bar:nth-child(2) {
+    opacity: 0;
+}
+
+.site-nav.is-open .site-nav__toggle-bar:nth-child(3) {
+    transform: rotate(-45deg);
+}
 
 /* ─── Media Queries Progresivas (Mobile First) ────────────────────────── */
 @media (min-width: 900px) {
+
     .site-nav__toggle,
     .site-nav__cta--mobile {
         display: none;
@@ -495,7 +509,7 @@ html {
         transform: scaleX(1);
     }
 
-    /* Mega Menú Horizontal en Escritorio (Estilo Shopify) */
+    /* Mega Menú Horizontal en Escritorio */
     .site-nav__dropdown--mega {
         position: static;
     }
@@ -507,10 +521,10 @@ html {
         right: 0;
         width: 100%;
         min-width: 100%;
-        background: #FFFFFF;
+        background: var(--nav-accent);
         border-top: 1px solid #E2E8F0;
-        border-bottom: 1px solid #CBD5E1;
-        border-radius: 0 0 16px 16px;
+        border-bottom: 4px solid var(--nav-navy-900);
+        border-radius: 0px;
         box-shadow: 0 25px 50px -12px rgba(0, 32, 77, 0.15), 0 10px 20px -5px rgba(0, 32, 77, 0.08);
         padding: 0;
         margin: 0;
@@ -518,8 +532,8 @@ html {
         visibility: hidden;
         transform: translateY(-8px);
         transition: opacity var(--nav-dur-link) var(--nav-ease-out),
-                    transform var(--nav-dur-link) var(--nav-ease-out),
-                    visibility 0s linear var(--nav-dur-link);
+            transform var(--nav-dur-link) var(--nav-ease-out),
+            visibility 0s linear var(--nav-dur-link);
         z-index: 60;
     }
 
@@ -532,9 +546,9 @@ html {
         height: 12px;
     }
 
-    .site-nav__dropdown--mega.is-open > .dropdown.mega-menu,
-    .site-nav__dropdown--mega:hover > .dropdown.mega-menu,
-    .site-nav__dropdown--mega:focus-within > .dropdown.mega-menu {
+    .site-nav__dropdown--mega.is-open>.dropdown.mega-menu,
+    .site-nav__dropdown--mega:hover>.dropdown.mega-menu,
+    .site-nav__dropdown--mega:focus-within>.dropdown.mega-menu {
         display: block;
         opacity: 1;
         visibility: visible;
@@ -683,8 +697,8 @@ html {
         visibility: hidden;
         transform: translate(-50%, -8px);
         transition: opacity var(--nav-dur-link) var(--nav-ease-out),
-                    transform var(--nav-dur-link) var(--nav-ease-out),
-                    visibility 0s linear var(--nav-dur-link);
+            transform var(--nav-dur-link) var(--nav-ease-out),
+            visibility 0s linear var(--nav-dur-link);
         z-index: 60;
     }
 
@@ -697,9 +711,9 @@ html {
         height: 8px;
     }
 
-    .site-nav__dropdown:not(.site-nav__dropdown--mega).is-open > .dropdown,
-    .site-nav__dropdown:not(.site-nav__dropdown--mega):hover > .dropdown,
-    .site-nav__dropdown:not(.site-nav__dropdown--mega):focus-within > .dropdown {
+    .site-nav__dropdown:not(.site-nav__dropdown--mega).is-open>.dropdown,
+    .site-nav__dropdown:not(.site-nav__dropdown--mega):hover>.dropdown,
+    .site-nav__dropdown:not(.site-nav__dropdown--mega):focus-within>.dropdown {
         display: block;
         opacity: 1;
         visibility: visible;
