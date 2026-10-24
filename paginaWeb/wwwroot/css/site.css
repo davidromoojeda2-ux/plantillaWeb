@@ -1087,3 +1087,65 @@ html {
 #articleBody {
     overflow: visible;
 }
+
+/* ─── Footer: redes sociales con iconos SVG ─────────────────────────────── */
+.social-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+}
+
+.social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: #FFFFFF;
+    background: rgb(255 255 255 / 0.08);
+    border: 1px solid rgb(255 255 255 / 0.16);
+    text-decoration: none;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+    transition: color var(--nav-dur-link) var(--nav-ease-out),
+        background-color var(--nav-dur-link) var(--nav-ease-out),
+        border-color var(--nav-dur-link) var(--nav-ease-out),
+        box-shadow var(--nav-dur-link) var(--nav-ease-out),
+        transform var(--nav-dur-link) var(--nav-ease-out);
+}
+
+.social-link:hover {
+    color: var(--nav-navy-900);
+    background: var(--nav-accent);
+    border-color: var(--nav-accent);
+    box-shadow: 0 10px 20px -8px rgb(0 0 0 / 0.45);
+    transform: translateY(-2px);
+}
+
+.social-link:focus-visible {
+    outline: 2px solid var(--nav-accent);
+    outline-offset: 3px;
+}
+
+.social-link:active {
+    transform: translateY(0) scale(0.96);
+}
+
+.social-link__icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .social-link {
+        transition: none;
+    }
+
+    .social-link:hover,
+    .social-link:active {
+        transform: none;
+    }
+}

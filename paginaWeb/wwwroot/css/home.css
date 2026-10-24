@@ -1552,7 +1552,26 @@ body {
     box-shadow: 0 8px 20px -4px rgba(0, 41, 107, 0.12);
 }
 
+/* Límites modernos para las tarjetas de "Más Recientes" (img1):
+   acento vertical a la izquierda + borde inferior más definido. */
+.entries-panel--recent .card-h {
+    border-color: #DFE4EC;
+    border-bottom-color: #CFD7E2;
+    border-left: 3px solid #00509D;
+    border-radius: 4px 12px 12px 4px;
+    box-shadow: 0 1px 2px rgba(0, 41, 107, 0.04);
+}
 
+.entries-panel--recent .card-h:hover {
+    border-color: #D2D9E4;
+    border-left-color: #FDC500;
+    box-shadow: 0 10px 24px -10px rgba(0, 41, 107, 0.22);
+}
+
+.entries-panel--recent .card-h:focus-visible {
+    outline: 3px solid #FDC500;
+    outline-offset: 3px;
+}
 
 /* La imagen se adapta al ancho de la tarjeta manteniendo proporción 4:3 */
 .card-h__media {
