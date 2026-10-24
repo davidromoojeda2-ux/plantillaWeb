@@ -382,6 +382,45 @@ html {
     display: none;
 }
 
+/* El menú móvil usa el amarillo corporativo del mega-menú de escritorio */
+@media (max-width: 899.98px) {
+    .site-nav__menu {
+        background: var(--nav-accent);
+        border-bottom: 4px solid var(--nav-navy-900);
+    }
+
+    .site-nav__menu .site-nav__link {
+        color: var(--nav-navy-900);
+    }
+
+    .site-nav__menu .site-nav__link:hover,
+    .site-nav__menu .site-nav__link[aria-current="page"] {
+        background-color: rgba(255, 255, 255, 0.5);
+        color: var(--nav-navy-900);
+    }
+
+    .mega-menu__column {
+        border-left-color: rgba(0, 41, 107, 0.22);
+    }
+
+    .mega-menu__header {
+        color: var(--nav-navy-900);
+    }
+
+    .mega-menu__sublink {
+        color: #1E3A5F;
+    }
+
+    .mega-menu__sublink:hover {
+        background: rgba(255, 255, 255, 0.55);
+        color: var(--nav-navy-900);
+    }
+
+    .mega-menu__sublink:hover .mega-menu__bullet {
+        background: var(--nav-navy-900);
+    }
+}
+
 /* ─── Acciones a la Derecha ──────────────────────────────────────────── */
 .site-nav__actions {
     justify-self: end;

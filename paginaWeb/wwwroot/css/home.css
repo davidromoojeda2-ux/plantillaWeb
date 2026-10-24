@@ -735,19 +735,36 @@ body {
 .link-arrow {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-3);
-    min-height: var(--tap-min);
-    border-radius: var(--radius-md);
-    color: var(--c-navy-500);
-    font: 700 var(--fs-small) / 1 var(--font-ui);
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 40px;
+    padding: 0.5rem 1.125rem;
+    border: 1px solid var(--c-navy-900);
+    border-radius: var(--radius-pill);
+    background: #FFFFFF;
+    color: var(--c-navy-900);
+    font: 700 0.8125rem / 1 var(--font-ui);
     text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--dur-link) var(--ease-out),
+        background-color var(--dur-link) var(--ease-out),
+        border-color var(--dur-link) var(--ease-out),
+        box-shadow var(--dur-link) var(--ease-out),
+        transform var(--dur-link) var(--ease-out);
 }
 
 .link-arrow:hover {
-    color: var(--c-navy-900);
+    background: var(--c-navy-900);
+    border-color: var(--c-navy-900);
+    color: #FFFFFF;
+    box-shadow: 0 8px 18px -6px rgba(0, 41, 107, 0.45);
+    transform: translateY(-1px);
 }
 
 .link-arrow__icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
     transition: transform var(--dur-link) var(--ease-out);
 }
 
@@ -1358,7 +1375,7 @@ body {
     }
 
     .link-arrow:hover .link-arrow__icon {
-        transform: translateX(var(--arrow-shift));
+        transform: translate(2px, -2px);
     }
 
     .btn:hover {
@@ -1385,7 +1402,7 @@ body {
     }
 
     .link-arrow:active .link-arrow__icon {
-        transform: translateX(var(--arrow-shift));
+        transform: translate(2px, -2px);
     }
 }
 
@@ -1621,6 +1638,46 @@ body {
 .card-h:hover .card-h__arrow {
     transform: translate(3px, -3px);
     color: #00296B;
+}
+
+/* Tarjetas del bloque izquierdo: imagen a sangre, de borde a borde vertical */
+.entries-panel--featured .card-h {
+    padding: 0;
+    gap: 0;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.entries-panel--featured .card-h__media {
+    width: clamp(112px, 30%, 180px);
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+    align-self: stretch;
+}
+
+.entries-panel--featured .card-h__img,
+.entries-panel--featured .card-h__fallback {
+    border-radius: 0;
+}
+
+.entries-panel--featured .card-h__body {
+    justify-content: center;
+    padding: 0.875rem 0.75rem 0.875rem 1rem;
+}
+
+.entries-panel--featured .card-h__arrow {
+    align-self: center;
+    margin-right: 1rem;
+}
+
+@media (max-width: 479.98px) {
+    .entries-panel--featured .card-h__body {
+        padding: 0.75rem 0.5rem 0.75rem 0.875rem;
+    }
+
+    .entries-panel--featured .card-h__arrow {
+        margin-right: 0.75rem;
+    }
 }
 
 /* ─── 17. Sección 'Encuentra el tema de tu interés' (Colores Base del Tema) ── */
