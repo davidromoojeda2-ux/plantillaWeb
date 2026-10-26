@@ -19,6 +19,11 @@ public class ArticleRepository : IArticleRepository
         await _col.Find(a => a.Status == ArticleStatus.Publicado && a.Featured)
                   .SortByDescending(a => a.PublishedAt).Limit(take).ToListAsync();
 
+    public async Task<List<Article>> GetMostReadAsync(int take = 5) =>
+        await _col.Find(a => a.Status == ArticleStatus.Publicado)
+                  .Sort(Builders<Article>.Sort.Descending(a => a.ViewCount).Descending(a => a.PublishedAt))
+                  .Limit(take).ToListAsync();
+
     public async Task<List<Article>> GetByCategoryAsync(string categoryId, int skip = 0, int take = 9) =>
         await _col.Find(a => a.Status == ArticleStatus.Publicado && (a.CategoryId == categoryId || a.SubcategoryId == categoryId))
                   .SortByDescending(a => a.PublishedAt).Skip(skip).Limit(take).ToListAsync();

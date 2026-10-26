@@ -6,13 +6,13 @@
     var encodedTitle = Uri.EscapeDataString(rawTitle);
 }
 
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center gap-2 sm:gap-3">
+<div
+    class="bg-white rounded-xl border border-slate-200/80 shadow-xs px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center gap-2 sm:gap-3">
     <span class="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-slate-400 mr-1">Compartir:</span>
 
     <!-- Twitter/X -->
     <a id="share-twitter" href="https://twitter.com/intent/tweet?url=@encodedUrl&text=@encodedTitle" target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Compartir en X / Twitter" title="Compartir en X / Twitter"
+       rel="noopener noreferrer" aria-label="Compartir en X / Twitter" title="Compartir en X / Twitter"
        class="flex items-center justify-center gap-2 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full bg-black hover:bg-slate-800 text-white text-xs font-semibold transition-all duration-200 hover:scale-105 shadow-xs">
         <svg class="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -23,8 +23,7 @@
 
     <!-- Facebook -->
     <a id="share-facebook" href="https://www.facebook.com/sharer/sharer.php?u=@encodedUrl" target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Compartir en Facebook" title="Compartir en Facebook"
+       rel="noopener noreferrer" aria-label="Compartir en Facebook" title="Compartir en Facebook"
        class="flex items-center justify-center gap-2 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full bg-[#1877F2] hover:bg-[#166FE5] text-white text-xs font-semibold transition-all duration-200 hover:scale-105 shadow-xs">
         <svg class="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -35,8 +34,7 @@
 
     <!-- LinkedIn -->
     <a id="share-linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=@encodedUrl" target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Compartir en LinkedIn" title="Compartir en LinkedIn"
+       rel="noopener noreferrer" aria-label="Compartir en LinkedIn" title="Compartir en LinkedIn"
        class="flex items-center justify-center gap-2 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full bg-[#0A66C2] hover:bg-[#0959AA] text-white text-xs font-semibold transition-all duration-200 hover:scale-105 shadow-xs">
         <svg class="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -47,8 +45,7 @@
 
     <!-- WhatsApp -->
     <a id="share-whatsapp" href="https://api.whatsapp.com/send?text=@encodedTitle%20@encodedUrl" target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Compartir en WhatsApp" title="Compartir en WhatsApp"
+       rel="noopener noreferrer" aria-label="Compartir en WhatsApp" title="Compartir en WhatsApp"
        class="flex items-center justify-center gap-2 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full bg-[#25D366] hover:bg-[#20BD5C] text-white text-xs font-semibold transition-all duration-200 hover:scale-105 shadow-xs">
         <svg class="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -58,8 +55,7 @@
     </a>
 
     <!-- Copiar enlace -->
-    <button id="copyLinkBtn" type="button"
-            aria-label="Copiar enlace" title="Copiar enlace"
+    <button id="copyLinkBtn" type="button" aria-label="Copiar enlace" title="Copiar enlace"
             class="flex items-center justify-center gap-2 w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all duration-200 hover:scale-105 shadow-xs ml-auto">
         <svg class="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

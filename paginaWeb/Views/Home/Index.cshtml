@@ -115,19 +115,23 @@
                 </div>
             </div>
 
-            <!-- ── Columna Derecha: Recientes (Azul Corporativo Base) ── -->
-            <div class="entries-panel entries-panel--recent">
+            <!-- ── Columna Derecha: Top Más Leídos (Azul Corporativo Base) ── -->
+            <div class="entries-panel entries-panel--popular entries-panel--recent">
                 <div class="entries-panel__header">
                     <span class="entries-panel__tag">
                         <span class="entries-panel__dot" aria-hidden="true"></span>
-                        <span>Más Recientes</span>
+                        <span>Top Más Leídos</span>
                     </span>
                 </div>
 
                 <div class="entries-list">
-                    @foreach (var entry in Model.RecentEntries)
+                    @foreach (var entry in Model.MostReadEntries)
                     {
-                        <a class="card-h" href="@entry.Href" aria-label="Leer @entry.Title">
+                        <a class="card-h card-h--top" href="@entry.Href" aria-label="Leer @entry.Title">
+                            @if (entry.Rank.HasValue)
+                            {
+                                <span class="card-h__rank" aria-hidden="true">@entry.Rank.Value.ToString("D2")</span>
+                            }
                             <div class="card-h__body">
                                 <span class="card-h__cat">@entry.Category</span>
                                 <h3 class="card-h__title">@entry.Title</h3>
@@ -138,7 +142,19 @@
                                     }
                                     else
                                     {
-                                        <span>Última hora</span>
+                                        <span>Actualidad</span>
+                                    }
+                                    @if (entry.ViewCount > 0)
+                                    {
+                                        <span class="card-h__meta-sep" aria-hidden="true">•</span>
+                                        <span class="card-h__views" title="@entry.ViewCount lecturas acumuladas">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                            <span>@entry.ViewCount lecturas</span>
+                                        </span>
                                     }
                                 </div>
                             </div>

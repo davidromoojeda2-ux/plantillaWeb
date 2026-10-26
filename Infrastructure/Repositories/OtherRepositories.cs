@@ -1,6 +1,8 @@
+using System.Text.RegularExpressions;
 using Aplication.Interfaces;
 using Domine.Entities;
 using Infrastructure.Persistence;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Infrastructure.Repositories;
@@ -57,6 +59,38 @@ public class ImageMetadataRepository : IImageMetadataRepository
     public async Task<ImageMetadata?> GetByIdAsync(string id) =>
         await _col.Find(i => i.Id == id).FirstOrDefaultAsync();
 
+    public async Task<ImageMetadata?> GetByNameAsync(string fileName, CancellationToken ct = default)
+    {
+        var trimmed = fileName.Trim();
+        var regex = new BsonRegularExpression($"^{Regex.Escape(trimmed)}$", "i");
+        var filter = Builders<ImageMetadata>.Filter.Regex(i => i.OriginalFileName, regex);
+        return await _col.Find(filter).FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<bool> ExistsByNameAsync(string fileName, CancellationToken ct = default)
+    {
+        var trimmed = fileName.Trim();
+        var regex = new BsonRegularExpression($"^{Regex.Escape(trimmed)}$", "i");
+        var filter = Builders<ImageMetadata>.Filter.Regex(i => i.OriginalFileName, regex);
+        return await _col.Find(filter).AnyAsync(ct);
+    }
+
+    public async Task<long> CountAsync(string? search = null, string? storage = null, string? articleId = null, CancellationToken ct = default)
+    {
+        var filter = BuildFilter(search, storage, articleId);
+        return await _col.CountDocumentsAsync(filter, cancellationToken: ct);
+    }
+
+    public async Task<List<ImageMetadata>> GetPagedAsync(int skip, int take, string? search = null, string? storage = null, string? articleId = null, CancellationToken ct = default)
+    {
+        var filter = BuildFilter(search, storage, articleId);
+        return await _col.Find(filter)
+            .SortByDescending(i => i.UploadedAt)
+            .Skip(skip)
+            .Limit(take)
+            .ToListAsync(ct);
+    }
+
     public async Task InsertAsync(ImageMetadata image) => await _col.InsertOneAsync(image);
 
     public async Task UpdateAltAsync(string id, string alt) =>
@@ -68,7 +102,52 @@ public class ImageMetadataRepository : IImageMetadataRepository
             Builders<ImageMetadata>.Update.Set(i => i.ArticleId, string.IsNullOrWhiteSpace(articleId) ? null : articleId));
 
     public async Task DeleteAsync(string id) => await _col.DeleteOneAsync(i => i.Id == id);
+
+    private static FilterDefinition<ImageMetadata> BuildFilter(string? search, string? storage, string? articleId)
+    {
+        var builder = Builders<ImageMetadata>.Filter;
+        var filter = builder.Empty;
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var clean = Regex.Escape(search.Trim());
+            var regex = new BsonRegularExpression(clean, "i");
+            filter &= (builder.Regex(i => i.OriginalFileName, regex) | builder.Regex(i => i.Alt, regex));
+        }
+
+        if (!string.IsNullOrWhiteSpace(storage))
+        {
+            var st = storage.Trim().ToLowerInvariant();
+            if (st == "s3" || st == "r2")
+            {
+                filter &= (builder.Eq(i => i.Storage, "s3") | builder.Eq(i => i.Storage, "r2"));
+            }
+            else
+            {
+                filter &= builder.Eq(i => i.Storage, st);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(articleId))
+        {
+            if (articleId.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                filter &= (builder.Eq(i => i.ArticleId, null) | builder.Eq(i => i.ArticleId, ""));
+            }
+            else if (articleId.Equals("linked", StringComparison.OrdinalIgnoreCase))
+            {
+                filter &= (builder.Ne(i => i.ArticleId, null) & builder.Ne(i => i.ArticleId, ""));
+            }
+            else
+            {
+                filter &= builder.Eq(i => i.ArticleId, articleId);
+            }
+        }
+
+        return filter;
+    }
 }
+
 
 public class AdminUserRepository : IAdminUserRepository
 {

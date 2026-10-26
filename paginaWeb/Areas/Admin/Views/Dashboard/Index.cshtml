@@ -97,11 +97,21 @@
                     @foreach (var art in recentArticles)
                     {
                         <div class="py-3.5 flex items-center justify-between">
-                            <div class="pr-4">
-                                <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id"
-                                   class="font-medium text-slate-800 hover:text-[#00509D] text-sm line-clamp-1">
-                                    @art.Title
-                                </a>
+                            <div class="pr-4 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id"
+                                       class="font-medium text-slate-800 hover:text-[#00509D] text-sm line-clamp-1">
+                                        @art.Title
+                                    </a>
+                                    @if (art.Featured)
+                                    {
+                                        <span
+                                            class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-950 border border-amber-300 flex-shrink-0 cursor-help"
+                                            data-tooltip="Artículo fijado como portada principal en el Hero">
+                                            Hero
+                                        </span>
+                                    }
+                                </div>
                                 <p class="text-xs text-slate-400 mt-0.5">
                                     @art.CreatedAt.ToString("dd MMM yyyy") • @art.ViewCount vistas
                                 </p>
@@ -118,7 +128,8 @@
                                     class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Borrador</span>
                                 }
                                 <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id"
-                                   class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                                   class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
+                                   data-tooltip="Editar artículo">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -142,7 +153,12 @@
             @if (!pendingComments.Any())
             {
                 <div class="text-center py-10 text-slate-400 text-sm">
-                    No hay comentarios pendientes por moderar. 🎉
+                    <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    No hay comentarios pendientes por moderar.
                 </div>
             }
             else
@@ -161,13 +177,17 @@
                                       asp-route-id="@c.Id" class="inline">
                                     @Html.AntiForgeryToken()
                                     <button type="submit"
-                                            class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold">Aprobar</button>
+                                            data-tooltip="Aprobar y publicar comentario"
+                                            data-tooltip-variant="success"
+                                            class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors">Aprobar</button>
                                 </form>
                                 <form method="post" asp-area="Admin" asp-controller="Comentarios" asp-action="Reject"
                                       asp-route-id="@c.Id" class="inline">
                                     @Html.AntiForgeryToken()
                                     <button type="submit"
-                                            class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold">Rechazar</button>
+                                            data-tooltip="Rechazar comentario"
+                                            data-tooltip-variant="danger"
+                                            class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors">Rechazar</button>
                                 </form>
                             </div>
                         </div>

@@ -1,0 +1,364 @@
+@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
+@using Aplication.Mappers
+
+<!-- ─── Modal para Seleccionar Imagen de la Biblioteca con Validación de Duplicidad ─── -->
+<div id="mediaLibraryModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full flex flex-col max-h-[90vh] overflow-hidden transition-all animate-in fade-in zoom-in-95 duration-150">
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+            <div>
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-[#00509D]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Biblioteca de Imágenes Disponibles
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Selecciona una imagen para la portada o contenido. Si la imagen está en uso por otro artículo, se te informará para evitar duplicidad de contenidos.
+                </p>
+            </div>
+            <button type="button" id="btnCloseMediaLibraryModal" onclick="window.closeMediaLibraryModal(event)" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Barra de búsqueda y pestañas de filtro -->
+        <div class="p-4 border-b border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="relative w-full sm:w-72">
+                <input type="text" id="modalImageSearchInput" placeholder="Buscar por nombre..."
+                       class="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+
+            <div class="flex items-center gap-1.5 w-full sm:w-auto text-xs">
+                <button type="button" data-filter="all" class="modal-tab-btn px-3 py-1.5 rounded-lg font-semibold bg-[#00296B] text-white transition">
+                    Todas (<span id="countAllImages">0</span>)
+                </button>
+                <button type="button" data-filter="free" class="modal-tab-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    🟢 Disponibles (<span id="countFreeImages">0</span>)
+                </button>
+                <button type="button" data-filter="used" class="modal-tab-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    ⚠️ En otros artículos (<span id="countUsedImages">0</span>)
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenedor de la Galería -->
+        <div class="flex-1 overflow-y-auto p-4 bg-slate-50/50 min-h-[300px]">
+            <div id="modalImagesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <!-- Se rellena dinámicamente -->
+            </div>
+            <div id="modalImagesEmptyState" class="hidden py-16 text-center text-slate-400">
+                <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <p class="text-sm font-semibold text-slate-600">No se encontraron imágenes</p>
+                <p class="text-xs text-slate-400 mt-0.5">Intenta con otro término de búsqueda o filtro.</p>
+            </div>
+        </div>
+
+        <!-- Zona de Aviso de Duplicidad e Información de Selección -->
+        <div id="modalSelectionNoticeArea" class="p-3.5 border-t border-slate-200 bg-white">
+            <div id="modalNoticeBox" class="p-3 rounded-xl text-xs flex items-start gap-2.5 bg-slate-100 text-slate-600 border border-slate-200">
+                <svg class="w-4 h-4 shrink-0 mt-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="flex-1">
+                    <span id="modalNoticeTitle" class="font-bold">Selecciona una imagen de la cuadrícula superior.</span>
+                    <p id="modalNoticeDesc" class="mt-0.5 text-slate-500">Haz clic en cualquier imagen para ver su información y confirmar su asignación.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+            <button type="button" id="btnCancelMediaLibraryModal" onclick="window.closeMediaLibraryModal(event)" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition">
+                Cancelar
+            </button>
+            <button type="button" id="btnConfirmSelectMediaImage" disabled
+                    class="px-5 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Usar como Portada</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const mediaLibraryModal = document.getElementById('mediaLibraryModal');
+        const btnOpenMediaLibraryModal = document.getElementById('btnOpenMediaLibraryModal');
+        const btnCloseMediaLibraryModal = document.getElementById('btnCloseMediaLibraryModal');
+        const btnCancelMediaLibraryModal = document.getElementById('btnCancelMediaLibraryModal');
+        const btnConfirmSelectMediaImage = document.getElementById('btnConfirmSelectMediaImage');
+        const modalImageSearchInput = document.getElementById('modalImageSearchInput');
+        const modalImagesGrid = document.getElementById('modalImagesGrid');
+        const modalImagesEmptyState = document.getElementById('modalImagesEmptyState');
+        const countAllImages = document.getElementById('countAllImages');
+        const countFreeImages = document.getElementById('countFreeImages');
+        const countUsedImages = document.getElementById('countUsedImages');
+        const duplicityNotice = document.getElementById('coverDuplicityNotice');
+        const duplicityTitle = document.getElementById('coverDuplicityArticleTitle');
+
+        const currentArticleId = '@(Model?.Id ?? "")';
+
+        let allModalImages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            (Model?.AvailableImages ?? new List<Aplication.DTOs.ImageMetadataResponseDto>()).Select(img => new {
+                id = img.Id,
+                fileName = img.OriginalFileName,
+                alt = img.Alt,
+                width = img.OriginalWidth,
+                height = img.OriginalHeight,
+                uploadedAt = img.UploadedAt.ToString("dd/MM/yyyy"),
+                url = ImageMapper.GetBestUrl(img) ?? img.Variants.FirstOrDefault()?.PublicUrl,
+                thumbnailUrl = ImageMapper.GetThumbnailUrl(img) ?? ImageMapper.GetBestUrl(img),
+                isUsed = !string.IsNullOrEmpty(img.ArticleId),
+                usedInArticleId = img.ArticleId,
+                usedInArticleTitle = img.ArticleTitle,
+                isCurrentArticle = !string.IsNullOrEmpty(Model?.Id) && img.ArticleId == Model.Id
+            })
+        ));
+
+        let selectedModalImage = null;
+        let currentModalFilter = 'all';
+        let activeInlineImageCallback = null;
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, '&amp;')
+                       .replace(/</g, '&lt;')
+                       .replace(/>/g, '&gt;')
+                       .replace(/"/g, '&quot;')
+                       .replace(/'/g, '&#039;');
+        }
+
+        window.checkCurrentCoverUsage = function() {
+            if (!duplicityNotice) return;
+            const coverImageIdInput = document.getElementById('coverImageIdInput');
+            const coverImageUrlInput = document.getElementById('coverImageUrlInput');
+            const currentCoverId = coverImageIdInput?.value || '';
+            const currentCoverUrl = coverImageUrlInput?.value || '';
+
+            if (!currentCoverId && !currentCoverUrl) {
+                duplicityNotice.classList.add('hidden');
+                return;
+            }
+
+            const matched = allModalImages.find(img =>
+                (currentCoverId && img.id === currentCoverId) ||
+                (currentCoverUrl && (img.url === currentCoverUrl || img.thumbnailUrl === currentCoverUrl))
+            );
+
+            if (matched && matched.isUsed && !matched.isCurrentArticle && matched.usedInArticleTitle) {
+                duplicityTitle.textContent = `"${matched.usedInArticleTitle}"`;
+                duplicityNotice.classList.remove('hidden');
+            } else {
+                duplicityNotice.classList.add('hidden');
+            }
+        };
+
+        function updateModalTabCounts() {
+            const allCount = allModalImages.length;
+            const freeCount = allModalImages.filter(img => !img.isUsed).length;
+            const usedCount = allModalImages.filter(img => img.isUsed && !img.isCurrentArticle).length;
+
+            if (countAllImages) countAllImages.textContent = allCount;
+            if (countFreeImages) countFreeImages.textContent = freeCount;
+            if (countUsedImages) countUsedImages.textContent = usedCount;
+        }
+
+        function renderModalImages() {
+            if (!modalImagesGrid) return;
+            const searchTerm = (modalImageSearchInput?.value || '').trim().toLowerCase();
+            const coverImageIdInput = document.getElementById('coverImageIdInput');
+            const coverImageUrlInput = document.getElementById('coverImageUrlInput');
+
+            const filtered = allModalImages.filter(img => {
+                if (currentModalFilter === 'free' && img.isUsed) return false;
+                if (currentModalFilter === 'used' && (!img.isUsed || img.isCurrentArticle)) return false;
+
+                if (searchTerm) {
+                    const nameMatch = (img.fileName || '').toLowerCase().includes(searchTerm);
+                    const altMatch = (img.alt || '').toLowerCase().includes(searchTerm);
+                    const articleMatch = (img.usedInArticleTitle || '').toLowerCase().includes(searchTerm);
+                    return nameMatch || altMatch || articleMatch;
+                }
+
+                return true;
+            });
+
+            modalImagesGrid.innerHTML = '';
+            if (filtered.length === 0) {
+                modalImagesEmptyState?.classList.remove('hidden');
+            } else {
+                modalImagesEmptyState?.classList.add('hidden');
+            }
+
+            filtered.forEach(img => {
+                const card = document.createElement('div');
+                const isSelected = selectedModalImage && selectedModalImage.id === img.id;
+                const isCurrentCover = coverImageIdInput && (coverImageIdInput.value === img.id || (coverImageUrlInput && coverImageUrlInput.value === img.url));
+
+                card.className = `modal-image-card group relative rounded-xl border bg-white p-2.5 flex flex-col justify-between cursor-pointer transition shadow-2xs hover:shadow-md ${
+                    isSelected ? 'ring-2 ring-[#00509D] border-[#00509D] bg-blue-50/30' : 'border-slate-200 hover:border-slate-300'
+                }`;
+                card.setAttribute('data-id', img.id);
+
+                let badgeHtml = '';
+                if (img.isUsed && !img.isCurrentArticle) {
+                    const articleTitle = img.usedInArticleTitle || 'Otro artículo';
+                    const displayTitle = articleTitle.length > 18 ? articleTitle.substring(0, 16) + '...' : articleTitle;
+                    badgeHtml = `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200" title="En uso por: ${escapeHtml(articleTitle)}">
+                        ⚠️ En: ${escapeHtml(displayTitle)}
+                    </span>`;
+                } else if (img.isCurrentArticle || isCurrentCover) {
+                    badgeHtml = `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                        ● Portada actual
+                    </span>`;
+                } else {
+                    badgeHtml = `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ✓ Disponible
+                    </span>`;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-100 relative mb-2">
+                            <img src="${img.thumbnailUrl || img.url}" alt="${escapeHtml(img.alt || img.fileName)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+                            <span class="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-xs">
+                                ${img.width || 0}×${img.height || 0}
+                            </span>
+                        </div>
+                        <div class="space-y-1">
+                            <div>${badgeHtml}</div>
+                            <p class="text-[11px] font-semibold text-slate-800 truncate" title="${escapeHtml(img.fileName)}">
+                                ${escapeHtml(img.fileName)}
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => selectImageInModal(img));
+                card.addEventListener('dblclick', () => {
+                    selectImageInModal(img);
+                    btnConfirmSelectMediaImage?.click();
+                });
+
+                modalImagesGrid.appendChild(card);
+            });
+        }
+
+        function selectImageInModal(img) {
+            selectedModalImage = img;
+            if (btnConfirmSelectMediaImage) btnConfirmSelectMediaImage.disabled = false;
+
+            document.querySelectorAll('.modal-image-card').forEach(card => {
+                if (card.getAttribute('data-id') === img.id) {
+                    card.classList.add('ring-2', 'ring-[#00509D]', 'border-[#00509D]', 'bg-blue-50/30');
+                } else {
+                    card.classList.remove('ring-2', 'ring-[#00509D]', 'border-[#00509D]', 'bg-blue-50/30');
+                }
+            });
+
+            const noticeBox = document.getElementById('modalNoticeBox');
+            const noticeTitle = document.getElementById('modalNoticeTitle');
+            const noticeDesc = document.getElementById('modalNoticeDesc');
+
+            if (noticeBox && noticeTitle && noticeDesc) {
+                if (img.isUsed && !img.isCurrentArticle) {
+                    noticeBox.className = 'p-3 rounded-xl text-xs flex items-start gap-2.5 bg-amber-50 text-amber-900 border border-amber-300 shadow-xs animate-in fade-in duration-150';
+                    noticeTitle.innerHTML = `⚠️ Aviso de duplicidad: Imagen en uso en otro artículo`;
+                    noticeDesc.innerHTML = `Esta imagen ya está siendo utilizada en el artículo <strong>"${escapeHtml(img.usedInArticleTitle || 'Otro artículo')}"</strong>. El sistema no te bloquea, pero te informamos para evitar repetir imágenes en diferentes notas.`;
+                } else if (img.isCurrentArticle) {
+                    noticeBox.className = 'p-3 rounded-xl text-xs flex items-start gap-2.5 bg-blue-50 text-blue-900 border border-blue-200 shadow-xs animate-in fade-in duration-150';
+                    noticeTitle.innerHTML = `Portada de este artículo`;
+                    noticeDesc.innerHTML = `Esta imagen ya pertenece o está vinculada a este artículo.`;
+                } else {
+                    noticeBox.className = 'p-3 rounded-xl text-xs flex items-start gap-2.5 bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs animate-in fade-in duration-150';
+                    noticeTitle.innerHTML = `✓ Imagen disponible (sin duplicidad)`;
+                    noticeDesc.innerHTML = `Esta imagen no está en uso en ningún otro artículo. Es una opción limpia para tu publicación.`;
+                }
+            }
+        }
+
+        window.openMediaLibraryModal = function(e) {
+            if (e) e.preventDefault();
+            if (!mediaLibraryModal) return;
+            mediaLibraryModal.classList.remove('hidden');
+            mediaLibraryModal.style.display = 'flex';
+            document.body.classList.add('overflow-hidden');
+            updateModalTabCounts();
+            renderModalImages();
+
+            fetch(`/admin/articulos/imagenes-disponibles?currentArticleId=${encodeURIComponent(currentArticleId)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        allModalImages = data;
+                        updateModalTabCounts();
+                        renderModalImages();
+                    }
+                })
+                .catch(err => console.warn('No se pudo refrescar catálogo en vivo:', err));
+        };
+
+        window.openMediaLibraryModalForInline = function(callback) {
+            activeInlineImageCallback = callback;
+            window.openMediaLibraryModal();
+        };
+
+        window.closeMediaLibraryModal = function(e) {
+            if (e) e.preventDefault();
+            activeInlineImageCallback = null;
+            if (!mediaLibraryModal) return;
+            mediaLibraryModal.classList.add('hidden');
+            mediaLibraryModal.style.display = 'none';
+            document.body.classList.remove('overflow-hidden');
+        };
+
+        btnOpenMediaLibraryModal?.addEventListener('click', window.openMediaLibraryModal);
+        btnCloseMediaLibraryModal?.addEventListener('click', window.closeMediaLibraryModal);
+        btnCancelMediaLibraryModal?.addEventListener('click', window.closeMediaLibraryModal);
+
+        btnConfirmSelectMediaImage?.addEventListener('click', () => {
+            if (!selectedModalImage) return;
+
+            if (typeof activeInlineImageCallback === 'function') {
+                const cb = activeInlineImageCallback;
+                activeInlineImageCallback = null;
+                cb(selectedModalImage);
+                window.closeMediaLibraryModal();
+                return;
+            }
+
+            const coverImageIdInput = document.getElementById('coverImageIdInput');
+            const coverImageUrlInput = document.getElementById('coverImageUrlInput');
+
+            if (coverImageIdInput) coverImageIdInput.value = selectedModalImage.id;
+            if (coverImageUrlInput) coverImageUrlInput.value = selectedModalImage.url;
+
+            if (typeof window.updateCoverPreview === 'function') {
+                window.updateCoverPreview(selectedModalImage.url);
+            }
+            window.closeMediaLibraryModal();
+        });
+
+        modalImageSearchInput?.addEventListener('input', () => {
+            renderModalImages();
+        });
+
+        document.querySelectorAll('.modal-tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.modal-tab-btn').forEach(b => {
+                    b.className = 'modal-tab-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition';
+                });
+                this.className = 'modal-tab-btn px-3 py-1.5 rounded-lg font-semibold bg-[#00296B] text-white transition';
+                currentModalFilter = this.getAttribute('data-filter') || 'all';
+                renderModalImages();
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && mediaLibraryModal && !mediaLibraryModal.classList.contains('hidden')) {
+                window.closeMediaLibraryModal();
+            }
+        });
+
+        // Verificación inicial de uso de portada
+        window.checkCurrentCoverUsage();
+    })();
+</script>

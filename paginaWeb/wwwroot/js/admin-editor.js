@@ -280,7 +280,7 @@ class BlockEditor {
                         } else {
                             this.createBlockObject('paragraph', node.innerHTML);
                         }
-                    } else if (tag === 'figure' || tag === 'img') {
+                    } else if (tag === 'figure' || tag === 'img' || (node.querySelector('img') && (tag === 'p' || tag === 'div'))) {
                         const img = tag === 'img' ? node : node.querySelector('img');
                         const caption = node.querySelector('figcaption')?.innerText || '';
                         if (img) {
@@ -288,6 +288,13 @@ class BlockEditor {
                                 alt: img.getAttribute('alt') || '',
                                 caption
                             });
+                            // Si el nodo contenedor tenía texto adicional fuera de la imagen
+                            const clone = node.cloneNode(true);
+                            clone.querySelectorAll('img, figcaption').forEach(el => el.remove());
+                            const remainingText = clone.innerHTML.trim();
+                            if (remainingText && remainingText !== '<br>') {
+                                this.createBlockObject('paragraph', remainingText);
+                            }
                         }
                     } else if (node.classList.contains('callout') || node.hasAttribute('data-callout')) {
                         const type = node.getAttribute('data-callout') ||
@@ -747,8 +754,14 @@ class BlockEditor {
         const hasSrc = !!src;
         return `
             <div class="image-block-widget border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 p-4 space-y-3">
-                <div class="image-preview-box text-center bg-white border border-slate-200 rounded-xl overflow-hidden ${hasSrc ? '' : 'hidden'}">
-                    <img src="${src || ''}" alt="${meta.alt || ''}" class="max-h-80 mx-auto object-cover rounded-lg w-full" onerror="this.src=''" />
+                <div class="image-preview-box text-center bg-white border border-slate-200 rounded-xl overflow-hidden relative ${hasSrc ? '' : 'hidden'}">
+                    <img src="${src || ''}" alt="${meta.alt || ''}" referrerpolicy="no-referrer"
+                         class="max-h-80 mx-auto object-cover rounded-lg w-full transition-opacity"
+                         onload="this.parentElement.querySelector('.img-error-badge')?.classList.add('hidden'); this.classList.remove('opacity-30');"
+                         onerror="this.parentElement.querySelector('.img-error-badge')?.classList.remove('hidden'); this.classList.add('opacity-30');" />
+                    <div class="img-error-badge hidden absolute inset-0 flex items-center justify-center bg-slate-950/85 text-amber-200 text-xs font-semibold px-4 text-center">
+                        ⚠️ No se pudo previsualizar la imagen en línea (comprueba la URL o conexión)
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -757,8 +770,12 @@ class BlockEditor {
                         <div class="flex items-center gap-1.5">
                             <input type="text" class="img-url-input flex-1 px-3 py-2 bg-white rounded-lg border border-slate-300 text-slate-800 font-mono text-xs outline-none focus:ring-1 focus:ring-[#00509D]"
                                    placeholder="https://... o /uploads/..." value="${src || ''}" />
-                            <button type="button" class="img-upload-btn px-3 py-2 bg-[#00296B] hover:bg-[#003F88] text-white font-bold rounded-lg shadow-xs transition flex items-center gap-1 shrink-0" title="Subir archivo desde el equipo">
+                            <button type="button" class="img-library-btn px-2.5 py-2 bg-blue-50 hover:bg-blue-100 text-[#00296B] font-bold rounded-lg border border-blue-200 transition flex items-center gap-1 shrink-0 text-xs" title="Seleccionar de la Biblioteca">
                                 ${BLOCK_ICONS.image}
+                                <span>Biblioteca</span>
+                            </button>
+                            <button type="button" class="img-upload-btn px-2.5 py-2 bg-[#00296B] hover:bg-[#003F88] text-white font-bold rounded-lg shadow-xs transition flex items-center gap-1 shrink-0 text-xs" title="Subir archivo desde el equipo">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                 <span>Subir</span>
                             </button>
                             <input type="file" accept="image/*" class="img-file-hidden hidden" />
@@ -787,17 +804,42 @@ class BlockEditor {
         const previewBox = contentEl.querySelector('.image-preview-box');
         const previewImg = contentEl.querySelector('.image-preview-box img');
         const uploadBtn = contentEl.querySelector('.img-upload-btn');
+        const libraryBtn = contentEl.querySelector('.img-library-btn');
         const fileInput = contentEl.querySelector('.img-file-hidden');
+        const errorBadge = contentEl.querySelector('.img-error-badge');
 
         urlInput?.addEventListener('input', () => {
             const val = urlInput.value.trim();
             if (val) {
                 previewImg.src = val;
+                previewImg.referrerPolicy = 'no-referrer';
                 previewBox.classList.remove('hidden');
+                errorBadge?.classList.add('hidden');
+                previewImg.classList.remove('opacity-30');
             } else {
                 previewBox.classList.add('hidden');
             }
             this.syncContent();
+        });
+
+        libraryBtn?.addEventListener('click', () => {
+            if (typeof window.openMediaLibraryModalForInline === 'function') {
+                window.openMediaLibraryModalForInline((selectedImg) => {
+                    const chosenUrl = selectedImg.url || selectedImg.thumbnailUrl;
+                    urlInput.value = chosenUrl;
+                    previewImg.src = chosenUrl;
+                    previewImg.referrerPolicy = 'no-referrer';
+                    previewBox.classList.remove('hidden');
+                    errorBadge?.classList.add('hidden');
+                    previewImg.classList.remove('opacity-30');
+                    if (!altInput.value && selectedImg.alt) {
+                        altInput.value = selectedImg.alt;
+                    }
+                    this.syncContent();
+                });
+            } else if (typeof window.openMediaLibraryModal === 'function') {
+                window.openMediaLibraryModal();
+            }
         });
 
         altInput?.addEventListener('input', () => {
@@ -829,7 +871,10 @@ class BlockEditor {
                 if (data.url) {
                     urlInput.value = data.url;
                     previewImg.src = data.url;
+                    previewImg.referrerPolicy = 'no-referrer';
                     previewBox.classList.remove('hidden');
+                    errorBadge?.classList.add('hidden');
+                    previewImg.classList.remove('opacity-30');
                     if (!altInput.value) altInput.value = data.alt || file.name.split('.')[0];
                     this.syncContent();
                 } else if (data.error) {
@@ -839,7 +884,10 @@ class BlockEditor {
                 alert('Error al subir imagen: ' + err);
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.innerHTML = `${BLOCK_ICONS.image} <span>Subir</span>`;
+                uploadBtn.innerHTML = `
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span>Subir</span>
+                `;
             }
         });
     }

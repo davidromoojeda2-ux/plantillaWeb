@@ -19,4 +19,11 @@ public interface IImageStorage
 
     /// <summary>Construye la URL pública de acceso CDN para una clave dada.</summary>
     string GetPublicUrl(string key);
+
+    /// <summary>Verifica la disponibilidad y conectividad del servicio de almacenamiento.</summary>
+    Task<bool> IsAvailableAsync(CancellationToken ct = default);
+
+    /// <summary>Identificador del tipo de almacenamiento (e.g. "s3", "r2", "local").</summary>
+    string StorageType { get; }
 }
+

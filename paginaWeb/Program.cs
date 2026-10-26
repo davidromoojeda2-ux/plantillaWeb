@@ -36,31 +36,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // ─── Almacenamiento de imágenes ───────────────────────────────────────────────
 builder.Services.AddScoped<LocalStorage>();
-
-var hasCloudflareConfig = !string.IsNullOrWhiteSpace(builder.Configuration["CloudflareR2:AccountId"]) &&
-                          !string.IsNullOrWhiteSpace(builder.Configuration["CloudflareR2:AccessKeyId"]) &&
-                          !string.IsNullOrWhiteSpace(builder.Configuration["CloudflareR2:SecretAccessKey"]);
-
-if (hasCloudflareConfig)
-{
-    builder.Services.AddScoped<CloudflareR2Storage>();
-}
-
-// Configuración de proveedor: "Local" o "CloudflareR2"
-var configuredProvider = builder.Configuration["Storage:Provider"];
-var useCloudflare = string.Equals(configuredProvider, "CloudflareR2", StringComparison.OrdinalIgnoreCase)
-                    || (string.IsNullOrEmpty(configuredProvider) && !builder.Environment.IsDevelopment() && hasCloudflareConfig);
-
-if (useCloudflare && hasCloudflareConfig)
-{
-    builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<CloudflareR2Storage>());
-}
-else
-{
-    builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<LocalStorage>());
-}
-
+builder.Services.AddScoped<S3Storage>();
+builder.Services.AddScoped<CloudflareR2Storage>();
+builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<S3Storage>());
 builder.Services.AddScoped<ImageService>();
+
 
 // ─── Autenticación por cookies ────────────────────────────────────────────────
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

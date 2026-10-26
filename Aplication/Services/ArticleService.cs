@@ -19,6 +19,7 @@ public interface IArticleService
     Task DeleteAsync(string id);
     Task IncrementViewCountAsync(string id);
     Task<List<ArticleResponseDto>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
+    Task<List<ArticleResponseDto>> GetMostReadAsync(int take = 5);
     Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
 }
 
@@ -159,6 +160,12 @@ public class ArticleService : IArticleService
     public async Task<List<ArticleResponseDto>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3)
     {
         var items = await _repo.GetRecommendedAsync(currentArticleId, categoryId, take);
+        return ArticleMapper.ToDtoList(items);
+    }
+
+    public async Task<List<ArticleResponseDto>> GetMostReadAsync(int take = 5)
+    {
+        var items = await _repo.GetMostReadAsync(take);
         return ArticleMapper.ToDtoList(items);
     }
 }

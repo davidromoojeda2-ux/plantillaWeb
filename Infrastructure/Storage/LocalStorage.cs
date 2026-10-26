@@ -59,9 +59,28 @@ public class LocalStorage : IImageStorage
         return Task.CompletedTask;
     }
 
+    public string StorageType => "local";
+
+    public Task<bool> IsAvailableAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            if (!Directory.Exists(_basePath))
+            {
+                Directory.CreateDirectory(_basePath);
+            }
+            return Task.FromResult(true);
+        }
+        catch
+        {
+            return Task.FromResult(false);
+        }
+    }
+
     public string GetPublicUrl(string key)
     {
         var cleanKey = key.TrimStart('/');
         return $"{_baseUrl}/{cleanKey}";
     }
 }
+

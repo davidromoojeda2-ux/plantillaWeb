@@ -32,7 +32,9 @@ public sealed record PostCardViewModel(
     string Href,
     CardImage Image,
     bool AsGridItem = true,
-    string? CustomClass = null)
+    string? CustomClass = null,
+    long ViewCount = 0,
+    int? Rank = null)
 {
     public static PostCardViewModel FromArticle(
         paginaWeb.Models.Category.ArticleCardViewModel item,
@@ -86,7 +88,8 @@ public sealed record PostCardViewModel(
                 Alt: title,
                 Width: 800,
                 Height: 500),
-            AsGridItem: asGridItem
+            AsGridItem: asGridItem,
+            ViewCount: article?.ViewCount ?? 0
         );
     }
 }
@@ -142,12 +145,15 @@ public sealed record HomePageViewModel(
     HeroViewModel Hero,
     SectionHeaderViewModel EntriesHeader,
     IReadOnlyList<PostCardViewModel> FeaturedEntries,
-    IReadOnlyList<PostCardViewModel> RecentEntries,
+    IReadOnlyList<PostCardViewModel> MostReadEntries,
     CategorySectionViewModel CategorySection,
     SectionHeaderViewModel? PostsHeader = null,
     IReadOnlyList<PostCardViewModel>? Posts = null,
     SectionHeaderViewModel? FeaturedHeader = null,
-    IReadOnlyList<FeaturedBlockViewModel>? Featured = null);
+    IReadOnlyList<FeaturedBlockViewModel>? Featured = null)
+{
+    public IReadOnlyList<PostCardViewModel> RecentEntries => MostReadEntries;
+}
 
 /// <summary>
 /// Construye el <see cref="HomePageViewModel"/> a partir de los datos entregados por
@@ -156,6 +162,7 @@ public sealed record HomePageViewModel(
 public static class HomePageViewModelFactory
 {
     public const int ColumnEntryCount = 3;
+    public const int TopReadEntryCount = 5;
 
     private const int CardImageWidth = 800;
     private const int CardImageHeight = 500; // relación 16:10
@@ -166,7 +173,8 @@ public static class HomePageViewModelFactory
         IReadOnlyList<CategoryResponseDto> allCategories,
         IReadOnlyDictionary<string, ImageMetadataResponseDto> images,
         Func<string, string> articleHref,
-        string? searchHref = null)
+        string? searchHref = null,
+        IReadOnlyList<ArticleResponseDto>? mostRead = null)
     {
         var catDict = allCategories.ToDictionary(c => c.Id, c => c.Name);
 
@@ -185,14 +193,19 @@ public static class HomePageViewModelFactory
                 a.Author,
                 EstimateReadingMinutes(a.Content ?? a.Summary))).ToList());
 
-        // 2. Últimas entradas en dos columnas (3 principales/destacadas a la izquierda, 3 recientes a la derecha)
+        // 2. Últimas entradas en dos columnas (3 principales/destacadas a la izquierda, mínimo 5 más leídos a la derecha)
         var featuredEntriesSource = (featured.Count >= 3 ? featured : recent).Take(ColumnEntryCount).ToList();
-        var featuredIds = featuredEntriesSource.Select(a => a.Id).ToHashSet();
 
-        var recentEntriesSource = recent.Where(a => !featuredIds.Contains(a.Id)).Take(ColumnEntryCount).ToList();
-        if (recentEntriesSource.Count < ColumnEntryCount)
+        var mostReadList = (mostRead != null && mostRead.Count > 0)
+            ? mostRead.ToList()
+            : recent.OrderByDescending(a => a.ViewCount).ThenByDescending(a => a.PublishedAt).ToList();
+
+        var mostReadEntriesSource = mostReadList.Take(TopReadEntryCount).ToList();
+        if (mostReadEntriesSource.Count < TopReadEntryCount)
         {
-            recentEntriesSource = recent.Take(ColumnEntryCount).ToList();
+            var missing = TopReadEntryCount - mostReadEntriesSource.Count;
+            var additional = recent.Where(r => !mostReadEntriesSource.Any(m => m.Id == r.Id)).Take(missing);
+            mostReadEntriesSource.AddRange(additional);
         }
 
         var featuredEntries = featuredEntriesSource.Select(a => new PostCardViewModel(
@@ -201,20 +214,23 @@ public static class HomePageViewModelFactory
             CategoryName(a, catDict, "Destacado"),
             a.PublishedAt,
             articleHref(a.Slug),
-            ResolveImage(a, images))).ToList();
+            ResolveImage(a, images),
+            ViewCount: a.ViewCount)).ToList();
 
-        var recentEntries = recentEntriesSource.Select(a => new PostCardViewModel(
+        var mostReadEntries = mostReadEntriesSource.Select((a, idx) => new PostCardViewModel(
             a.Title,
             a.Summary,
-            CategoryName(a, catDict, "Actualidad"),
+            CategoryName(a, catDict, "Popular"),
             a.PublishedAt,
             articleHref(a.Slug),
-            ResolveImage(a, images))).ToList();
+            ResolveImage(a, images),
+            ViewCount: a.ViewCount,
+            Rank: idx + 1)).ToList();
 
         var entriesHeader = new SectionHeaderViewModel(
             HeadingId: "ultimas-entradas-title",
             Title: "Últimas entradas",
-            Subtitle: "Noticias principales y coberturas recientes seleccionadas por nuestra redacción",
+            Subtitle: "Noticias principales y los artículos más leídos de nuestra redacción",
             LinkText: "Ver todas",
             LinkHref: searchHref);
 
@@ -304,10 +320,10 @@ public static class HomePageViewModelFactory
             Hero: hero,
             EntriesHeader: entriesHeader,
             FeaturedEntries: featuredEntries,
-            RecentEntries: recentEntries,
+            MostReadEntries: mostReadEntries,
             CategorySection: categorySection,
             PostsHeader: entriesHeader,
-            Posts: recentEntries,
+            Posts: mostReadEntries,
             FeaturedHeader: entriesHeader,
             Featured: []);
     }

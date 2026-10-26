@@ -7,6 +7,46 @@
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="Id" />
 
+    @if (Model.Featured)
+    {
+        <!-- ─── Indicador Hero Principal ──────────────────────────────────── -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/70 border border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+            <div class="flex items-start gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FDC500] to-amber-500 text-[#00296B] flex items-center justify-center font-bold text-xl shadow-xs flex-shrink-0">
+                    ★
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-bold text-sm text-amber-950">Artículo Destacado en el Hero Principal</span>
+                        @if (string.Equals(Model.Status, "Publicado", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                ● Activo en Portada
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-200/80 text-amber-900 border border-amber-300">
+                                ○ En espera (Requiere Publicarse)
+                            </span>
+                        }
+                        <button type="button" class="cms-tooltip-icon cms-tooltip-icon--amber"
+                                data-tooltip="Esta publicación tiene la marca de Hero. Aparecerá en el carrusel de noticias prioritarias en la portada pública siempre que su estado sea Publicado."
+                                data-tooltip-position="top"
+                                aria-label="Información sobre Artículo Destacado">
+                            i
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <a asp-area="" asp-controller="Home" asp-action="Index" target="_blank"
+               class="self-start sm:self-center inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-900 text-xs font-semibold border border-amber-300 shadow-2xs transition flex-shrink-0">
+                <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                Ver Portada ↗
+            </a>
+        </div>
+    }
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- ─── Columna Principal (Contenido y Editor) ─────────────────────── -->
         <div class="lg:col-span-2 space-y-6">
@@ -19,7 +59,10 @@
                 </div>
 
                 <div>
-                    <label asp-for="Slug" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Slug URL</label>
+                    <label asp-for="Slug" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
+                        Slug URL
+                        <button type="button" class="cms-tooltip-icon" data-tooltip="Identificador único para la URL amigable del artículo en el navegador">i</button>
+                    </label>
                     <div class="flex items-center rounded-xl border border-slate-300 overflow-hidden bg-slate-50 focus-within:ring-2 focus-within:ring-[#00509D]">
                         <span class="px-3 text-xs text-slate-400 font-mono select-none">/articulos/</span>
                         <input asp-for="Slug" id="slugInput" required placeholder="slug-de-la-noticia"
@@ -29,7 +72,10 @@
                 </div>
 
                 <div>
-                    <label asp-for="Summary" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Bajada o Resumen Editorial</label>
+                    <label asp-for="Summary" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
+                        Bajada o Resumen Editorial
+                        <button type="button" class="cms-tooltip-icon" data-tooltip="Texto introductorio breve que se muestra en tarjetas y resultados de búsqueda">i</button>
+                    </label>
                     <textarea asp-for="Summary" rows="3" required placeholder="Breve síntesis de dos a tres oraciones que introducen el artículo..."
                               class="w-full text-sm text-slate-800 px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] leading-relaxed"></textarea>
                     <span asp-validation-for="Summary" class="text-xs text-rose-600 mt-1 block"></span>
@@ -68,11 +114,58 @@
                     <input asp-for="Author" required class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2" />
                 </div>
 
+                <!-- Destacado en Hero Card -->
                 <div class="pt-2">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input asp-for="Featured" type="checkbox" class="rounded border-slate-300 text-[#00296B] focus:ring-[#00296B]" />
-                        <span class="text-xs font-semibold text-slate-700">Destacar en portada (Hero)</span>
+                    @{
+                        var heroCountOther = (int?)ViewBag.FeaturedCount ?? 0;
+                        var isHeroFull = heroCountOther >= 3;
+                    }
+                    <label for="FeaturedCheckbox" id="featuredCardWrapper"
+                           data-featured-count="@heroCountOther"
+                           data-initial-featured="@Model.Featured.ToString().ToLower()"
+                           class="relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer @(Model.Featured ? "bg-amber-50/70 border-amber-300 shadow-2xs" : "bg-slate-50/60 border-slate-200 hover:border-slate-300")">
+                        <div class="pt-0.5">
+                            <input asp-for="Featured" id="FeaturedCheckbox" type="checkbox"
+                                   class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-300 cursor-pointer"
+                                   onchange="toggleFeaturedStyling(this)" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-1.5">
+                                <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span class="text-amber-500 font-bold">★</span> Destacar en portada
+                                    <button type="button" class="cms-tooltip-icon cms-tooltip-icon--amber"
+                                            data-tooltip="Muestra esta noticia en el carrusel principal de la portada. Requiere imagen asignada (límite de 3 artículos)."
+                                            data-tooltip-position="top"
+                                            aria-label="Más información sobre Destacar en portada">
+                                        i
+                                    </button>
+                                </span>
+                                @if (isHeroFull && !Model.Featured)
+                                {
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 cursor-help"
+                                          data-tooltip="Cupo completo (3/3). Para asignar este artículo, primero desmarca uno existente del Hero."
+                                          data-tooltip-position="top">
+                                        Hero (3/3 Lleno)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-950 border border-amber-300 cursor-help"
+                                          data-tooltip="Muestra esta noticia en el carrusel principal de la portada. Requiere imagen asignada (límite de 3 artículos)."
+                                          data-tooltip-position="top">
+                                        Hero (Máx 3)
+                                    </span>
+                                }
+                            </div>
+                            @if (isHeroFull && !Model.Featured)
+                            {
+                                <p class="text-[10px] text-amber-800 font-semibold mt-1">
+                                    ⚠️ Cupo completo (3/3). Para asignar este artículo, primero desmarca uno existente del Hero.
+                                </p>
+                            }
+                        </div>
                     </label>
+                    <span asp-validation-for="Featured" class="text-xs text-rose-600 mt-1 block font-medium"></span>
                 </div>
 
                 <div class="pt-4 border-t border-slate-100 flex gap-2">
@@ -130,14 +223,17 @@
             <!-- Portada de Imagen (Previsualización Mejorada) -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <h4 class="font-bold text-slate-800 text-sm">Imagen de Portada</h4>
+                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                        Imagen de Portada
+                        <button type="button" class="cms-tooltip-icon" data-tooltip="Imagen principal de la noticia. Se optimiza y genera variantes WebP automáticamente">i</button>
+                    </h4>
                     <span class="text-[11px] text-slate-400 font-medium">Editorial (16:9)</span>
                 </div>
 
                 <!-- Vista previa estilizada -->
                 <div id="coverPreviewContainer" class="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "hidden" : "") space-y-2">
                     <div class="relative w-full aspect-video max-h-60 rounded-xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-md group">
-                        <img id="coverPreviewImg" src="@Model.CoverImageUrl" alt="Portada"
+                        <img id="coverPreviewImg" src="@Model.CoverImageUrl" alt="Portada" referrerpolicy="no-referrer"
                              class="w-full h-full object-cover transition-all duration-300"
                              onerror="this.onerror=null; this.classList.add('opacity-30'); document.getElementById('coverErrorBadge')?.classList.remove('hidden');"
                              onload="this.classList.remove('opacity-30'); document.getElementById('coverErrorBadge')?.classList.add('hidden');" />
@@ -215,20 +311,25 @@
                     </div>
                 }
 
-                @if (Model.AvailableImages.Any())
-                {
-                    <div class="pt-2 border-t border-slate-100">
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">O seleccionar de la Biblioteca</label>
-                        <select id="libraryImageSelect" class="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white">
-                            <option value="">-- Seleccionar imagen existente --</option>
-                            @foreach (var img in Model.AvailableImages)
-                            {
-                                var bestUrl = ImageMapper.GetBestUrl(img);
-                                <option value="@img.Id" data-url="@bestUrl">@img.OriginalFileName</option>
-                            }
-                        </select>
+                <div class="pt-2 border-t border-slate-100 space-y-2">
+                    <label class="block text-[11px] font-semibold text-slate-600">O seleccionar de la Biblioteca</label>
+                    <button type="button" id="btnOpenMediaLibraryModal" onclick="openMediaLibraryModal(event)"
+                            class="w-full py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#00296B] font-bold text-xs flex items-center justify-center gap-2 transition shadow-2xs group">
+                        <svg class="w-4 h-4 text-[#00509D] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Explorar Biblioteca de Imágenes</span>
+                    </button>
+
+                    <!-- Aviso no bloqueante si la portada seleccionada está en uso por otro artículo -->
+                    <div id="coverDuplicityNotice" class="hidden p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-start gap-2 shadow-2xs">
+                        <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <div class="leading-tight">
+                            <span class="font-bold">Aviso de duplicidad:</span> Esta imagen también está asignada al artículo <strong id="coverDuplicityArticleTitle"></strong>.
+                        </div>
                     </div>
-                }
+                </div>
+
 
                 <input type="hidden" asp-for="CoverImageId" id="coverImageIdInput" />
             </div>
@@ -236,35 +337,8 @@
     </div>
 </form>
 
-<!-- Modal Rápido para Crear Categoría o Subcategoría -->
-<div id="quickCategoryModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 transition-all animate-in fade-in zoom-in-95 duration-150">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 id="quickModalTitle" class="text-base font-bold text-slate-800">Nueva Categoría</h3>
-            <button type="button" id="btnCancelQuickModal" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-
-        <input type="hidden" id="quickParentId" value="" />
-
-        <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1" id="quickNameLabel">Nombre de la Categoría</label>
-            <input type="text" id="quickNameInput" placeholder="Ej. Inteligencia Artificial" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-[#00509D] transition" />
-            <p id="quickHelpText" class="text-[11px] text-slate-400 mt-1">Se creará y estará disponible de inmediato.</p>
-        </div>
-
-        <div id="quickErrorMsg" class="hidden text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200 font-medium"></div>
-
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <button type="button" id="btnCloseQuickModal" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
-            <button type="button" id="btnSaveQuickCategory" class="px-5 py-2 text-xs font-bold text-white bg-[#00296B] hover:bg-[#00509D] rounded-xl shadow-xs transition flex items-center gap-1.5">
-                <span id="quickSaveSpinner" class="hidden animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full"></span>
-                <span>Guardar</span>
-            </button>
-        </div>
-    </div>
-</div>
+<partial name="_QuickCategoryModal" />
+<partial name="_MediaLibraryModal" model="Model" />
 
 @section Scripts {
     <script src="~/js/admin-editor.js" asp-append-version="true"></script>
@@ -286,11 +360,13 @@
         const coverFullViewLink = document.getElementById('coverFullViewLink');
         const toggleFitBtn = document.getElementById('toggleFitBtn');
         const removeCoverBtn = document.getElementById('removeCoverBtn');
-        const libraryImageSelect = document.getElementById('libraryImageSelect');
 
-        function updateCoverPreview(url) {
+        window.updateCoverPreview = function(url) {
             if (url) {
                 coverPreviewImg.src = url;
+                coverPreviewImg.referrerPolicy = 'no-referrer';
+                coverPreviewImg.classList.remove('opacity-30');
+                document.getElementById('coverErrorBadge')?.classList.add('hidden');
                 if (coverFullViewLink) coverFullViewLink.href = url;
                 coverPreviewContainer.classList.remove('hidden');
             } else {
@@ -298,21 +374,10 @@
                 coverImageIdInput.value = '';
                 if (coverFullViewLink) coverFullViewLink.href = '#';
             }
-        }
-
-        function selectExistingCover(id, url) {
-            coverImageIdInput.value = id;
-            coverImageUrlInput.value = url;
-            updateCoverPreview(url);
-        }
-
-        if (libraryImageSelect) {
-            libraryImageSelect.addEventListener('change', () => {
-                const opt = libraryImageSelect.selectedOptions[0];
-                if (!opt || !opt.value) return;
-                selectExistingCover(opt.value, opt.dataset.url);
-            });
-        }
+            if (typeof window.checkCurrentCoverUsage === 'function') {
+                window.checkCurrentCoverUsage();
+            }
+        };
 
         // Alternar ajuste de imagen (cover vs contain)
         toggleFitBtn?.addEventListener('click', () => {
@@ -329,10 +394,10 @@
 
         // Actualizar vista previa cuando el usuario edite la ruta o URL manualmente
         coverImageUrlInput?.addEventListener('input', () => {
-            updateCoverPreview(coverImageUrlInput.value.trim());
+            window.updateCoverPreview(coverImageUrlInput.value.trim());
         });
 
-        coverUploadBox?.addEventListener('click', () => coverFileInput.click());
+        coverUploadBox?.addEventListener('click', () => coverFileInput?.click());
         coverFileInput?.addEventListener('change', async () => {
             if (!coverFileInput.files || coverFileInput.files.length === 0) return;
             const file = coverFileInput.files[0];
@@ -351,7 +416,7 @@
                 if (data.id) {
                     coverImageIdInput.value = data.id;
                     coverImageUrlInput.value = data.url;
-                    updateCoverPreview(data.url);
+                    window.updateCoverPreview(data.url);
                 }
             } catch (err) {
                 alert('Error al subir portada: ' + err);
@@ -361,21 +426,20 @@
         removeCoverBtn?.addEventListener('click', () => {
             coverImageIdInput.value = '';
             coverImageUrlInput.value = '';
-            updateCoverPreview('');
+            window.updateCoverPreview('');
             coverFileInput.value = '';
-            if (libraryImageSelect) libraryImageSelect.value = '';
         });
 
         // Filtrado dinámico de subcategorías según la categoría seleccionada
         const categorySelect = document.getElementById('categorySelect');
         const subcategorySelect = document.getElementById('subcategorySelect');
 
-        function filterSubcategories() {
-            const selectedCat = categorySelect.value;
-            const currentSubVal = subcategorySelect.value;
+        window.filterSubcategories = function() {
+            const selectedCat = categorySelect?.value;
+            const currentSubVal = subcategorySelect?.value;
             let currentSubStillValid = false;
 
-            Array.from(subcategorySelect.options).forEach((opt, idx) => {
+            Array.from(subcategorySelect?.options || []).forEach((opt, idx) => {
                 if (idx === 0) return; // Opción "-- Ninguna --"
                 const parent = opt.getAttribute('data-parent');
                 if (!selectedCat || parent === selectedCat) {
@@ -388,112 +452,32 @@
                 }
             });
 
-            if (!currentSubStillValid && selectedCat) {
+            if (!currentSubStillValid && selectedCat && subcategorySelect) {
                 subcategorySelect.value = '';
             }
-        }
+        };
 
-        categorySelect?.addEventListener('change', filterSubcategories);
-        filterSubcategories();
+        categorySelect?.addEventListener('change', window.filterSubcategories);
+        window.filterSubcategories();
 
-        // ─── Modal Rápido de Categorías y Subcategorías ─────────────────────
-        const quickModal = document.getElementById('quickCategoryModal');
-        const quickTitle = document.getElementById('quickModalTitle');
-        const quickNameLabel = document.getElementById('quickNameLabel');
-        const quickNameInput = document.getElementById('quickNameInput');
-        const quickParentId = document.getElementById('quickParentId');
-        const quickHelpText = document.getElementById('quickHelpText');
-        const quickErrorMsg = document.getElementById('quickErrorMsg');
-        const btnSaveQuick = document.getElementById('btnSaveQuickCategory');
-        const quickSpinner = document.getElementById('quickSaveSpinner');
+        function toggleFeaturedStyling(input) {
+            const card = document.getElementById('featuredCardWrapper');
+            if (!card) return;
 
-        function openQuickModal(isSubcategory) {
-            quickErrorMsg.classList.add('hidden');
-            quickErrorMsg.innerText = '';
-            quickNameInput.value = '';
+            const currentCount = parseInt(card.getAttribute('data-featured-count') || '0', 10);
+            const wasInitiallyFeatured = card.getAttribute('data-initial-featured') === 'true';
 
-            if (isSubcategory) {
-                const parentId = categorySelect.value;
-                if (!parentId) {
-                    alert('Por favor selecciona primero una Categoría Principal a la que pertenecerá la subcategoría.');
-                    categorySelect.focus();
-                    return;
-                }
-                const parentName = categorySelect.options[categorySelect.selectedIndex]?.text || '';
-                quickTitle.innerText = 'Nueva Subcategoría';
-                quickNameLabel.innerText = `Nombre de la Subcategoría (para ${parentName})`;
-                quickHelpText.innerText = `Se asociará directamente como subcategoría de "${parentName}".`;
-                quickParentId.value = parentId;
-            } else {
-                quickTitle.innerText = 'Nueva Categoría Principal';
-                quickNameLabel.innerText = 'Nombre de la Categoría';
-                quickHelpText.innerText = 'Se creará como categoría principal en el menú y portal.';
-                quickParentId.value = '';
-            }
-
-            quickModal.classList.remove('hidden');
-            setTimeout(() => quickNameInput.focus(), 50);
-        }
-
-        function closeQuickModal() {
-            quickModal.classList.add('hidden');
-        }
-
-        document.getElementById('btnOpenNewCategoryModal')?.addEventListener('click', () => openQuickModal(false));
-        document.getElementById('btnOpenNewSubcategoryModal')?.addEventListener('click', () => openQuickModal(true));
-        document.getElementById('btnCancelQuickModal')?.addEventListener('click', closeQuickModal);
-        document.getElementById('btnCloseQuickModal')?.addEventListener('click', closeQuickModal);
-
-        btnSaveQuick?.addEventListener('click', async () => {
-            const name = quickNameInput.value.trim();
-            if (!name) {
-                quickErrorMsg.innerText = 'Por favor ingresa un nombre.';
-                quickErrorMsg.classList.remove('hidden');
+            if (input.checked && !wasInitiallyFeatured && currentCount >= 3) {
+                alert('Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos destacados. Debes desmarcar uno existente antes de designar este.');
+                input.checked = false;
                 return;
             }
 
-            const parentId = quickParentId.value.trim() || null;
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-
-            btnSaveQuick.disabled = true;
-            quickSpinner.classList.remove('hidden');
-            quickErrorMsg.classList.add('hidden');
-
-            try {
-                const res = await fetch('/admin/categorias/crear-rapida', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { 'RequestVerificationToken': token } : {})
-                    },
-                    body: JSON.stringify({ name, parentId })
-                });
-
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    throw new Error(data.message || 'Error al crear.');
-                }
-
-                if (parentId) {
-                    const opt = new Option(data.name, data.id, true, true);
-                    opt.setAttribute('data-parent', parentId);
-                    subcategorySelect.add(opt);
-                    subcategorySelect.value = data.id;
-                } else {
-                    const opt = new Option(data.name, data.id, true, true);
-                    categorySelect.add(opt);
-                    categorySelect.value = data.id;
-                    filterSubcategories();
-                }
-
-                closeQuickModal();
-            } catch (err) {
-                quickErrorMsg.innerText = err.message;
-                quickErrorMsg.classList.remove('hidden');
-            } finally {
-                btnSaveQuick.disabled = false;
-                quickSpinner.classList.add('hidden');
+            if (input.checked) {
+                card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-amber-50/70 border-amber-300 shadow-2xs";
+            } else {
+                card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-slate-50/60 border-slate-200 hover:border-slate-300";
             }
-        });
+        }
     </script>
 }

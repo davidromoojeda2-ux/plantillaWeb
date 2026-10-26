@@ -1,4 +1,5 @@
 using Aplication.Services;
+using Aplication.Mappers;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,13 @@ public class DashboardController : Controller
         ViewBag.PendingCommentsCount = pendingComments.Count;
         ViewBag.PendingComments = pendingComments.Take(5).ToList();
         ViewBag.RecentArticles = articles.Take(5).ToList();
+
+        var coverIds = articles.Where(a => !string.IsNullOrEmpty(a.CoverImageId)).Select(a => a.CoverImageId!).Distinct().ToList();
+        var images = await _imageService.GetVariantsDictAsync(coverIds);
+        ViewBag.CoverImages = images.ToDictionary(
+            kvp => kvp.Key,
+            kvp => ImageMapper.GetThumbnailUrl(kvp.Value) ?? ImageMapper.GetBestUrl(kvp.Value) ?? string.Empty
+        );
 
         return View();
     }

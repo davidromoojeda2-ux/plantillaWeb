@@ -37,6 +37,7 @@ public interface IArticleRepository
     Task IncrementViewCountAsync(string id);
     Task<bool> SlugExistsAsync(string slug, string? excludeId = null);
     Task<List<Article>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
+    Task<List<Article>> GetMostReadAsync(int take = 5);
     Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
 }
 
@@ -84,11 +85,16 @@ public interface IImageMetadataRepository
     Task<List<ImageMetadata>> GetAllAsync(int skip = 0, int take = 50);
     Task<List<ImageMetadata>> GetByArticleIdAsync(string articleId);
     Task<ImageMetadata?> GetByIdAsync(string id);
+    Task<ImageMetadata?> GetByNameAsync(string fileName, CancellationToken ct = default);
+    Task<bool> ExistsByNameAsync(string fileName, CancellationToken ct = default);
+    Task<long> CountAsync(string? search = null, string? storage = null, string? articleId = null, CancellationToken ct = default);
+    Task<List<ImageMetadata>> GetPagedAsync(int skip, int take, string? search = null, string? storage = null, string? articleId = null, CancellationToken ct = default);
     Task InsertAsync(ImageMetadata image);
     Task UpdateAltAsync(string id, string alt);
     Task UpdateArticleIdAsync(string id, string? articleId);
     Task DeleteAsync(string id);
 }
+
 
 // ─── AdminUser Repository Interface ───────────────────────────────────────────
 

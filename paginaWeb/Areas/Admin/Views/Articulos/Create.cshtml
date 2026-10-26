@@ -11,521 +11,450 @@
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-5">
                 <div>
-                    <label asp-for="Title"
-                           class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Título del
-                        Artículo</label>
-                        <input asp-for="Title" id="titleInput" required placeholder="Escribe el titular impactante..."
-                               class="w-full text-xl font-serif font-bold text-slate-900 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D]" />
-                        <span asp-validation-for="Title" class="text-xs text-rose-600 mt-1 block"></span>
+                    <label asp-for="Title" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Título del Artículo</label>
+                    <input asp-for="Title" id="titleInput" required placeholder="Escribe el titular impactante..."
+                           class="w-full text-xl font-serif font-bold text-slate-900 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D]" />
+                    <span asp-validation-for="Title" class="text-xs text-rose-600 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Slug" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
+                        Slug URL
+                        <button type="button" class="cms-tooltip-icon" data-tooltip="Identificador único para la URL amigable del artículo en el navegador">i</button>
+                    </label>
+                    <div class="flex items-center rounded-xl border border-slate-300 overflow-hidden bg-slate-50 focus-within:ring-2 focus-within:ring-[#00509D]">
+                        <span class="px-3 text-xs text-slate-400 font-mono select-none">/articulos/</span>
+                        <input asp-for="Slug" id="slugInput" required placeholder="slug-de-la-noticia"
+                               class="w-full text-sm font-mono text-slate-800 bg-transparent px-2 py-2.5 outline-none" />
+                    </div>
+                    <span asp-validation-for="Slug" class="text-xs text-rose-600 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Summary" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1.5">
+                        Bajada o Resumen Editorial
+                        <button type="button" class="cms-tooltip-icon" data-tooltip="Texto introductorio breve que se muestra en tarjetas y resultados de búsqueda">i</button>
+                    </label>
+                    <textarea asp-for="Summary" rows="3" required placeholder="Breve síntesis de dos a tres oraciones que introducen el artículo..."
+                              class="w-full text-sm text-slate-800 px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] leading-relaxed"></textarea>
+                    <span asp-validation-for="Summary" class="text-xs text-rose-600 mt-1 block"></span>
+                </div>
+            </div>
+
+            <!-- Editor de Bloques Gutenberg -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600">Cuerpo del Artículo (Editor por Bloques)</label>
+                    <span class="text-[11px] text-slate-400">Presiona <kbd class="px-1.5 py-0.5 rounded bg-slate-100 border text-slate-600 font-mono">/</kbd> para insertar bloques</span>
+                </div>
+
+                <div id="editorCanvas"></div>
+                <textarea asp-for="Content" id="ContentInput" class="hidden"></textarea>
+                <span asp-validation-for="Content" class="text-xs text-rose-600 mt-1 block"></span>
+            </div>
+        </div>
+
+        <!-- ─── Columna Lateral (Metadatos y Publicación) ───────────────────── -->
+        <div class="space-y-6">
+            <!-- Panel de Publicación -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+                <h4 class="font-bold text-slate-800 text-sm pb-3 border-b border-slate-100">Publicación</h4>
+
+                <div>
+                    <label asp-for="Status" class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
+                    <select asp-for="Status" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white">
+                        <option value="Publicado">Publicado</option>
+                        <option value="Borrador">Borrador</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label asp-for="Author" class="block text-xs font-semibold text-slate-600 mb-1">Firma / Autor</label>
+                    <input asp-for="Author" required class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2" />
+                </div>
+
+                <!-- Destacado en Hero Card -->
+                <div class="pt-2">
+                    @{
+                        var heroCountAll = (int?)ViewBag.FeaturedCount ?? 0;
+                        var isHeroFull = heroCountAll >= 3;
+                    }
+                    <label for="FeaturedCheckbox" id="featuredCardWrapper"
+                           data-featured-count="@heroCountAll"
+                           class="relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer @(Model.Featured ? "bg-amber-50/70 border-amber-300 shadow-2xs" : "bg-slate-50/60 border-slate-200 hover:border-slate-300")">
+                        <div class="pt-0.5">
+                            <input asp-for="Featured" id="FeaturedCheckbox" type="checkbox"
+                                   class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-300 cursor-pointer"
+                                   onchange="toggleFeaturedStyling(this)" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-1.5">
+                                <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <span class="text-amber-500 font-bold">★</span> Destacar en portada
+                                    <button type="button" class="cms-tooltip-icon cms-tooltip-icon--amber"
+                                            data-tooltip="Muestra esta noticia en el carrusel principal de la portada. Requiere imagen asignada (límite de 3 artículos)."
+                                            data-tooltip-position="top"
+                                            aria-label="Más información sobre Destacar en portada">
+                                        i
+                                    </button>
+                                </span>
+                                @if (isHeroFull && !Model.Featured)
+                                {
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 cursor-help"
+                                          data-tooltip="Cupo completo (3/3). Para asignar este artículo, primero desmarca uno existente del Hero."
+                                          data-tooltip-position="top">
+                                        Hero (3/3 Lleno)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-950 border border-amber-300 cursor-help"
+                                          data-tooltip="Muestra esta noticia en el carrusel principal de la portada. Requiere imagen asignada (límite de 3 artículos)."
+                                          data-tooltip-position="top">
+                                        Hero (Máx 3)
+                                    </span>
+                                }
+                            </div>
+                            @if (isHeroFull && !Model.Featured)
+                            {
+                                <p class="text-[10px] text-amber-800 font-semibold mt-1">
+                                    ⚠️ Cupo completo (3/3). Para asignar este artículo, primero desmarca uno existente del Hero.
+                                </p>
+                            }
+                        </div>
+                    </label>
+                    <span asp-validation-for="Featured" class="text-xs text-rose-600 mt-1 block font-medium"></span>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex gap-2">
+                    <button type="submit"
+                            class="flex-1 py-2.5 px-4 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-sm transition">
+                        Guardar Noticia
+                    </button>
+                    <a asp-area="Admin" asp-controller="Articulos" asp-action="Index"
+                       class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
+                        Cancelar
+                    </a>
+                </div>
+            </div>
+
+            <!-- Categoría y Taxonomía -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h4 class="font-bold text-slate-800 text-sm">Taxonomía</h4>
+                    <span class="text-[11px] text-slate-400 font-medium">Clasificación</span>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label asp-for="CategoryId" class="block text-xs font-semibold text-slate-600">Categoría Principal</label>
+                        <button type="button" id="btnOpenNewCategoryModal"
+                                class="text-[11px] font-bold text-[#00509D] hover:underline flex items-center gap-1 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            + Nueva Categoría
+                        </button>
+                    </div>
+                    <select asp-for="CategoryId" id="categorySelect"
+                            class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D]/30 focus:border-[#00509D] transition">
+                        <option value="">-- Seleccionar Categoría --</option>
+                        @foreach (var p in Model.ParentCategories)
+                        {
+                            <option value="@p.Id">@p.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label asp-for="SubcategoryId" class="block text-xs font-semibold text-slate-600">Subcategoría (Opcional)</label>
+                        <button type="button" id="btnOpenNewSubcategoryModal"
+                                class="text-[11px] font-bold text-[#00509D] hover:underline flex items-center gap-1 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            + Nueva Subcategoría
+                        </button>
+                    </div>
+                    <select asp-for="SubcategoryId" id="subcategorySelect"
+                            class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D]/30 focus:border-[#00509D] transition">
+                        <option value="">-- Ninguna --</option>
+                        @foreach (var s in Model.SubCategories)
+                        {
+                            <option value="@s.Id" data-parent="@s.ParentId">@s.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Portada de Imagen -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                        Imagen de Portada
+                        <button type="button" class="cms-tooltip-icon" data-tooltip="Imagen principal de la noticia. Se optimiza y genera variantes WebP automáticamente">i</button>
+                    </h4>
+                    <span class="text-[11px] text-slate-400 font-medium">URL o archivo</span>
+                </div>
+
+                <!-- Vista previa estilizada -->
+                <div id="coverPreviewContainer" class="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "hidden" : "") space-y-2">
+                    <div class="relative w-full aspect-video max-h-60 rounded-xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-md group">
+                        <img id="coverPreviewImg" src="@Model.CoverImageUrl" alt="Portada" referrerpolicy="no-referrer"
+                             class="w-full h-full object-cover transition-all duration-300"
+                             onerror="this.onerror=null; this.classList.add('opacity-30'); document.getElementById('coverErrorBadge')?.classList.remove('hidden');"
+                             onload="this.classList.remove('opacity-30'); document.getElementById('coverErrorBadge')?.classList.add('hidden');" />
+
+                        <!-- Insignia de estado -->
+                        <div class="absolute top-2.5 left-2.5 z-10">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/95 backdrop-blur-md text-[#00296B] shadow-xs">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Portada activa
+                            </span>
+                        </div>
+
+                        <!-- Badge error oculto -->
+                        <div id="coverErrorBadge" class="hidden absolute inset-0 flex items-center justify-center bg-slate-950/85 text-rose-300 text-xs font-semibold px-4 text-center">
+                            ⚠️ No se pudo cargar la imagen desde la ruta indicada
+                        </div>
+
+                        <!-- Acciones flotantes sobre imagen -->
+                        <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                            <button type="button" id="toggleFitBtn" title="Alternar Ajustar / Llenar"
+                                    class="p-1.5 rounded-lg bg-white/95 backdrop-blur-md text-slate-700 hover:text-[#00296B] shadow-xs text-xs font-bold transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                </svg>
+                            </button>
+                            <a id="coverFullViewLink" href="@Model.CoverImageUrl" target="_blank"
+                               title="Abrir imagen completa"
+                               class="p-1.5 rounded-lg bg-white/95 backdrop-blur-md text-slate-700 hover:text-[#00296B] shadow-xs text-xs font-bold transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </div>
                     </div>
 
-                    <div>
-                        <label asp-for="Slug"
-                               class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Slug
-                            URL</label>
-                            <div
-                                class="flex items-center rounded-xl border border-slate-300 overflow-hidden bg-slate-50 focus-within:ring-2 focus-within:ring-[#00509D]">
-                                <span class="px-3 text-xs text-slate-400 font-mono select-none">/articulos/</span>
-                                <input asp-for="Slug" id="slugInput" required placeholder="slug-de-la-noticia"
-                                       class="w-full text-sm font-mono text-slate-800 bg-transparent px-2 py-2.5 outline-none" />
-                            </div>
-                            <span asp-validation-for="Slug" class="text-xs text-rose-600 mt-1 block"></span>
+                    <div class="flex items-center justify-between text-xs pt-1 px-1">
+                        <span class="text-slate-500 font-medium text-[11px] flex items-center gap-1">
+                            <span class="text-slate-400">Proporción:</span> 16:9
+                        </span>
+                        <button type="button" id="removeCoverBtn"
+                                class="text-xs text-rose-600 hover:text-rose-700 hover:underline font-semibold flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Quitar imagen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Campo de Ruta o URL -->
+                <div>
+                    <label asp-for="CoverImageUrl" class="block text-xs font-semibold text-slate-600 mb-1">Ruta o URL de la imagen</label>
+                    <div class="flex items-center rounded-xl border border-slate-300 focus-within:ring-2 focus-within:ring-[#00509D] overflow-hidden bg-white">
+                        <input asp-for="CoverImageUrl" id="coverImageUrlInput" placeholder="/uploads/... o https://..."
+                               class="w-full text-xs font-mono text-slate-800 px-3 py-2 outline-none" />
+                    </div>
+                    <span class="text-[11px] text-slate-400 mt-1 block">Puedes escribir o modificar directamente la ruta de la portada.</span>
+                </div>
+
+                <!-- Subir / Cambiar archivo -->
+                <div id="coverUploadBox"
+                     class="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:bg-slate-50 hover:border-[#00509D]/40 transition cursor-pointer">
+                    <svg class="w-7 h-7 text-slate-400 mx-auto mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-xs font-semibold text-[#00509D]">Subir archivo local</span>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Se optimizará a WebP automáticamente</p>
+                    <input type="file" id="coverFileInput" accept="image/*" class="hidden" />
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 space-y-2">
+                    <label class="block text-[11px] font-semibold text-slate-600">O seleccionar de la Biblioteca</label>
+                    <button type="button" id="btnOpenMediaLibraryModal" onclick="window.openMediaLibraryModal(event)"
+                            class="w-full py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#00296B] font-bold text-xs flex items-center justify-center gap-2 transition shadow-2xs group">
+                        <svg class="w-4 h-4 text-[#00509D] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Explorar Biblioteca de Imágenes</span>
+                    </button>
+
+                    <!-- Aviso no bloqueante si la portada seleccionada está en uso por otro artículo -->
+                    <div id="coverDuplicityNotice" class="hidden p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-start gap-2 shadow-2xs">
+                        <svg class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <div class="leading-tight">
+                            <span class="font-bold">Aviso de duplicidad:</span> Esta imagen ya está asignada al artículo <strong id="coverDuplicityArticleTitle"></strong>.
                         </div>
+                    </div>
+                </div>
 
-                        <div>
-                            <label asp-for="Summary"
-                                   class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Bajada o
-                                Resumen Editorial</label>
-                                <textarea asp-for="Summary" rows="3" required
-                                          placeholder="Breve síntesis de dos a tres oraciones que introducen el artículo..."
-                                          class="w-full text-sm text-slate-800 px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] leading-relaxed"></textarea>
-                                <span asp-validation-for="Summary" class="text-xs text-rose-600 mt-1 block"></span>
-                            </div>
-                        </div>
+                <input type="hidden" asp-for="CoverImageId" id="coverImageIdInput" />
+            </div>
+        </div>
+    </div>
+</form>
 
-                        <!-- Editor de Bloques Gutenberg -->
-                        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
-                            <div class="flex items-center justify-between mb-3">
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600">Cuerpo del
-                                    Artículo (Editor por Bloques)</label>
-                                    <span class="text-[11px] text-slate-400">Presiona <kbd
-                                        class="px-1.5 py-0.5 rounded bg-slate-100 border text-slate-600 font-mono">/</kbd> para
-                                        insertar bloques</span>
-                                    </div>
+<partial name="_QuickCategoryModal" />
+<partial name="_MediaLibraryModal" model="Model" />
 
-                                    <div id="editorCanvas"></div>
-                                    <textarea asp-for="Content" id="ContentInput" class="hidden"></textarea>
-                                    <span asp-validation-for="Content" class="text-xs text-rose-600 mt-1 block"></span>
-                                </div>
-                            </div>
+@section Scripts {
+    <script src="~/js/admin-editor.js" asp-append-version="true"></script>
+    <script>
+        // Sincronizar editor de bloques antes de enviar formulario
+        const articleForm = document.getElementById('articleForm');
+        articleForm?.addEventListener('submit', () => {
+            if (window.editorInstance) {
+                window.editorInstance.syncContent();
+            }
+        });
 
-                            <!-- ─── Columna Lateral (Metadatos y Publicación) ───────────────────── -->
-                            <div class="space-y-6">
-                                <!-- Panel de Publicación -->
-                                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
-                                    <h4 class="font-bold text-slate-800 text-sm pb-3 border-b border-slate-100">Publicación</h4>
+        // Generador automático de Slug basado en el Título
+        const titleInput = document.getElementById('titleInput');
+        const slugInput = document.getElementById('slugInput');
+        titleInput?.addEventListener('input', () => {
+            if (!slugInput.dataset.manual) {
+                slugInput.value = titleInput.value
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+        });
+        slugInput?.addEventListener('input', () => {
+            slugInput.dataset.manual = 'true';
+        });
 
-                                    <div>
-                                        <label asp-for="Status" class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
-                                        <select asp-for="Status"
-                                                class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white">
-                                            <option value="Publicado">Publicado</option>
-                                            <option value="Borrador">Borrador</option>
-                                        </select>
-                                    </div>
+        const coverUploadBox = document.getElementById('coverUploadBox');
+        const coverFileInput = document.getElementById('coverFileInput');
+        const coverImageUrlInput = document.getElementById('coverImageUrlInput');
+        const coverImageIdInput = document.getElementById('coverImageIdInput');
+        const coverPreviewContainer = document.getElementById('coverPreviewContainer');
+        const coverPreviewImg = document.getElementById('coverPreviewImg');
+        const coverFullViewLink = document.getElementById('coverFullViewLink');
+        const toggleFitBtn = document.getElementById('toggleFitBtn');
+        const removeCoverBtn = document.getElementById('removeCoverBtn');
 
-                                    <div>
-                                        <label asp-for="Author" class="block text-xs font-semibold text-slate-600 mb-1">Firma /
-                                            Autor</label>
-                                            <input asp-for="Author" required
-                                                   class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2" />
-                                        </div>
+        window.updateCoverPreview = function(url) {
+            if (url) {
+                coverPreviewImg.src = url;
+                coverPreviewImg.referrerPolicy = 'no-referrer';
+                coverPreviewImg.classList.remove('opacity-30');
+                document.getElementById('coverErrorBadge')?.classList.add('hidden');
+                if (coverFullViewLink) coverFullViewLink.href = url;
+                coverPreviewContainer.classList.remove('hidden');
+            } else {
+                coverPreviewContainer.classList.add('hidden');
+                coverImageIdInput.value = '';
+                if (coverFullViewLink) coverFullViewLink.href = '#';
+            }
+            if (typeof window.checkCurrentCoverUsage === 'function') {
+                window.checkCurrentCoverUsage();
+            }
+        };
 
-                                        <div class="pt-2">
-                                            <label class="flex items-center gap-2 cursor-pointer">
-                                                <input asp-for="Featured" type="checkbox"
-                                                       class="rounded border-slate-300 text-[#00296B] focus:ring-[#00296B]" />
-                                                <span class="text-xs font-semibold text-slate-700">Destacar en portada (Hero)</span>
-                                            </label>
-                                        </div>
+        // Alternar ajuste de imagen (cover vs contain)
+        toggleFitBtn?.addEventListener('click', () => {
+            if (coverPreviewImg.classList.contains('object-cover')) {
+                coverPreviewImg.classList.remove('object-cover');
+                coverPreviewImg.classList.add('object-contain');
+                toggleFitBtn.title = "Modo: Ajustar completa (Clic para Llenar 16:9)";
+            } else {
+                coverPreviewImg.classList.remove('object-contain');
+                coverPreviewImg.classList.add('object-cover');
+                toggleFitBtn.title = "Modo: Llenar 16:9 (Clic para Ajustar completa)";
+            }
+        });
 
-                                        <div class="pt-4 border-t border-slate-100 flex gap-2">
-                                            <button type="submit"
-                                                    class="flex-1 py-2.5 px-4 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-sm transition">
-                                                Guardar Noticia
-                                            </button>
-                                            <a asp-area="Admin" asp-controller="Articulos" asp-action="Index"
-                                               class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
-                                                Cancelar
-                                            </a>
-                                        </div>
-                                    </div>
+        // Actualizar vista previa cuando el usuario edite la ruta o URL manualmente
+        coverImageUrlInput?.addEventListener('input', () => {
+            window.updateCoverPreview(coverImageUrlInput.value.trim());
+        });
 
-                                    <!-- Categoría y Taxonomía -->
-                                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
-                                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                                            <h4 class="font-bold text-slate-800 text-sm">Taxonomía</h4>
-                                            <span class="text-[11px] text-slate-400 font-medium">Clasificación</span>
-                                        </div>
+        coverUploadBox?.addEventListener('click', () => coverFileInput?.click());
+        coverFileInput?.addEventListener('change', async () => {
+            if (!coverFileInput.files || coverFileInput.files.length === 0) return;
+            const file = coverFileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
 
-                                        <div>
-                                            <div class="flex items-center justify-between mb-1">
-                                                <label asp-for="CategoryId" class="block text-xs font-semibold text-slate-600">Categoría
-                                                    Principal</label>
-                                                    <button type="button" id="btnOpenNewCategoryModal"
-                                                            class="text-[11px] font-bold text-[#00509D] hover:underline flex items-center gap-1 transition">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                                                  d="M12 4.5v15m7.5-7.5h-15" />
-                                                        </svg>
-                                                        + Nueva Categoría
-                                                    </button>
-                                                </div>
-                                                <select asp-for="CategoryId" id="categorySelect"
-                                                        class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D]/30 focus:border-[#00509D] transition">
-                                                    <option value="">-- Seleccionar Categoría --</option>
-                                                    @foreach (var p in Model.ParentCategories)
-                                                    {
-                                                        <option value="@p.Id">@p.Name</option>
-                                                    }
-                                                </select>
-                                            </div>
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            try {
+                const res = await fetch('/admin/articulos/upload-inline', {
+                    method: 'POST',
+                    headers: token ? { 'RequestVerificationToken': token } : {},
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.id) {
+                    coverImageIdInput.value = data.id;
+                    coverImageUrlInput.value = data.url;
+                    window.updateCoverPreview(data.url);
+                }
+            } catch (err) {
+                alert('Error al subir portada: ' + err);
+            }
+        });
 
-                                            <div>
-                                                <div class="flex items-center justify-between mb-1">
-                                                    <label asp-for="SubcategoryId" class="block text-xs font-semibold text-slate-600">Subcategoría
-                                                        (Opcional)</label>
-                                                        <button type="button" id="btnOpenNewSubcategoryModal"
-                                                                class="text-[11px] font-bold text-[#00509D] hover:underline flex items-center gap-1 transition">
-                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                                                      d="M12 4.5v15m7.5-7.5h-15" />
-                                                            </svg>
-                                                            + Nueva Subcategoría
-                                                        </button>
-                                                    </div>
-                                                    <select asp-for="SubcategoryId" id="subcategorySelect"
-                                                            class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D]/30 focus:border-[#00509D] transition">
-                                                        <option value="">-- Ninguna --</option>
-                                                        @foreach (var s in Model.SubCategories)
-                                                        {
-                                                            <option value="@s.Id" data-parent="@s.ParentId">@s.Name</option>
-                                                        }
-                                                    </select>
-                                                </div>
-                                            </div>
+        removeCoverBtn?.addEventListener('click', () => {
+            coverImageIdInput.value = '';
+            coverImageUrlInput.value = '';
+            window.updateCoverPreview('');
+            coverFileInput.value = '';
+        });
 
-                                            <!-- Portada de Imagen (Previsualización Mejorada) -->
-                                            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
-                                                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                                                    <h4 class="font-bold text-slate-800 text-sm">Imagen de Portada</h4>
-                                                    <span class="text-[11px] text-slate-400 font-medium">URL o archivo</span>
-                                                </div>
+        // Filtrado dinámico de subcategorías según la categoría seleccionada
+        const categorySelect = document.getElementById('categorySelect');
+        const subcategorySelect = document.getElementById('subcategorySelect');
 
-                                                <!-- Vista previa estilizada -->
-                                                <div id="coverPreviewContainer"
-                                                     class="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "hidden" : "") space-y-2">
-                                                    <div
-                                                        class="relative w-full aspect-video max-h-60 rounded-xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-md group">
-                                                        <img id="coverPreviewImg" src="@Model.CoverImageUrl" alt="Portada"
-                                                             class="w-full h-full object-cover transition-all duration-300"
-                                                             onerror="this.onerror=null; this.classList.add('opacity-30'); document.getElementById('coverErrorBadge')?.classList.remove('hidden');"
-                                                             onload="this.classList.remove('opacity-30'); document.getElementById('coverErrorBadge')?.classList.add('hidden');" />
+        window.filterSubcategories = function() {
+            const selectedCat = categorySelect?.value;
+            const currentSubVal = subcategorySelect?.value;
+            let currentSubStillValid = false;
 
-                                                        <!-- Insignia de estado -->
-                                                        <div class="absolute top-2.5 left-2.5 z-10">
-                                                            <span
-                                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/95 backdrop-blur-md text-[#00296B] shadow-xs">
-                                                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                                Portada activa
-                                                            </span>
-                                                        </div>
+            Array.from(subcategorySelect?.options || []).forEach((opt, idx) => {
+                if (idx === 0) return; // Opción "-- Ninguna --"
+                const parent = opt.getAttribute('data-parent');
+                if (!selectedCat || parent === selectedCat) {
+                    opt.hidden = false;
+                    opt.disabled = false;
+                    if (opt.value === currentSubVal) currentSubStillValid = true;
+                } else {
+                    opt.hidden = true;
+                    opt.disabled = true;
+                }
+            });
 
-                                                        <!-- Badge error oculto -->
-                                                        <div id="coverErrorBadge"
-                                                             class="hidden absolute inset-0 flex items-center justify-center bg-slate-950/85 text-rose-300 text-xs font-semibold px-4 text-center">
-                                                            ⚠️ No se pudo cargar la imagen desde la ruta indicada
-                                                        </div>
+            if (!currentSubStillValid && selectedCat && subcategorySelect) {
+                subcategorySelect.value = '';
+            }
+        };
 
-                                                        <!-- Acciones flotantes sobre imagen -->
-                                                        <div
-                                                            class="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
-                                                            <button type="button" id="toggleFitBtn" title="Alternar Ajustar / Llenar"
-                                                                    class="p-1.5 rounded-lg bg-white/95 backdrop-blur-md text-slate-700 hover:text-[#00296B] shadow-xs text-xs font-bold transition">
-                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                          d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                                                                </svg>
-                                                            </button>
-                                                            <a id="coverFullViewLink" href="@Model.CoverImageUrl" target="_blank"
-                                                               title="Abrir imagen completa"
-                                                               class="p-1.5 rounded-lg bg-white/95 backdrop-blur-md text-slate-700 hover:text-[#00296B] shadow-xs text-xs font-bold transition">
-                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                                </svg>
-                                                            </a>
-                                                        </div>
-                                                    </div>
+        categorySelect?.addEventListener('change', window.filterSubcategories);
+        window.filterSubcategories();
 
-                                                    <div class="flex items-center justify-between text-xs pt-1 px-1">
-                                                        <span class="text-slate-500 font-medium text-[11px] flex items-center gap-1">
-                                                            <span class="text-slate-400">Proporción:</span> 16:9
-                                                        </span>
-                                                        <button type="button" id="removeCoverBtn"
-                                                                class="text-xs text-rose-600 hover:text-rose-700 hover:underline font-semibold flex items-center gap-1">
-                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                            </svg>
-                                                            Quitar imagen
-                                                        </button>
-                                                    </div>
-                                                </div>
+        function toggleFeaturedStyling(input) {
+            const card = document.getElementById('featuredCardWrapper');
+            if (!card) return;
 
-                                                <!-- Campo de Ruta o URL -->
-                                                <div>
-                                                    <label asp-for="CoverImageUrl" class="block text-xs font-semibold text-slate-600 mb-1">Ruta o URL de
-                                                        la imagen</label>
-                                                        <div
-                                                            class="flex items-center rounded-xl border border-slate-300 focus-within:ring-2 focus-within:ring-[#00509D] overflow-hidden bg-white">
-                                                            <input asp-for="CoverImageUrl" id="coverImageUrlInput" placeholder="/uploads/... o https://..."
-                                                                   class="w-full text-xs font-mono text-slate-800 px-3 py-2 outline-none" />
-                                                        </div>
-                                                        <span class="text-[11px] text-slate-400 mt-1 block">Puedes escribir o modificar directamente la ruta
-                                                            de la portada.</span>
-                                                        </div>
+            const currentCount = parseInt(card.getAttribute('data-featured-count') || '0', 10);
 
-                                                        <!-- Subir / Cambiar archivo -->
-                                                        <div id="coverUploadBox"
-                                                             class="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:bg-slate-50 hover:border-[#00509D]/40 transition cursor-pointer">
-                                                            <svg class="w-7 h-7 text-slate-400 mx-auto mb-1.5" fill="none" stroke="currentColor"
-                                                                 viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                            </svg>
-                                                            <span class="text-xs font-semibold text-[#00509D]">Subir archivo local</span>
-                                                            <p class="text-[10px] text-slate-400 mt-0.5">Se optimizará a WebP automáticamente</p>
-                                                            <input type="file" id="coverFileInput" accept="image/*" class="hidden" />
-                                                        </div>
+            if (input.checked && currentCount >= 3) {
+                alert('Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos destacados. Debes desmarcar uno existente antes de designar este.');
+                input.checked = false;
+                return;
+            }
 
-                                                        <input type="hidden" asp-for="CoverImageId" id="coverImageIdInput" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </form>
-
-                                        <!-- Modal Rápido para Crear Categoría o Subcategoría -->
-                                        <div id="quickCategoryModal"
-                                             class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-                                            <div
-                                                class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 transition-all animate-in fade-in zoom-in-95 duration-150">
-                                                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                                                    <h3 id="quickModalTitle" class="text-base font-bold text-slate-800">Nueva Categoría</h3>
-                                                    <button type="button" id="btnCancelQuickModal" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-
-                                                <input type="hidden" id="quickParentId" value="" />
-
-                                                <div>
-                                                    <label class="block text-xs font-semibold text-slate-700 mb-1" id="quickNameLabel">Nombre de la
-                                                        Categoría</label>
-                                                        <input type="text" id="quickNameInput" placeholder="Ej. Inteligencia Artificial"
-                                                               class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-[#00509D] transition" />
-                                                        <p id="quickHelpText" class="text-[11px] text-slate-400 mt-1">Se creará y estará disponible de inmediato.
-                                                        </p>
-                                                    </div>
-
-                                                    <div id="quickErrorMsg"
-                                                         class="hidden text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200 font-medium"></div>
-
-                                                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                                                        <button type="button" id="btnCloseQuickModal"
-                                                                class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
-                                                        <button type="button" id="btnSaveQuickCategory"
-                                                                class="px-5 py-2 text-xs font-bold text-white bg-[#00296B] hover:bg-[#00509D] rounded-xl shadow-xs transition flex items-center gap-1.5">
-                                                            <span id="quickSaveSpinner"
-                                                                  class="hidden animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full"></span>
-                                                            <span>Guardar</span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            @section Scripts {
-                                                <script src="~/js/admin-editor.js" asp-append-version="true"></script>
-                                                <script>
-                                                    // Sincronizar editor de bloques antes de enviar formulario
-                                                    const articleForm = document.getElementById('articleForm');
-                                                    articleForm?.addEventListener('submit', () => {
-                                                        if (window.editorInstance) {
-                                                            window.editorInstance.syncContent();
-                                                        }
-                                                    });
-
-                                                    // Slug generator
-                                                    const titleInput = document.getElementById('titleInput');
-                                                    const slugInput = document.getElementById('slugInput');
-                                                    titleInput.addEventListener('input', () => {
-                                                        if (!slugInput.dataset.manual) {
-                                                            slugInput.value = titleInput.value
-                                                                .toLowerCase()
-                                                                .trim()
-                                                                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                                                                .replace(/[^a-z0-9]+/g, '-')
-                                                                .replace(/^-+|-+$/g, '');
-                                                        }
-                                                    });
-                                                    slugInput.addEventListener('input', () => {
-                                                        slugInput.dataset.manual = 'true';
-                                                    });
-
-                                                    // Cover preview and upload
-                                                    const coverUploadBox = document.getElementById('coverUploadBox');
-                                                    const coverFileInput = document.getElementById('coverFileInput');
-                                                    const coverImageUrlInput = document.getElementById('coverImageUrlInput');
-                                                    const coverImageIdInput = document.getElementById('coverImageIdInput');
-                                                    const coverPreviewContainer = document.getElementById('coverPreviewContainer');
-                                                    const coverPreviewImg = document.getElementById('coverPreviewImg');
-                                                    const coverFullViewLink = document.getElementById('coverFullViewLink');
-                                                    const toggleFitBtn = document.getElementById('toggleFitBtn');
-                                                    const removeCoverBtn = document.getElementById('removeCoverBtn');
-
-                                                    function updateCoverPreview(url) {
-                                                        if (url) {
-                                                            coverPreviewImg.src = url;
-                                                            if (coverFullViewLink) coverFullViewLink.href = url;
-                                                            coverPreviewContainer.classList.remove('hidden');
-                                                        } else {
-                                                            coverPreviewContainer.classList.add('hidden');
-                                                            coverImageIdInput.value = '';
-                                                            if (coverFullViewLink) coverFullViewLink.href = '#';
-                                                        }
-                                                    }
-
-                                                    coverImageUrlInput?.addEventListener('input', () => {
-                                                        updateCoverPreview(coverImageUrlInput.value.trim());
-                                                    });
-
-                                                    // Alternar ajuste de imagen (cover vs contain)
-                                                    toggleFitBtn?.addEventListener('click', () => {
-                                                        if (coverPreviewImg.classList.contains('object-cover')) {
-                                                            coverPreviewImg.classList.remove('object-cover');
-                                                            coverPreviewImg.classList.add('object-contain');
-                                                            toggleFitBtn.title = "Modo: Ajustar completa (Clic para Llenar 16:9)";
-                                                        } else {
-                                                            coverPreviewImg.classList.remove('object-contain');
-                                                            coverPreviewImg.classList.add('object-cover');
-                                                            toggleFitBtn.title = "Modo: Llenar 16:9 (Clic para Ajustar completa)";
-                                                        }
-                                                    });
-
-                                                    coverUploadBox?.addEventListener('click', () => coverFileInput.click());
-                                                    coverFileInput?.addEventListener('change', async () => {
-                                                        if (!coverFileInput.files || coverFileInput.files.length === 0) return;
-                                                        const file = coverFileInput.files[0];
-                                                        const formData = new FormData();
-                                                        formData.append('file', file);
-
-                                                        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-                                                        try {
-                                                            const res = await fetch('/admin/articulos/upload-inline', {
-                                                                method: 'POST',
-                                                                headers: token ? { 'RequestVerificationToken': token } : {},
-                                                                body: formData
-                                                            });
-                                                            const data = await res.json();
-                                                            if (data.id) {
-                                                                coverImageIdInput.value = data.id;
-                                                                coverImageUrlInput.value = data.url;
-                                                                updateCoverPreview(data.url);
-                                                            }
-                                                        } catch (err) {
-                                                            alert('Error al subir portada: ' + err);
-                                                        }
-                                                    });
-
-                                                    removeCoverBtn?.addEventListener('click', () => {
-                                                        coverImageIdInput.value = '';
-                                                        coverImageUrlInput.value = '';
-                                                        updateCoverPreview('');
-                                                        coverFileInput.value = '';
-                                                    });
-
-                                                    // Filtrado dinámico de subcategorías según la categoría seleccionada
-                                                    const categorySelect = document.getElementById('categorySelect');
-                                                    const subcategorySelect = document.getElementById('subcategorySelect');
-
-                                                    function filterSubcategories() {
-                                                        const selectedCat = categorySelect.value;
-                                                        const currentSubVal = subcategorySelect.value;
-                                                        let currentSubStillValid = false;
-
-                                                        Array.from(subcategorySelect.options).forEach((opt, idx) => {
-                                                            if (idx === 0) return; // Opción "-- Ninguna --"
-                                                            const parent = opt.getAttribute('data-parent');
-                                                            if (!selectedCat || parent === selectedCat) {
-                                                                opt.hidden = false;
-                                                                opt.disabled = false;
-                                                                if (opt.value === currentSubVal) currentSubStillValid = true;
-                                                            } else {
-                                                                opt.hidden = true;
-                                                                opt.disabled = true;
-                                                            }
-                                                        });
-
-                                                        if (!currentSubStillValid && selectedCat) {
-                                                            subcategorySelect.value = '';
-                                                        }
-                                                    }
-
-                                                    categorySelect?.addEventListener('change', filterSubcategories);
-                                                    filterSubcategories();
-
-                                                    // ─── Modal Rápido de Categorías y Subcategorías ─────────────────────
-                                                    const quickModal = document.getElementById('quickCategoryModal');
-                                                    const quickTitle = document.getElementById('quickModalTitle');
-                                                    const quickNameLabel = document.getElementById('quickNameLabel');
-                                                    const quickNameInput = document.getElementById('quickNameInput');
-                                                    const quickParentId = document.getElementById('quickParentId');
-                                                    const quickHelpText = document.getElementById('quickHelpText');
-                                                    const quickErrorMsg = document.getElementById('quickErrorMsg');
-                                                    const btnSaveQuick = document.getElementById('btnSaveQuickCategory');
-                                                    const quickSpinner = document.getElementById('quickSaveSpinner');
-
-                                                    function openQuickModal(isSubcategory) {
-                                                        quickErrorMsg.classList.add('hidden');
-                                                        quickErrorMsg.innerText = '';
-                                                        quickNameInput.value = '';
-
-                                                        if (isSubcategory) {
-                                                            const parentId = categorySelect.value;
-                                                            if (!parentId) {
-                                                                alert('Por favor selecciona primero una Categoría Principal a la que pertenecerá la subcategoría.');
-                                                                categorySelect.focus();
-                                                                return;
-                                                            }
-                                                            const parentName = categorySelect.options[categorySelect.selectedIndex]?.text || '';
-                                                            quickTitle.innerText = 'Nueva Subcategoría';
-                                                            quickNameLabel.innerText = `Nombre de la Subcategoría (para ${parentName})`;
-                                                            quickHelpText.innerText = `Se asociará directamente como subcategoría de "${parentName}".`;
-                                                            quickParentId.value = parentId;
-                                                        } else {
-                                                            quickTitle.innerText = 'Nueva Categoría Principal';
-                                                            quickNameLabel.innerText = 'Nombre de la Categoría';
-                                                            quickHelpText.innerText = 'Se creará como categoría principal en el menú y portal.';
-                                                            quickParentId.value = '';
-                                                        }
-
-                                                        quickModal.classList.remove('hidden');
-                                                        setTimeout(() => quickNameInput.focus(), 50);
-                                                    }
-
-                                                    function closeQuickModal() {
-                                                        quickModal.classList.add('hidden');
-                                                    }
-
-                                                    document.getElementById('btnOpenNewCategoryModal')?.addEventListener('click', () => openQuickModal(false));
-                                                    document.getElementById('btnOpenNewSubcategoryModal')?.addEventListener('click', () => openQuickModal(true));
-                                                    document.getElementById('btnCancelQuickModal')?.addEventListener('click', closeQuickModal);
-                                                    document.getElementById('btnCloseQuickModal')?.addEventListener('click', closeQuickModal);
-
-                                                    btnSaveQuick?.addEventListener('click', async () => {
-                                                        const name = quickNameInput.value.trim();
-                                                        if (!name) {
-                                                            quickErrorMsg.innerText = 'Por favor ingresa un nombre.';
-                                                            quickErrorMsg.classList.remove('hidden');
-                                                            return;
-                                                        }
-
-                                                        const parentId = quickParentId.value.trim() || null;
-                                                        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-
-                                                        btnSaveQuick.disabled = true;
-                                                        quickSpinner.classList.remove('hidden');
-                                                        quickErrorMsg.classList.add('hidden');
-
-                                                        try {
-                                                            const res = await fetch('/admin/categorias/crear-rapida', {
-                                                                method: 'POST',
-                                                                headers: {
-                                                                    'Content-Type': 'application/json',
-                                                                    ...(token ? { 'RequestVerificationToken': token } : {})
-                                                                },
-                                                                body: JSON.stringify({ name, parentId })
-                                                            });
-
-                                                            const data = await res.json();
-                                                            if (!res.ok || !data.success) {
-                                                                throw new Error(data.message || 'Error al crear.');
-                                                            }
-
-                                                            if (parentId) {
-                                                                // Agregar a subcategorías
-                                                                const opt = new Option(data.name, data.id, true, true);
-                                                                opt.setAttribute('data-parent', parentId);
-                                                                subcategorySelect.add(opt);
-                                                                subcategorySelect.value = data.id;
-                                                            } else {
-                                                                // Agregar a categorías principales
-                                                                const opt = new Option(data.name, data.id, true, true);
-                                                                categorySelect.add(opt);
-                                                                categorySelect.value = data.id;
-                                                                filterSubcategories();
-                                                            }
-
-                                                            closeQuickModal();
-                                                        } catch (err) {
-                                                            quickErrorMsg.innerText = err.message;
-                                                            quickErrorMsg.classList.remove('hidden');
-                                                        } finally {
-                                                            btnSaveQuick.disabled = false;
-                                                            quickSpinner.classList.add('hidden');
-                                                        }
-                                                    });
-                                                </script>
-                                            }
+            if (input.checked) {
+                card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-amber-50/70 border-amber-300 shadow-2xs";
+            } else {
+                card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-slate-50/60 border-slate-200 hover:border-slate-300";
+            }
+        }
+    </script>
+}

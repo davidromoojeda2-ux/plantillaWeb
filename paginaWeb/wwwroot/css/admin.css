@@ -1,0 +1,164 @@
+/* ==========================================================================
+   CMS Admin — Hoja de estilos global y Tooltips
+   Estilos especializados para el panel de administración
+   ========================================================================== */
+
+/* ─── Tooltip Flotante del CMS ───────────────────────────────────────────── */
+.cms-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(0, 4px, 0) scale(0.96);
+    transform-origin: center bottom;
+    transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.15s;
+    will-change: transform, opacity;
+}
+
+.cms-tooltip.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, 0, 0) scale(1);
+}
+
+.cms-tooltip__inner {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 280px;
+    padding: 5px 10px;
+    background: #0B132B;
+    color: #FFFFFF;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.015em;
+    text-align: center;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4),
+                0 2px 6px -1px rgba(0, 0, 0, 0.25);
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Flecha / Caret */
+.cms-tooltip__arrow {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #0B132B;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transform: rotate(45deg);
+    pointer-events: none;
+}
+
+/* Posición Top: flecha abajo */
+.cms-tooltip--top .cms-tooltip__arrow {
+    bottom: -5px;
+    border-top: none;
+    border-left: none;
+}
+
+/* Posición Bottom: flecha arriba */
+.cms-tooltip--bottom .cms-tooltip__arrow {
+    top: -5px;
+    border-bottom: none;
+    border-right: none;
+}
+
+/* Posición Left: flecha a la derecha */
+.cms-tooltip--left .cms-tooltip__arrow {
+    right: -5px;
+    border-bottom: none;
+    border-left: none;
+}
+
+/* Posición Right: flecha a la izquierda */
+.cms-tooltip--right .cms-tooltip__arrow {
+    left: -5px;
+    border-top: none;
+    border-right: none;
+}
+
+/* ─── Variantes temáticas opcionales ─────────────────────────────────────── */
+.cms-tooltip--hero .cms-tooltip__inner {
+    background: #0B132B;
+    border-color: rgba(253, 197, 0, 0.6);
+    box-shadow: 0 4px 18px -2px rgba(253, 197, 0, 0.25), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+}
+.cms-tooltip--hero .cms-tooltip__arrow {
+    background: #0B132B;
+    border-color: rgba(253, 197, 0, 0.6);
+}
+
+.cms-tooltip--danger .cms-tooltip__inner {
+    background: #1C0F14;
+    border-color: rgba(244, 63, 94, 0.5);
+    box-shadow: 0 4px 18px -2px rgba(244, 63, 94, 0.25), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+}
+.cms-tooltip--danger .cms-tooltip__arrow {
+    background: #1C0F14;
+    border-color: rgba(244, 63, 94, 0.5);
+}
+
+.cms-tooltip--success .cms-tooltip__inner {
+    background: #0B1D16;
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 4px 18px -2px rgba(16, 185, 129, 0.2), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+}
+.cms-tooltip--success .cms-tooltip__arrow {
+    background: #0B1D16;
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
+/* ─── Icono / Botón de Globo Informativo (i) ────────────────────────────── */
+.cms-tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: #E2E8F0;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    cursor: help;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    vertical-align: middle;
+    user-select: none;
+    flex-shrink: 0;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.cms-tooltip-icon:hover,
+.cms-tooltip-icon:focus-visible {
+    background: #00296B;
+    color: #FFFFFF;
+    transform: scale(1.1);
+    outline: none;
+}
+
+.cms-tooltip-icon--amber {
+    background: rgba(253, 197, 0, 0.3);
+    color: #78350F;
+}
+
+.cms-tooltip-icon--amber:hover,
+.cms-tooltip-icon--amber:focus-visible {
+    background: #78350F;
+    color: #FFFFFF;
+}
+

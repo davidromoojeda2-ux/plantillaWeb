@@ -34,10 +34,11 @@ public class HomeController : Controller
     public async Task<IActionResult> Index()
     {
         var featured = await _articleService.GetFeaturedAsync(3);
+        var mostRead = await _articleService.GetMostReadAsync(5);
         var (recent, _) = await _articleService.GetPublishedAsync(1, 50);
         var categories = await _categoryService.GetAllAsync();
         var images = await _imageService.GetVariantsDictAsync(
-            recent.Concat(featured).Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
+            recent.Concat(featured).Concat(mostRead).Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
 
         var model = HomePageViewModelFactory.Create(
             recent,
@@ -45,7 +46,8 @@ public class HomeController : Controller
             categories,
             images,
             slug => Url.Action(nameof(Articulo), "Home", new { slug }) ?? "#",
-            Url.Action("Index", "Publicaciones"));
+            Url.Action("Index", "Publicaciones"),
+            mostRead: mostRead);
 
         return View(model);
     }

@@ -84,13 +84,7 @@ public class ArticleFormViewModel
         Status = Status
     };
 
-    public static ArticleFormViewModel FromDto(
-        ArticleResponseDto article,
-        List<CategoryResponseDto> parentCategories,
-        List<CategoryResponseDto> subCategories,
-        string? coverImageUrl,
-        List<ImageMetadataResponseDto> linkedImages,
-        List<ImageMetadataResponseDto> availableImages) => new()
+    public static ArticleFormViewModel FromDto(ArticleResponseDto article, string? coverImageUrl = null) => new()
     {
         Id = article.Id,
         Title = article.Title,
@@ -109,10 +103,22 @@ public class ArticleFormViewModel
         CoverImageUrl = coverImageUrl ?? article.CoverImageUrl,
         ImageIds = [.. article.ImageIds],
         Featured = article.Featured,
-        Status = article.Status,
-        ParentCategories = parentCategories,
-        SubCategories = subCategories,
-        LinkedImages = linkedImages,
-        AvailableImages = availableImages
+        Status = article.Status
     };
+
+    public static ArticleFormViewModel FromDto(
+        ArticleResponseDto article,
+        List<CategoryResponseDto> parentCategories,
+        List<CategoryResponseDto> subCategories,
+        string? coverImageUrl,
+        List<ImageMetadataResponseDto> linkedImages,
+        List<ImageMetadataResponseDto> availableImages)
+    {
+        var vm = FromDto(article, coverImageUrl);
+        vm.ParentCategories = parentCategories;
+        vm.SubCategories = subCategories;
+        vm.LinkedImages = linkedImages;
+        vm.AvailableImages = availableImages;
+        return vm;
+    }
 }

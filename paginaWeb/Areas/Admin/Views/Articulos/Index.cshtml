@@ -2,7 +2,14 @@
 @{
     ViewData["Title"] = "Gestión de Artículos";
     var categories = (Dictionary<string, string>?)ViewBag.Categories ?? new();
+    var coverImages = (Dictionary<string, string>?)ViewBag.CoverImages ?? new();
+    var featuredCount = Model.Count(a => a.Featured);
+    var activeHeroCount = Model.Count(a => a.Featured && string.Equals(a.Status, "Publicado", StringComparison.OrdinalIgnoreCase));
+    var publishedCount = Model.Count(a => string.Equals(a.Status, "Publicado", StringComparison.OrdinalIgnoreCase));
+    var draftCount = Model.Count(a => !string.Equals(a.Status, "Publicado", StringComparison.OrdinalIgnoreCase));
 }
+
+@Html.AntiForgeryToken()
 
 @section HeaderActions {
     <a asp-area="Admin" asp-controller="Articulos" asp-action="Create" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
@@ -11,88 +18,477 @@
     </a>
 }
 
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-    <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-        <h3 class="font-bold text-slate-800 text-base">Publicaciones del Portal</h3>
-        <span class="text-xs text-slate-400">Total: @Model.Count</span>
+<div class="space-y-6">
+    <!-- ─── Banner Informativo del Hero Principal ──────────────────────────────── -->
+    <div class="bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/60 rounded-2xl border border-amber-200/90 p-4 sm:p-5 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FDC500] to-amber-500 text-[#00296B] flex items-center justify-center font-bold text-xl shadow-xs flex-shrink-0">
+                    ★
+                </div>
+                <div>
+                    <div class="flex items-center flex-wrap gap-2">
+                        <h3 class="font-bold text-amber-950 text-sm sm:text-base">Artículos Destacados en Portada (Hero)</h3>
+                        <span id="heroSummaryBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold @(featuredCount >= 3 ? "bg-amber-400 text-amber-950 border border-amber-500 shadow-xs" : "bg-amber-200/80 text-amber-950 border border-amber-300")">
+                            ★ <span id="heroTotalCount">@featuredCount</span> / 3 @(featuredCount >= 3 ? "(Cupos completos)" : $"designados ({3 - featuredCount} disponibles)") · <span id="heroActiveCount">@activeHeroCount</span> en vivo
+                        </span>
+                    </div>
+                    <p class="text-xs text-amber-900/80 mt-1 max-w-2xl leading-relaxed">
+                        El carrusel principal de la portada tiene una <strong>restricción estricta de máximo 3 artículos</strong> con imagen asignada. Para designar una nueva noticia cuando el cupo está completo (3/3), primero debes desmarcar una existente.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 self-start sm:self-center flex-shrink-0">
+                <a asp-area="" asp-controller="Home" asp-action="Index" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-900 font-semibold text-xs border border-amber-300 shadow-xs transition">
+                    <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    Ver Portada en Vivo
+                </a>
+            </div>
+        </div>
     </div>
 
-    @if (!Model.Any())
-    {
-        <div class="p-12 text-center text-slate-400">
-            <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-.586-1.414l-4.5-4.5A2 2 0 0015.5 3H5"/></svg>
-            <p class="font-medium text-slate-600">No hay artículos registrados.</p>
-            <p class="text-xs text-slate-400 mt-1">Comienza publicando tu primera noticia o crónica.</p>
-            <a asp-area="Admin" asp-controller="Articulos" asp-action="Create" class="mt-4 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear artículo ahora →</a>
+    <!-- ─── Filtros Rápidos y Buscador ─────────────────────────────────────────── -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <!-- Pestañas de Filtro -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0" id="filterTabs">
+            <button type="button" data-filter="all" class="filter-tab active px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#00296B] text-white shadow-xs transition">
+                Todas (<span id="countAll">@Model.Count</span>)
+            </button>
+            <button type="button" data-filter="hero" class="filter-tab px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200 transition">
+                ★ Hero Principal (<span id="countHeroTab">@featuredCount</span>)
+            </button>
+            <button type="button" data-filter="publicado" class="filter-tab px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                Publicadas (<span id="countPubTab">@publishedCount</span>)
+            </button>
+            <button type="button" data-filter="borrador" class="filter-tab px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                Borradores (<span id="countDraftTab">@draftCount</span>)
+            </button>
         </div>
-    }
-    else
-    {
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50 border-b border-slate-100 text-xs font-semibold uppercase text-slate-500 tracking-wider">
-                    <tr>
-                        <th class="px-6 py-3.5">Título</th>
-                        <th class="px-6 py-3.5">Categoría</th>
-                        <th class="px-6 py-3.5">Estado</th>
-                        <th class="px-6 py-3.5">Fecha</th>
-                        <th class="px-6 py-3.5">Vistas</th>
-                        <th class="px-6 py-3.5 text-right">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @foreach (var art in Model)
-                    {
-                        <tr class="hover:bg-slate-50/60 transition-colors">
-                            <td class="px-6 py-4">
-                                <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id" class="font-semibold text-slate-800 hover:text-[#00509D] line-clamp-1">
-                                    @art.Title
-                                </a>
-                                <span class="text-xs text-slate-400 font-mono">/@art.Slug</span>
-                            </td>
-                            <td class="px-6 py-4 text-xs text-slate-600">
-                                @(art.CategoryId != null && categories.ContainsKey(art.CategoryId) ? categories[art.CategoryId] : "-")
-                            </td>
-                            <td class="px-6 py-4">
-                                @if (string.Equals(art.Status, "Publicado", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Publicado
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Borrador
-                                    </span>
-                                }
-                            </td>
-                            <td class="px-6 py-4 text-xs text-slate-500">
-                                @art.CreatedAt.ToString("dd/MM/yyyy")
-                            </td>
-                            <td class="px-6 py-4 text-xs font-mono text-slate-600">
-                                @art.ViewCount
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <div class="inline-flex items-center gap-2">
-                                    <a asp-area="" asp-controller="Home" asp-action="Articulo" asp-route-slug="@art.Slug" target="_blank" class="p-1.5 text-slate-400 hover:text-[#00509D] rounded-lg transition" title="Ver en portal público">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                    </a>
-                                    <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                    </a>
-                                    <form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="Delete" asp-route-id="@art.Id" onsubmit="return confirm('¿Seguro que deseas eliminar este artículo? Esta acción no se puede deshacer.');" class="inline">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Eliminar">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
+
+        <!-- Buscador en tiempo real -->
+        <div class="relative w-full md:w-72 flex-shrink-0">
+            <input type="text" id="articleSearchInput" placeholder="Buscar por título, categoría o slug..."
+                   class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] bg-slate-50 focus:bg-white transition" />
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ─── Tabla de Artículos ────────────────────────────────────────────────── -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <h3 class="font-bold text-slate-800 text-base">Publicaciones del Portal</h3>
+                <span class="text-xs text-slate-400">Total: @Model.Count</span>
+            </div>
+            <div class="flex items-center gap-3 text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Hero</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Publicado</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Borrador</span>
+            </div>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="p-12 text-center text-slate-400">
+                <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-.586-1.414l-4.5-4.5A2 2 0 0015.5 3H5"/></svg>
+                <p class="font-medium text-slate-600">No hay artículos registrados.</p>
+                <p class="text-xs text-slate-400 mt-1">Comienza publicando tu primera noticia o crónica.</p>
+                <a asp-area="Admin" asp-controller="Articulos" asp-action="Create" class="mt-4 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear artículo ahora →</a>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm" id="articlesTable">
+                    <thead class="bg-slate-50 border-b border-slate-100 text-xs font-semibold uppercase text-slate-500 tracking-wider">
+                        <tr>
+                            <th class="px-5 py-3.5">Artículo</th>
+                            <th class="px-4 py-3.5 text-center">Hero Portada</th>
+                            <th class="px-5 py-3.5">Categoría</th>
+                            <th class="px-5 py-3.5">Estado</th>
+                            <th class="px-5 py-3.5">Fecha</th>
+                            <th class="px-5 py-3.5">Vistas</th>
+                            <th class="px-5 py-3.5 text-right">Acciones</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
+                    </thead>
+                    <tbody class="divide-y divide-slate-100" id="articlesTableBody">
+                        @foreach (var art in Model)
+                        {
+                            string? coverUrl = null;
+                            if (!string.IsNullOrEmpty(art.CoverImageId) && coverImages.TryGetValue(art.CoverImageId, out var foundUrl) && !string.IsNullOrWhiteSpace(foundUrl))
+                            {
+                                coverUrl = foundUrl;
+                            }
+                            else if (!string.IsNullOrWhiteSpace(art.CoverImageUrl))
+                            {
+                                coverUrl = art.CoverImageUrl;
+                            }
+                            else if (!string.IsNullOrWhiteSpace(art.Content))
+                            {
+                                var imgMatch = System.Text.RegularExpressions.Regex.Match(art.Content, @"<img[^>]+src=[""']([^""']+)[""']", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                if (imgMatch.Success)
+                                {
+                                    coverUrl = imgMatch.Groups[1].Value;
+                                }
+                            }
+
+                            var isPublished = string.Equals(art.Status, "Publicado", StringComparison.OrdinalIgnoreCase);
+                            var categoryName = art.CategoryId != null && categories.ContainsKey(art.CategoryId) ? categories[art.CategoryId] : "-";
+
+                            <tr class="article-row transition-all @(art.Featured ? "is-featured bg-amber-50/40 hover:bg-amber-50/70 border-l-4 border-l-amber-400" : "hover:bg-slate-50/60 border-l-4 border-l-transparent")"
+                                id="row-@art.Id"
+                                data-id="@art.Id"
+                                data-featured="@art.Featured.ToString().ToLower()"
+                                data-status="@(isPublished ? "publicado" : "borrador")"
+                                data-search="@art.Title.ToLower() @art.Slug.ToLower() @categoryName.ToLower()">
+                                
+                                <!-- Columna Artículo (Portada + Título + Badges) -->
+                                <td class="px-5 py-4">
+                                    <div class="flex items-start gap-3.5">
+                                        <!-- Miniatura de Imagen con Indicador de Hero -->
+                                        <div class="relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
+                                            @if (!string.IsNullOrEmpty(coverUrl))
+                                            {
+                                                <img src="@coverUrl" alt="" referrerpolicy="no-referrer" class="w-full h-full object-cover" onerror="this.onerror=null;this.classList.add('hidden');this.nextElementSibling.classList.remove('hidden');" />
+                                                <div class="hidden w-full h-full flex items-center justify-center text-slate-300">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                </div>
+                                            }
+
+                                            <!-- Medalla de Estrella en la miniatura -->
+                                            <span class="hero-thumb-badge absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-[10px] font-black shadow-xs ring-2 ring-white @(art.Featured ? "" : "hidden")"
+                                                  title="Destacado en Hero">★</span>
+                                        </div>
+
+                                        <!-- Título, Slug y Badges -->
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center flex-wrap gap-2">
+                                                <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id"
+                                                   class="font-semibold text-slate-800 hover:text-[#00509D] line-clamp-1 text-sm transition-colors"
+                                                   title="@art.Title">
+                                                    @art.Title
+                                                </a>
+
+                                                <!-- Badge HERO PRINCIPAL -->
+                                                <span class="hero-title-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-gradient-to-r from-amber-100 to-amber-200 text-amber-950 border border-amber-300 shadow-2xs @(art.Featured ? "" : "hidden")">
+                                                    ★ HERO PRINCIPAL
+                                                </span>
+                                            </div>
+
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="text-xs text-slate-400 font-mono">/@art.Slug</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Columna HERO PORTADA (Toggle Directo) -->
+                                <td class="px-4 py-4 text-center">
+                                    <button type="button"
+                                            onclick="toggleHero('@art.Id', this)"
+                                            data-featured="@art.Featured.ToString().ToLower()"
+                                            class="hero-toggle-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs @(art.Featured ? "bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200" : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300")"
+                                            title="@(art.Featured ? "Quitar del Hero principal" : "Fijar en Hero principal")">
+                                        <span class="star-icon text-sm @(art.Featured ? "text-amber-600" : "text-slate-400")">★</span>
+                                        <span class="hero-btn-label">@(art.Featured ? "Destacado" : "Normal")</span>
+                                    </button>
+                                </td>
+
+                                <!-- Columna Categoría -->
+                                <td class="px-5 py-4 text-xs text-slate-600">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
+                                        @categoryName
+                                    </span>
+                                </td>
+
+                                <!-- Columna Estado -->
+                                <td class="px-5 py-4">
+                                    @if (isPublished)
+                                    {
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Publicado
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Borrador
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Columna Fecha -->
+                                <td class="px-5 py-4 text-xs text-slate-500 font-medium">
+                                    @art.CreatedAt.ToString("dd/MM/yyyy")
+                                </td>
+
+                                <!-- Columna Vistas -->
+                                <td class="px-5 py-4 text-xs font-mono text-slate-600">
+                                    @art.ViewCount
+                                </td>
+
+                                <!-- Columna Acciones -->
+                                <td class="px-5 py-4 text-right">
+                                    <div class="inline-flex items-center gap-1">
+                                        <a asp-area="" asp-controller="Home" asp-action="Articulo" asp-route-slug="@art.Slug" target="_blank"
+                                           class="p-2 text-slate-400 hover:text-[#00509D] hover:bg-blue-50 rounded-xl transition" title="Ver en portal público">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                        </a>
+                                        <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@art.Id"
+                                           class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition" title="Editar artículo">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </a>
+                                        <form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="Delete" asp-route-id="@art.Id"
+                                              onsubmit="return confirm('¿Seguro que deseas eliminar este artículo? Esta acción no se puede deshacer.');" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition" title="Eliminar artículo">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Estado cuando no hay resultados de búsqueda/filtro -->
+            <div id="noResultsMessage" class="hidden p-12 text-center text-slate-400">
+                <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <p class="font-medium text-slate-600 text-sm">No se encontraron artículos con el filtro seleccionado.</p>
+                <button type="button" onclick="resetFilters()" class="mt-3 text-xs font-semibold text-[#00509D] hover:underline">Restablecer filtros</button>
+            </div>
+        }
+    </div>
 </div>
+
+<!-- Contenedor Flotante de Toasts de Notificación -->
+<div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+@section Scripts {
+<script>
+    // ─── FILTROS Y BÚSQUEDA EN TIEMPO REAL ────────────────────────────────────
+    let currentFilter = 'all';
+    const searchInput = document.getElementById('articleSearchInput');
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    const rows = document.querySelectorAll('.article-row');
+    const noResults = document.getElementById('noResultsMessage');
+
+    function applyFilters() {
+        const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const isFeatured = row.getAttribute('data-featured') === 'true';
+            const status = row.getAttribute('data-status');
+            const searchText = row.getAttribute('data-search') || '';
+
+            let matchesTab = true;
+            if (currentFilter === 'hero') matchesTab = isFeatured;
+            else if (currentFilter === 'publicado') matchesTab = (status === 'publicado');
+            else if (currentFilter === 'borrador') matchesTab = (status !== 'publicado');
+
+            let matchesSearch = !query || searchText.includes(query);
+
+            if (matchesTab && matchesSearch) {
+                row.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        if (noResults) {
+            if (visibleCount === 0 && rows.length > 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+            }
+        }
+    }
+
+    if (filterTabs) {
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                filterTabs.forEach(t => {
+                    t.classList.remove('active', 'bg-[#00296B]', 'text-white', 'shadow-xs');
+                    if (t.dataset.filter === 'hero') {
+                        t.className = 'filter-tab px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200 transition';
+                    } else {
+                        t.className = 'filter-tab px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition';
+                    }
+                });
+
+                tab.classList.add('active', 'bg-[#00296B]', 'text-white', 'shadow-xs');
+                tab.classList.remove('bg-amber-50', 'bg-slate-100', 'text-amber-900', 'text-slate-700', 'border', 'border-amber-200');
+                currentFilter = tab.getAttribute('data-filter') || 'all';
+                applyFilters();
+            });
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+    }
+
+    window.resetFilters = function() {
+        if (searchInput) searchInput.value = '';
+        const allTab = document.querySelector('.filter-tab[data-filter="all"]');
+        if (allTab) allTab.click();
+        else applyFilters();
+    };
+
+    // ─── TOGGLE HERO AJAX CON FEEDBACK INMEDIATO Y RESTRICCIÓN DE 3 ARTÍCULOS ──
+    window.toggleHero = async function(articleId, btn) {
+        const row = document.getElementById(`row-${articleId}`);
+        if (!row) return;
+
+        const isCurrentlyFeatured = row.getAttribute('data-featured') === 'true';
+
+        // Si se intenta activar y ya hay 3 destacados, restringir de inmediato
+        if (!isCurrentlyFeatured) {
+            const currentFeatured = document.querySelectorAll('.article-row[data-featured="true"]').length;
+            if (currentFeatured >= 3) {
+                showToast('Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos. Desmarca uno antes de designar otro.', 'rose');
+                return;
+            }
+        }
+
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenInput ? tokenInput.value : '';
+
+        // Deshabilitar temporalmente para evitar doble clic
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+
+        try {
+            const res = await fetch(`/admin/articulos/toggle-destacado/${encodeURIComponent(articleId)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: token ? `__RequestVerificationToken=${encodeURIComponent(token)}` : ''
+            });
+
+            if (!res.ok) throw new Error('Error en la respuesta del servidor');
+            const data = await res.json();
+
+            if (data.success) {
+                const isNowFeatured = !!data.featured;
+                updateRowFeaturedState(row, btn, isNowFeatured);
+                showToast(isNowFeatured ? '★ Artículo fijado en Hero Principal' : 'Artículo removido de Hero', isNowFeatured ? 'amber' : 'slate');
+                recalculateHeroCounters(data.totalFeatured, data.activeFeatured);
+                if (currentFilter === 'hero') applyFilters();
+            } else {
+                showToast(data.message || 'No se pudo actualizar el estado de Hero', 'rose');
+            }
+        } catch (err) {
+            console.error('Error toggling hero:', err);
+            showToast('No se pudo actualizar el estado de Hero', 'rose');
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+        }
+    };
+
+    function updateRowFeaturedState(row, btn, isFeatured) {
+        row.setAttribute('data-featured', isFeatured ? 'true' : 'false');
+        btn.setAttribute('data-featured', isFeatured ? 'true' : 'false');
+
+        const thumbBadge = row.querySelector('.hero-thumb-badge');
+        const titleBadge = row.querySelector('.hero-title-badge');
+        const starIcon = btn.querySelector('.star-icon');
+        const btnLabel = btn.querySelector('.hero-btn-label');
+
+        if (isFeatured) {
+            row.classList.add('is-featured', 'bg-amber-50/40', 'hover:bg-amber-50/70', 'border-l-4', 'border-l-amber-400');
+            row.classList.remove('border-l-transparent');
+
+            if (thumbBadge) thumbBadge.classList.remove('hidden');
+            if (titleBadge) titleBadge.classList.remove('hidden');
+
+            btn.className = "hero-toggle-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200";
+            btn.title = "Quitar del Hero principal";
+            if (starIcon) {
+                starIcon.className = "star-icon text-sm text-amber-600";
+            }
+            if (btnLabel) btnLabel.textContent = "Destacado";
+        } else {
+            row.classList.remove('is-featured', 'bg-amber-50/40', 'hover:bg-amber-50/70', 'border-l-amber-400');
+            row.classList.add('hover:bg-slate-50/60', 'border-l-transparent');
+
+            if (thumbBadge) thumbBadge.classList.add('hidden');
+            if (titleBadge) titleBadge.classList.add('hidden');
+
+            btn.className = "hero-toggle-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs bg-slate-100 text-slate-500 border border-slate-200 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300";
+            btn.title = "Fijar en Hero principal";
+            if (starIcon) {
+                starIcon.className = "star-icon text-sm text-slate-400";
+            }
+            if (btnLabel) btnLabel.textContent = "Normal";
+        }
+    }
+
+    function recalculateHeroCounters(totalServer, activeServer) {
+        const allFeatured = document.querySelectorAll('.article-row[data-featured="true"]');
+        const allActiveHero = document.querySelectorAll('.article-row[data-featured="true"][data-status="publicado"]');
+
+        const heroCount = totalServer !== undefined ? totalServer : allFeatured.length;
+        const activeCount = activeServer !== undefined ? activeServer : allActiveHero.length;
+
+        const countHeroTab = document.getElementById('countHeroTab');
+        if (countHeroTab) countHeroTab.textContent = heroCount;
+
+        const heroTotalCount = document.getElementById('heroTotalCount');
+        if (heroTotalCount) heroTotalCount.textContent = heroCount;
+
+        const heroActiveCount = document.getElementById('heroActiveCount');
+        if (heroActiveCount) heroActiveCount.textContent = activeCount;
+
+        const heroSummaryBadge = document.getElementById('heroSummaryBadge');
+        if (heroSummaryBadge) {
+            if (heroCount >= 3) {
+                heroSummaryBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-amber-950 border border-amber-500 shadow-xs";
+                heroSummaryBadge.innerHTML = `★ <span id="heroTotalCount">${heroCount}</span> / 3 (Cupos completos) · <span id="heroActiveCount">${activeCount}</span> en vivo`;
+            } else {
+                heroSummaryBadge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200/80 text-amber-950 border border-amber-300";
+                heroSummaryBadge.innerHTML = `★ <span id="heroTotalCount">${heroCount}</span> / 3 designados (${3 - heroCount} disponibles) · <span id="heroActiveCount">${activeCount}</span> en vivo`;
+            }
+        }
+    }
+
+    function showToast(message, type) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transition-all transform duration-300 opacity-0 translate-y-2 ${
+            type === 'amber' ? 'bg-amber-50 border-amber-300 text-amber-950' :
+            type === 'rose' ? 'bg-rose-50 border-rose-300 text-rose-900' :
+            'bg-slate-900 border-slate-800 text-white'
+        }`;
+        toast.innerHTML = `<span>${type === 'amber' ? '★' : '✓'}</span><span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.remove('opacity-0', 'translate-y-2');
+        }, 10);
+
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-2');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+</script>
+}

@@ -6,6 +6,7 @@ using Domine.Exceptions;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using paginaWeb.Areas.Admin.Models;
 
 namespace paginaWeb.Areas.Admin.Controllers;
 
@@ -24,9 +25,14 @@ public class ImagenesController : Controller
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Index(int page = 1)
+    public async Task<IActionResult> Index(
+        int page = 1,
+        string? search = null,
+        string? storage = null,
+        string? articleId = null)
     {
-        var images = await _imageService.GetAllAsync((page - 1) * 30, 30);
+        const int pageSize = 24;
+        var (images, totalCount) = await _imageService.GetPagedAsync(page, pageSize, search, storage, articleId);
         var articles = await _articleService.GetAllAdminAsync(1, 100);
         var articlesDict = articles.ToDictionary(a => a.Id, a => a.Title);
 
@@ -38,13 +44,49 @@ public class ImagenesController : Controller
             }
         }
 
-        ViewBag.Articles = articles;
-        return View(images);
+        var storageStatus = await _imageService.GetStorageStatusAsync();
+
+        var viewModel = new ImageLibraryViewModel
+        {
+            Images = images,
+            Articles = articles,
+            StorageStatus = storageStatus,
+            CurrentPage = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            Search = search,
+            StorageFilter = storage,
+            ArticleFilter = articleId
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpGet("verificar-nombre")]
+    public async Task<IActionResult> CheckName(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return Json(new { exists = false, available = true });
+        }
+
+        var exists = await _imageService.ExistsByNameAsync(fileName);
+        return Json(new
+        {
+            exists = exists,
+            available = !exists,
+            fileName = fileName.Trim()
+        });
     }
 
     [HttpPost("subir")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Upload(IFormFile file, string? alt, string? articleId, bool setAsCover = false)
+    public async Task<IActionResult> Upload(
+        IFormFile file,
+        string? customName,
+        string? alt,
+        string? articleId,
+        bool setAsCover = false)
     {
         if (file is null || file.Length == 0)
         {
@@ -54,36 +96,40 @@ public class ImagenesController : Controller
 
         try
         {
+            var fileName = !string.IsNullOrWhiteSpace(customName) ? customName.Trim() : file.FileName.Trim();
+
+            // Si el nombre personalizado no tiene extensión, conservar la del archivo subido
+            if (!Path.HasExtension(fileName) && Path.HasExtension(file.FileName))
+            {
+                fileName += Path.GetExtension(file.FileName);
+            }
+
             using var stream = file.OpenReadStream();
             var metadata = await _imageService.ProcessAndStoreDtoAsync(
-                file.FileName, stream, alt ?? Path.GetFileNameWithoutExtension(file.FileName), articleId);
+                file.FileName,
+                stream,
+                alt ?? Path.GetFileNameWithoutExtension(fileName),
+                articleId,
+                fileName);
 
             if (!string.IsNullOrEmpty(articleId))
             {
-                var article = await _articleService.GetByIdAsync(articleId);
-                if (article != null)
-                {
-                    var editDto = ArticleMapper.ToEditDto(article);
-                    if (!editDto.ImageIds.Contains(metadata.Id))
-                        editDto.ImageIds.Add(metadata.Id);
-
-                    if (setAsCover)
-                    {
-                        editDto.CoverImageId = metadata.Id;
-                        editDto.CoverImageUrl = ImageMapper.GetBestUrl(metadata);
-                    }
-
-                    await _articleService.UpdateAsync(articleId, editDto);
-                }
+                await LinkImageToArticleAsync(articleId, metadata.Id, ImageMapper.GetBestUrl(metadata), setAsCover);
             }
 
-            TempData["Success"] = "Imagen procesada, almacenada" + (!string.IsNullOrEmpty(articleId) ? " y vinculada al artículo" : "") + " correctamente.";
+            var storageProviderName = metadata.Storage.Equals("r2", StringComparison.OrdinalIgnoreCase) ||
+                                      metadata.Storage.Equals("s3", StringComparison.OrdinalIgnoreCase)
+                ? "S3 / Cloudflare R2 (Prioritario)"
+                : "Almacenamiento Local (Fallback)";
+
+            TempData["Success"] = $"Imagen '{metadata.OriginalFileName}' optimizada con variantes WebP y guardada en {storageProviderName}." +
+                                  (!string.IsNullOrEmpty(articleId) ? " Vinculada al artículo." : "");
         }
-        catch (DomainValidationException ex)
+        catch (ConflictException ex)
         {
             TempData["Error"] = ex.Message;
         }
-        catch (ConflictException ex)
+        catch (DomainValidationException ex)
         {
             TempData["Error"] = ex.Message;
         }
@@ -97,11 +143,15 @@ public class ImagenesController : Controller
         }
         catch (SixLabors.ImageSharp.UnknownImageFormatException)
         {
-            TempData["Error"] = "El archivo proporcionado no es un formato de imagen soportado.";
+            TempData["Error"] = "El archivo proporcionado no es un formato de imagen soportado (use JPEG, PNG, WEBP, AVIF, etc.).";
         }
         catch (SixLabors.ImageSharp.InvalidImageContentException)
         {
-            TempData["Error"] = "El archivo de imagen está dañado o su contenido es inválido.";
+            TempData["Error"] = "El archivo de imagen está dañado o su contenido no es válido.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "Error inesperado al procesar la imagen: " + ex.Message;
         }
 
         return RedirectToAction(nameof(Index));
@@ -140,21 +190,11 @@ public class ImagenesController : Controller
             // Si se asigna a un nuevo artículo
             if (!string.IsNullOrEmpty(articleId))
             {
-                var article = await _articleService.GetByIdAsync(articleId);
-                if (article != null)
+                var linked = await LinkImageToArticleAsync(articleId, id, ImageMapper.GetBestUrl(img), setAsCover);
+                if (linked)
                 {
-                    var editDto = ArticleMapper.ToEditDto(article);
-                    if (!editDto.ImageIds.Contains(id))
-                        editDto.ImageIds.Add(id);
-
-                    if (setAsCover)
-                    {
-                        editDto.CoverImageId = id;
-                        editDto.CoverImageUrl = ImageMapper.GetBestUrl(img);
-                    }
-
-                    await _articleService.UpdateAsync(articleId, editDto);
-                    TempData["Success"] = $"Imagen vinculada exitosamente con '{article.Title}'" + (setAsCover ? " y asignada como portada." : ".");
+                    var article = await _articleService.GetByIdAsync(articleId);
+                    TempData["Success"] = $"Imagen vinculada exitosamente con '{article?.Title}'" + (setAsCover ? " y asignada como portada." : ".");
                     return RedirectToAction(nameof(Index));
                 }
             }
@@ -197,13 +237,40 @@ public class ImagenesController : Controller
         try
         {
             await _imageService.DeleteByIdAsync(id);
-            TempData["Success"] = "Imagen y sus variantes WebP eliminadas.";
-            return RedirectToAction(nameof(Index));
+            TempData["Success"] = "La imagen y todas sus variantes WebP han sido eliminadas correctamente del almacenamiento y del catálogo.";
         }
         catch (NotFoundException ex)
         {
             TempData["Error"] = ex.Message;
-            return RedirectToAction(nameof(Index));
         }
+        catch (Exception ex)
+        {
+            TempData["Error"] = "Error al eliminar la imagen: " + ex.Message;
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<bool> LinkImageToArticleAsync(string? articleId, string imageId, string? coverUrl, bool setAsCover)
+    {
+        if (string.IsNullOrEmpty(articleId)) return false;
+
+        var article = await _articleService.GetByIdAsync(articleId);
+        if (article == null) return false;
+
+        var editDto = ArticleMapper.ToEditDto(article);
+        if (!editDto.ImageIds.Contains(imageId))
+        {
+            editDto.ImageIds.Add(imageId);
+        }
+
+        if (setAsCover)
+        {
+            editDto.CoverImageId = imageId;
+            editDto.CoverImageUrl = coverUrl;
+        }
+
+        await _articleService.UpdateAsync(articleId, editDto);
+        return true;
     }
 }
