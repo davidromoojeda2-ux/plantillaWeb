@@ -1,0 +1,12 @@
+@model ContentCalloutBlockDto
+@inject Aplication.Interfaces.IHtmlSanitizer HtmlSanitizer
+
+<div class="@ContentBlockViewHelpers.CalloutClass(Model.Variant)" data-callout="@Model.Variant">
+    <div class="callout-body">
+        @if (!string.IsNullOrWhiteSpace(Model.Title))
+        {
+            <strong class="callout-title">@Model.Title</strong>
+        }
+        @Html.Raw(HtmlSanitizer.Sanitize(Model.Text))
+    </div>
+</div>

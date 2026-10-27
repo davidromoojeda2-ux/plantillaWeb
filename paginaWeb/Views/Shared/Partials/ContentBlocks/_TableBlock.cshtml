@@ -1,0 +1,29 @@
+@model ContentTableBlockDto
+
+<div class="table-responsive-wrapper">
+    <table class="article-table">
+        @if (!string.IsNullOrWhiteSpace(Model.Caption))
+        {
+            <caption>@Model.Caption</caption>
+        }
+        <thead>
+            <tr>
+                @foreach (var header in Model.Headers)
+                {
+                    <th scope="col">@header</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.Rows)
+            {
+                <tr>
+                    @foreach (var cell in row)
+                    {
+                        <td>@cell</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

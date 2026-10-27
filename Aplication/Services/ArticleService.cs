@@ -28,11 +28,16 @@ public class ArticleService : IArticleService
 {
     private readonly IArticleRepository _repo;
     private readonly ICategoryRepository _categoryRepo;
+    private readonly ContentBodySanitizer _contentSanitizer;
 
-    public ArticleService(IArticleRepository repo, ICategoryRepository categoryRepo)
+    public ArticleService(
+        IArticleRepository repo,
+        ICategoryRepository categoryRepo,
+        ContentBodySanitizer contentSanitizer)
     {
         _repo = repo;
         _categoryRepo = categoryRepo;
+        _contentSanitizer = contentSanitizer;
     }
 
     public Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync() =>
@@ -84,7 +89,9 @@ public class ArticleService : IArticleService
     {
         await EnforceCategoryIntegrityAsync(dto);
 
-        var article = ArticleMapper.ToEntity(dto);
+        var blocks = _contentSanitizer.Sanitize(dto.Blocks);
+        var article = ArticleMapper.ToEntity(dto, blocks);
+        ApplyDerivedFields(article);
         article.ValidarInvariantes();
 
         if (await _repo.SlugExistsAsync(article.Slug))
@@ -101,7 +108,9 @@ public class ArticleService : IArticleService
         var existing = await _repo.GetByIdAsync(id)
             ?? throw new NotFoundException("Artículo", id);
 
-        ArticleMapper.ApplyUpdate(existing, dto);
+        var blocks = _contentSanitizer.Sanitize(dto.Blocks);
+        ArticleMapper.ApplyUpdate(existing, dto, blocks);
+        ApplyDerivedFields(existing);
         existing.ValidarInvariantes();
 
         if (await _repo.SlugExistsAsync(existing.Slug, id))
@@ -109,6 +118,12 @@ public class ArticleService : IArticleService
 
         await _repo.UpdateAsync(existing);
         return ArticleMapper.ToDto(existing);
+    }
+
+    private static void ApplyDerivedFields(Domine.Entities.Article article)
+    {
+        article.SearchText = article.BuildSearchText();
+        article.ReadingTimeMinutes = Domine.Entities.Article.EstimateReadingTime(article.SearchText);
     }
 
     private async Task EnforceCategoryIntegrityAsync(ArticleDto dto)

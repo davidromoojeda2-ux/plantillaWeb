@@ -1,10 +1,11 @@
-using Aplication.DTOs;
+using Aplication.DTOs.ContentBlocks;
 using Aplication.Exceptions;
-using Aplication.Mappers;
 using Aplication.Services;
 using Domine.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using paginaWeb.Areas.Admin.Models;
+using paginaWeb.Helpers;
 
 namespace paginaWeb.Areas.Admin.Controllers;
 
@@ -30,19 +31,21 @@ public class SeccionesController : Controller
     [HttpGet("nueva")]
     public IActionResult Create()
     {
-        return View(new PageDto { Order = 1, ShowInFooter = true });
+        return View(new PageFormViewModel { Order = 1, ShowInFooter = true });
     }
 
     [HttpPost("nueva")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(PageDto model)
+    public async Task<IActionResult> Create(PageFormViewModel model)
     {
+        ContentBlockFormHelper.TryParse(model.BlocksJson, ModelState, out var blocks);
+
         if (!ModelState.IsValid)
             return View(model);
 
         try
         {
-            await _pageService.CreateAsync(model);
+            await _pageService.CreateAsync(model.ToDto(blocks));
             TempData["Success"] = "Página informativa creada correctamente.";
             return RedirectToAction(nameof(Index));
         }
@@ -64,7 +67,7 @@ public class SeccionesController : Controller
         var page = await _pageService.GetByIdAsync(id);
         if (page is null) return NotFound();
 
-        var model = PageMapper.ToEditDto(page);
+        var model = PageFormViewModel.FromDto(page);
 
         ViewBag.PageId = id;
         return View(model);
@@ -72,8 +75,10 @@ public class SeccionesController : Controller
 
     [HttpPost("editar/{id}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(string id, PageDto model)
+    public async Task<IActionResult> Edit(string id, PageFormViewModel model)
     {
+        ContentBlockFormHelper.TryParse(model.BlocksJson, ModelState, out var blocks);
+
         if (!ModelState.IsValid)
         {
             ViewBag.PageId = id;
@@ -82,7 +87,7 @@ public class SeccionesController : Controller
 
         try
         {
-            await _pageService.UpdateAsync(id, model);
+            await _pageService.UpdateAsync(id, model.ToDto(blocks));
             TempData["Success"] = "Página informativa actualizada.";
             return RedirectToAction(nameof(Index));
         }

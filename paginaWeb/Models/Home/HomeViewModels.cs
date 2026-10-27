@@ -191,7 +191,7 @@ public static class HomePageViewModelFactory
                 ResolveImage(a, images),
                 a.PublishedAt,
                 a.Author,
-                EstimateReadingMinutes(a.Content ?? a.Summary))).ToList());
+                a.ReadingTimeMinutes > 0 ? a.ReadingTimeMinutes : EstimateReadingMinutes(a.Summary))).ToList());
 
         // 2. Últimas entradas en dos columnas (3 principales/destacadas a la izquierda, mínimo 5 más leídos a la derecha)
         var featuredEntriesSource = (featured.Count >= 3 ? featured : recent).Take(ColumnEntryCount).ToList();

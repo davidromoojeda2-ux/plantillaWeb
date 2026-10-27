@@ -1,0 +1,10 @@
+@model ContentQuoteBlockDto
+@inject Aplication.Interfaces.IHtmlSanitizer HtmlSanitizer
+
+<blockquote class="article-quote">
+    <p>@Html.Raw(HtmlSanitizer.Sanitize(Model.Text))</p>
+    @if (!string.IsNullOrWhiteSpace(Model.Attribution))
+    {
+        <cite>@Model.Attribution</cite>
+    }
+</blockquote>

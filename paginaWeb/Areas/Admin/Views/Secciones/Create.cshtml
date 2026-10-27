@@ -1,4 +1,5 @@
-@model Aplication.DTOs.PageDto
+@model paginaWeb.Areas.Admin.Models.PageFormViewModel
+@inject IOptions<ContentSecurityOptions> ContentSecurity
 @{
     ViewData["Title"] = "Nueva Página Informativa";
 }
@@ -8,6 +9,7 @@
 
     <form method="post" asp-area="Admin" asp-controller="Secciones" asp-action="Create" class="space-y-6">
         @Html.AntiForgeryToken()
+        <div asp-validation-summary="All" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -40,9 +42,23 @@
 
         <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Contenido Estructurado (Editor por Bloques)</label>
-            <div id="editorCanvas"></div>
-            <textarea asp-for="Content" id="ContentInput" class="hidden"></textarea>
-            <span asp-validation-for="Content" class="text-xs text-rose-600 mt-1 block"></span>
+            <div id="contentBlocksEditor"
+                 class="content-blocks-editor"
+                 data-content-blocks-editor
+                 data-input-id="BlocksJsonInput"
+                 data-upload-url="@Url.Action("UploadInline", "Articulos", new { area = "Admin" })"
+                 data-article-id=""
+                 data-allowed-image-hosts="@string.Join(",", ContentSecurity.Value.AllowedImageHosts)"
+                 data-max-blocks="@ContentSecurity.Value.MaxBlocks"
+                 data-max-list-items="@ContentSecurity.Value.MaxListItems"
+                 data-max-table-rows="@ContentSecurity.Value.MaxTableRows"
+                 data-max-table-columns="@ContentSecurity.Value.MaxTableColumns"
+                 data-max-url-length="@ContentSecurity.Value.MaxUrlLength">
+                <div data-cbe-toolbar class="cbe-toolbar"></div>
+                <div data-cbe-canvas class="cbe-canvas" id="editorCanvas"></div>
+            </div>
+            <textarea asp-for="BlocksJson" id="BlocksJsonInput" class="hidden" aria-hidden="true"></textarea>
+            <span asp-validation-for="BlocksJson" class="text-xs text-rose-600 mt-1 block"></span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -71,8 +87,9 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/admin-editor.js" asp-append-version="true"></script>
+    <script src="~/js/content-blocks-editor.js" asp-append-version="true"></script>
     <script>
+        document.querySelector('form')?.addEventListener('submit', () => window.contentBlocksEditor?.sync());
         const titleInput = document.getElementById('titleInput');
         const slugInput = document.getElementById('slugInput');
         titleInput.addEventListener('input', () => {

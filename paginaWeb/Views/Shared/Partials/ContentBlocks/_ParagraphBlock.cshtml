@@ -1,0 +1,4 @@
+@model ContentParagraphBlockDto
+@inject Aplication.Interfaces.IHtmlSanitizer HtmlSanitizer
+
+<p>@Html.Raw(HtmlSanitizer.Sanitize(Model.Text))</p>

@@ -1,0 +1,14 @@
+@model ContentHeadingBlockDto
+@{
+    var blockIndex = ViewData["ContentBlockIndex"] as int? ?? 0;
+    var headingId = ContentBlockViewHelpers.HeadingId(Model.Text, blockIndex);
+}
+
+@if (Model.Level == 3)
+{
+    <h3 id="@headingId">@Model.Text</h3>
+}
+else
+{
+    <h2 id="@headingId">@Model.Text</h2>
+}

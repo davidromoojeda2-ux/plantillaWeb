@@ -1,0 +1,44 @@
+@model ContentImageBlockDto
+@{
+    var images = ViewData["BodyImages"] as Dictionary<string, ImageMetadataResponseDto>;
+    ImageMetadataResponseDto? metadata = null;
+    if (!string.IsNullOrWhiteSpace(Model.ImageId) && images is not null)
+    {
+        images.TryGetValue(Model.ImageId, out metadata);
+    }
+
+    var url = metadata is not null
+        ? ImageMapper.GetBestUrl(metadata) ?? metadata.Variants.FirstOrDefault()?.PublicUrl
+        : Model.Url;
+
+    if (string.IsNullOrWhiteSpace(url))
+    {
+        return;
+    }
+
+    var alt = !string.IsNullOrWhiteSpace(metadata?.Alt) ? metadata!.Alt : Model.Alt;
+    var width = metadata?.OriginalWidth > 0 ? metadata.OriginalWidth : Model.Width;
+    var height = metadata?.OriginalHeight > 0 ? metadata.OriginalHeight : Model.Height;
+}
+
+<figure class="article-figure">
+    <img src="@url"
+         alt="@alt"
+         loading="lazy"
+         decoding="async"
+         width="@(width is > 0 ? width : null)"
+         height="@(height is > 0 ? height : null)" />
+    @if (!string.IsNullOrWhiteSpace(Model.Caption) || !string.IsNullOrWhiteSpace(Model.Credit))
+    {
+        <figcaption>
+            @if (!string.IsNullOrWhiteSpace(Model.Caption))
+            {
+                <span>@Model.Caption</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Credit))
+            {
+                <small class="article-image-credit">@Model.Credit</small>
+            }
+        </figcaption>
+    }
+</figure>

@@ -1,10 +1,12 @@
 @model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
+@inject IOptions<ContentSecurityOptions> ContentSecurity
 @{
     ViewData["Title"] = "Nuevo Artículo";
 }
 
 <form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="Create" class="space-y-8" id="articleForm">
     @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- ─── Columna Principal (Contenido y Editor) ─────────────────────── -->
@@ -45,12 +47,26 @@
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
                 <div class="flex items-center justify-between mb-3">
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600">Cuerpo del Artículo (Editor por Bloques)</label>
-                    <span class="text-[11px] text-slate-400">Presiona <kbd class="px-1.5 py-0.5 rounded bg-slate-100 border text-slate-600 font-mono">/</kbd> para insertar bloques</span>
+                    <span class="text-[11px] text-slate-400">Añade, reordena y edita cada bloque con los controles</span>
                 </div>
 
-                <div id="editorCanvas"></div>
-                <textarea asp-for="Content" id="ContentInput" class="hidden"></textarea>
-                <span asp-validation-for="Content" class="text-xs text-rose-600 mt-1 block"></span>
+                <div id="contentBlocksEditor"
+                     class="content-blocks-editor"
+                     data-content-blocks-editor
+                     data-input-id="BlocksJsonInput"
+                     data-upload-url="@Url.Action("UploadInline", "Articulos", new { area = "Admin" })"
+                     data-article-id="@Model.Id"
+                     data-allowed-image-hosts="@string.Join(",", ContentSecurity.Value.AllowedImageHosts)"
+                     data-max-blocks="@ContentSecurity.Value.MaxBlocks"
+                     data-max-list-items="@ContentSecurity.Value.MaxListItems"
+                     data-max-table-rows="@ContentSecurity.Value.MaxTableRows"
+                     data-max-table-columns="@ContentSecurity.Value.MaxTableColumns"
+                     data-max-url-length="@ContentSecurity.Value.MaxUrlLength">
+                    <div data-cbe-toolbar class="cbe-toolbar"></div>
+                    <div data-cbe-canvas class="cbe-canvas" id="editorCanvas"></div>
+                </div>
+                <textarea asp-for="BlocksJson" id="BlocksJsonInput" class="hidden" aria-hidden="true"></textarea>
+                <span asp-validation-for="BlocksJson" class="text-xs text-rose-600 mt-1 block"></span>
             </div>
         </div>
 
@@ -303,15 +319,12 @@
 <partial name="_MediaLibraryModal" model="Model" />
 
 @section Scripts {
-    <script src="~/js/admin-editor.js" asp-append-version="true"></script>
+    <script src="~/js/content-blocks-editor.js" asp-append-version="true"></script>
     <script>
-        // Sincronizar editor de bloques antes de enviar formulario
+        // El editor sincroniza el JSON en cada cambio; se fuerza una última
+        // sincronización por si el navegador envía el formulario con el foco activo.
         const articleForm = document.getElementById('articleForm');
-        articleForm?.addEventListener('submit', () => {
-            if (window.editorInstance) {
-                window.editorInstance.syncContent();
-            }
-        });
+        articleForm?.addEventListener('submit', () => window.contentBlocksEditor?.sync());
 
         // Generador automático de Slug basado en el Título
         const titleInput = document.getElementById('titleInput');

@@ -1,0 +1,9 @@
+@model ContentCodeBlockDto
+@{
+    var languageClass = string.IsNullOrWhiteSpace(Model.Language) ? string.Empty : $" language-{Model.Language}";
+}
+
+<div class="article-code-wrapper">
+    <button type="button" class="article-code-copy" data-copy-code aria-label="Copiar código">Copiar</button>
+    <pre class="article-code"><code class="@languageClass">@Model.Code</code></pre>
+</div>

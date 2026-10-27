@@ -1,0 +1,9 @@
+@model ContentOrderedListBlockDto
+@inject Aplication.Interfaces.IHtmlSanitizer HtmlSanitizer
+
+<ol class="article-ordered-list">
+    @foreach (var item in Model.Items)
+    {
+        <li>@Html.Raw(HtmlSanitizer.Sanitize(item))</li>
+    }
+</ol>

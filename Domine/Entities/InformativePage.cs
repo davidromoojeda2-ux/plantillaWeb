@@ -1,5 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using Domine.Content;
+using Domine.ContentBlocks;
 using Domine.Exceptions;
 
 namespace Domine.Entities;
@@ -19,8 +21,11 @@ public class InformativePage
     /// <summary>Slug URL-friendly, e.g. "politica-de-privacidad".</summary>
     public string Slug { get; set; } = string.Empty;
 
-    /// <summary>Contenido HTML sanitizado de la sección.</summary>
-    public string Content { get; set; } = string.Empty;
+    /// <summary>Cuerpo editorial estructurado y ya sanitizado.</summary>
+    public List<ContentBlock> Blocks { get; set; } = [];
+
+    /// <summary>Versión del esquema de bloques con la que se guardó el documento.</summary>
+    public int SchemaVersion { get; set; } = ContentLimits.CurrentSchemaVersion;
 
     /// <summary>Subtítulo descriptivo que aparece en el hero de la página pública.</summary>
     public string Subtitle { get; set; } = string.Empty;
@@ -46,8 +51,10 @@ public class InformativePage
         if (string.IsNullOrWhiteSpace(Slug))
             throw new DomainValidationException("El slug de la página es obligatorio.", nameof(Slug));
 
-        if (string.IsNullOrWhiteSpace(Content))
-            throw new DomainValidationException("El contenido de la página es obligatorio.", nameof(Content));
+        if (Blocks.Count > ContentLimits.MaxBlocks)
+            throw new DomainValidationException($"La página no puede superar los {ContentLimits.MaxBlocks} bloques.", nameof(Blocks));
+
+        if (Blocks.Count == 0)
+            throw new DomainValidationException("El contenido de la página es obligatorio.", nameof(Blocks));
     }
 }
-

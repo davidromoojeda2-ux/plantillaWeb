@@ -1,4 +1,6 @@
 using Aplication.DTOs;
+using Domine.Content;
+using Domine.ContentBlocks;
 using Domine.Entities;
 
 namespace Aplication.Mappers;
@@ -8,7 +10,7 @@ namespace Aplication.Mappers;
 /// </summary>
 public static class ArticleMapper
 {
-    public static Article ToEntity(ArticleDto dto)
+    public static Article ToEntity(ArticleDto dto, IReadOnlyList<ContentBlock> blocks)
     {
         var status = ParseStatus(dto.Status);
         return new Article
@@ -16,7 +18,8 @@ public static class ArticleMapper
             Title = dto.Title.Trim(),
             Slug = dto.Slug.Trim().ToLowerInvariant(),
             Summary = dto.Summary.Trim(),
-            Content = dto.Content,
+            Blocks = [.. blocks],
+            SchemaVersion = ContentLimits.CurrentSchemaVersion,
             Author = dto.Author.Trim(),
             AuthorBio = NullIfEmpty(dto.AuthorBio),
             AuthorAvatarUrl = NullIfEmpty(dto.AuthorAvatarUrl),
@@ -27,22 +30,22 @@ public static class ArticleMapper
             Tags = dto.Tags.Select(t => t.Trim()).Where(t => t.Length > 0).ToList(),
             CoverImageId = NullIfEmpty(dto.CoverImageId),
             CoverImageUrl = NullIfEmpty(dto.CoverImageUrl),
-            ImageIds = dto.ImageIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList(),
+            ImageIds = MergeImageIds(dto.ImageIds, blocks),
             Featured = dto.Featured,
             Status = status,
-            PublishedAt = status == ArticleStatus.Publicado ? DateTime.UtcNow : null,
-            ReadingTimeMinutes = Article.EstimateReadingTime(dto.Content)
+            PublishedAt = status == ArticleStatus.Publicado ? DateTime.UtcNow : null
         };
     }
 
-    public static Article ApplyUpdate(Article existing, ArticleDto dto)
+    public static Article ApplyUpdate(Article existing, ArticleDto dto, IReadOnlyList<ContentBlock> blocks)
     {
         var status = ParseStatus(dto.Status);
 
         existing.Title = dto.Title.Trim();
         existing.Slug = dto.Slug.Trim().ToLowerInvariant();
         existing.Summary = dto.Summary.Trim();
-        existing.Content = dto.Content;
+        existing.Blocks = [.. blocks];
+        existing.SchemaVersion = ContentLimits.CurrentSchemaVersion;
         existing.Author = dto.Author.Trim();
         existing.AuthorBio = NullIfEmpty(dto.AuthorBio);
         existing.AuthorAvatarUrl = NullIfEmpty(dto.AuthorAvatarUrl);
@@ -53,10 +56,9 @@ public static class ArticleMapper
         existing.Tags = dto.Tags.Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
         existing.CoverImageId = NullIfEmpty(dto.CoverImageId);
         existing.CoverImageUrl = NullIfEmpty(dto.CoverImageUrl);
-        existing.ImageIds = dto.ImageIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        existing.ImageIds = MergeImageIds(dto.ImageIds, blocks);
         existing.Featured = dto.Featured;
         existing.Status = status;
-        existing.ReadingTimeMinutes = Article.EstimateReadingTime(dto.Content);
         existing.UpdatedAt = DateTime.UtcNow;
 
         if (status == ArticleStatus.Publicado && existing.PublishedAt is null)
@@ -71,7 +73,7 @@ public static class ArticleMapper
         Title = article.Title,
         Slug = article.Slug,
         Summary = article.Summary,
-        Content = article.Content,
+        Blocks = ContentBlockMapper.ToDtoList(article.Blocks),
         Author = article.Author,
         AuthorBio = article.AuthorBio,
         AuthorAvatarUrl = article.AuthorAvatarUrl,
@@ -95,12 +97,26 @@ public static class ArticleMapper
     public static List<ArticleResponseDto> ToDtoList(IEnumerable<Article> articles) =>
         articles.Select(ToDto).ToList();
 
+    /// <summary>
+    /// Mantiene el catálogo de imágenes del artículo sincronizado con las
+    /// referencias de biblioteca presentes en los bloques del cuerpo.
+    /// </summary>
+    private static List<string> MergeImageIds(
+        IEnumerable<string>? imageIds,
+        IEnumerable<ContentBlock>? blocks) =>
+        (imageIds ?? [])
+            .Concat(blocks?.OfType<ContentImageBlock>().Select(block => block.ImageId) ?? [])
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!)
+            .Distinct()
+            .ToList();
+
     public static ArticleDto ToEditDto(Article article) => new()
     {
         Title = article.Title,
         Slug = article.Slug,
         Summary = article.Summary,
-        Content = article.Content,
+        Blocks = ContentBlockMapper.ToDtoList(article.Blocks),
         Author = article.Author,
         AuthorBio = article.AuthorBio,
         AuthorAvatarUrl = article.AuthorAvatarUrl,
@@ -121,7 +137,7 @@ public static class ArticleMapper
         Title = article.Title,
         Slug = article.Slug,
         Summary = article.Summary,
-        Content = article.Content,
+        Blocks = [.. article.Blocks],
         Author = article.Author,
         AuthorBio = article.AuthorBio,
         AuthorAvatarUrl = article.AuthorAvatarUrl,

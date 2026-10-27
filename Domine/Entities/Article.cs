@@ -1,5 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using Domine.Content;
+using Domine.ContentBlocks;
 using Domine.Exceptions;
 
 namespace Domine.Entities;
@@ -23,8 +25,14 @@ public class Article
     /// <summary>Resumen corto para tarjetas y SEO (meta description).</summary>
     public string Summary { get; set; } = string.Empty;
 
-    /// <summary>Contenido HTML sanitizado del artículo.</summary>
-    public string Content { get; set; } = string.Empty;
+    /// <summary>Cuerpo editorial estructurado y ya sanitizado.</summary>
+    public List<ContentBlock> Blocks { get; set; } = [];
+
+    /// <summary>Versión del esquema de bloques con la que se guardó el documento.</summary>
+    public int SchemaVersion { get; set; } = ContentLimits.CurrentSchemaVersion;
+
+    /// <summary>Texto plano denormalizado para el índice de búsqueda.</summary>
+    public string SearchText { get; set; } = string.Empty;
 
     public string Author { get; set; } = string.Empty;
 
@@ -73,21 +81,86 @@ public class Article
     /// <summary>Contador de vistas acumuladas del artículo.</summary>
     public long ViewCount { get; set; } = 0;
 
-    /// <summary>Tiempo estimado de lectura en minutos (calculado al publicar).</summary>
+    /// <summary>Tiempo estimado de lectura en minutos (calculado desde los bloques).</summary>
     public int ReadingTimeMinutes { get; set; } = 1;
 
     /// <summary>
-    /// Calcula el tiempo estimado de lectura en base al conteo de palabras del contenido HTML.
+    /// Construye el texto plano de búsqueda a partir de todos los bloques.
+    /// Nunca incluye marcado HTML.
     /// </summary>
-    public static int EstimateReadingTime(string? htmlContent)
+    public string BuildSearchText()
     {
-        if (string.IsNullOrWhiteSpace(htmlContent)) return 1;
+        var parts = new List<string>();
 
-        var words = System.Text.RegularExpressions.Regex
-            .Replace(htmlContent, "<[^>]+>", " ")
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        foreach (var block in Blocks)
+        {
+            switch (block)
+            {
+                case ContentParagraphBlock paragraph:
+                    parts.Add(paragraph.Text.Text);
+                    break;
+                case ContentHeadingBlock heading:
+                    parts.Add(heading.Text.Value);
+                    break;
+                case ContentOrderedListBlock ordered:
+                    parts.AddRange(ordered.Items.Select(i => i.Text));
+                    break;
+                case ContentBulletListBlock bullets:
+                    parts.AddRange(bullets.Items.Select(i => i.Text));
+                    break;
+                case ContentQuoteBlock quote:
+                    parts.Add(quote.Text.Text);
+                    if (quote.Attribution is not null) parts.Add(quote.Attribution.Value);
+                    break;
+                case ContentCalloutBlock callout:
+                    if (callout.Title is not null) parts.Add(callout.Title.Value);
+                    parts.Add(callout.Text.Text);
+                    break;
+                case ContentImageBlock image:
+                    parts.Add(image.Alt.Value);
+                    if (image.Caption is not null) parts.Add(image.Caption.Value);
+                    if (image.Credit is not null) parts.Add(image.Credit.Value);
+                    break;
+                case ContentTableBlock table:
+                    parts.AddRange(table.Headers.Select(h => h.Value));
+                    if (table.Caption is not null) parts.Add(table.Caption.Value);
+                    foreach (var row in table.Rows)
+                        parts.AddRange(row.Select(c => c.Value));
+                    break;
+                case ContentCodeBlock code:
+                    parts.Add(code.Code.Value);
+                    break;
+            }
+        }
+
+        return string.Join(' ', parts.Where(p => !string.IsNullOrWhiteSpace(p))).Trim();
+    }
+
+    /// <summary>
+    /// Calcula el tiempo estimado de lectura a partir del texto plano.
+    /// </summary>
+    public static int EstimateReadingTime(string? plainText)
+    {
+        if (string.IsNullOrWhiteSpace(plainText)) return 1;
+
+        var words = plainText
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+            .Length;
 
         return Math.Max(1, (int)Math.Ceiling(words / 200.0));
+    }
+
+    public static int EstimateReadingTime(IEnumerable<ContentBlock> blocks)
+    {
+        var text = string.Join(' ', ExtractPlainText(blocks));
+        return EstimateReadingTime(text);
+    }
+
+    private static IEnumerable<string> ExtractPlainText(IEnumerable<ContentBlock> blocks)
+    {
+        var article = new Article { Blocks = [.. blocks] };
+        var text = article.BuildSearchText();
+        return text.Length == 0 ? [] : [text];
     }
 
     /// <summary>
@@ -102,11 +175,11 @@ public class Article
         if (string.IsNullOrWhiteSpace(Slug))
             throw new DomainValidationException("El slug del artículo es obligatorio.", nameof(Slug));
 
-        if (Status == ArticleStatus.Publicado)
-        {
-            if (string.IsNullOrWhiteSpace(Content))
-                throw new DomainValidationException("No se puede publicar un artículo sin contenido.", nameof(Content));
-        }
+        if (Blocks.Count > ContentLimits.MaxBlocks)
+            throw new DomainValidationException($"El artículo no puede superar los {ContentLimits.MaxBlocks} bloques.", nameof(Blocks));
+
+        if (Status == ArticleStatus.Publicado && Blocks.Count == 0)
+            throw new DomainValidationException("No se puede publicar un artículo sin contenido.", nameof(Blocks));
 
         if (ReadingTimeMinutes < 1)
             ReadingTimeMinutes = 1;
@@ -121,7 +194,8 @@ public class Article
         Status = ArticleStatus.Publicado;
         PublishedAt ??= DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
-        ReadingTimeMinutes = EstimateReadingTime(Content);
+        SearchText = BuildSearchText();
+        ReadingTimeMinutes = EstimateReadingTime(Blocks);
         ValidarInvariantes();
     }
 
@@ -132,6 +206,8 @@ public class Article
     {
         Status = ArticleStatus.Borrador;
         UpdatedAt = DateTime.UtcNow;
+        SearchText = BuildSearchText();
+        ReadingTimeMinutes = EstimateReadingTime(Blocks);
         ValidarInvariantes();
     }
 }

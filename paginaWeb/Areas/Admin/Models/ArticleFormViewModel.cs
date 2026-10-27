@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Aplication.DTOs;
+using Aplication.DTOs.ContentBlocks;
+using Aplication.Serialization;
 
 namespace paginaWeb.Areas.Admin.Models;
 
@@ -23,7 +25,9 @@ public class ArticleFormViewModel
     [StringLength(500, MinimumLength = 20, ErrorMessage = "El resumen debe tener entre 20 y 500 caracteres.")]
     public string Summary { get; set; } = string.Empty;
 
-    public string Content { get; set; } = string.Empty;
+    /// <summary>JSON serializado del editor de bloques; se valida en el controlador.</summary>
+    [Required(ErrorMessage = "El cuerpo del artículo es obligatorio.")]
+    public string BlocksJson { get; set; } = "[]";
 
     [Required(ErrorMessage = "El autor es obligatorio.")]
     [StringLength(100, ErrorMessage = "El autor no puede superar los 100 caracteres.")]
@@ -63,12 +67,12 @@ public class ArticleFormViewModel
 
     public List<ImageMetadataResponseDto> AvailableImages { get; set; } = [];
 
-    public ArticleDto ToDto() => new()
+    public ArticleDto ToDto(IReadOnlyList<ContentBlockDto> blocks) => new()
     {
         Title = Title,
         Slug = Slug,
         Summary = Summary,
-        Content = Content,
+        Blocks = [.. blocks],
         Author = Author,
         AuthorBio = AuthorBio,
         AuthorAvatarUrl = AuthorAvatarUrl,
@@ -90,7 +94,7 @@ public class ArticleFormViewModel
         Title = article.Title,
         Slug = article.Slug,
         Summary = article.Summary,
-        Content = article.Content,
+        BlocksJson = ContentBlockJson.Serialize(article.Blocks),
         Author = article.Author,
         AuthorBio = article.AuthorBio,
         AuthorAvatarUrl = article.AuthorAvatarUrl,
