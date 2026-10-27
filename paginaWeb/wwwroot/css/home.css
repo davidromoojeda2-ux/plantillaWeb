@@ -255,8 +255,8 @@ body {
 
 .hero:has(.hero-dynamic),
 .hero:has(.card-grid--hero) {
-    --hero-curve-h: clamp(140px, 18vw, 240px);
-    padding-bottom: clamp(60px, 8vw, 110px);
+    --hero-curve-h: clamp(75px, 8vw, 120px);
+    padding-bottom: clamp(12px, 2vw, 24px);
 }
 
 .hero__glow {
@@ -355,7 +355,7 @@ body {
     z-index: 3;
     width: 100%;
     max-width: 1160px;
-    margin: var(--space-6) auto 0;
+    margin: clamp(6rem, 10vw, 10rem) auto 0;
     border-radius: 20px;
     background: linear-gradient(145deg, rgba(0, 35, 90, 0.94) 0%, rgba(0, 48, 120, 0.88) 100%);
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -646,7 +646,7 @@ body {
     .hero:has(.hero-dynamic),
     .hero:has(.card-grid--hero) {
         --hero-curve-h: clamp(160px, 22vw, 300px);
-        padding-bottom: clamp(70px, 9vw, 120px);
+        padding-bottom: clamp(50px, 6vw, 80px);
     }
 
     .hero__kicker {
@@ -708,7 +708,7 @@ body {
 
 .hero+.section,
 .hero+*+.section {
-    padding-top: var(--space-8);
+    padding-top: clamp(1rem, 2vw, 1.75rem);
 }
 
 .section-header {
@@ -775,7 +775,7 @@ body {
 
     .hero+.section,
     .hero+*+.section {
-        padding-top: var(--space-6);
+        padding-top: clamp(1.25rem, 2vw, 1.875rem);
     }
 
     .section-header {
@@ -790,6 +790,11 @@ body {
 @media (min-width: 1024px) {
     .section {
         padding-top: var(--space-9);
+    }
+
+    .hero+.section,
+    .hero+*+.section {
+        padding-top: clamp(1.25rem, 0.25rem, 2rem);
     }
 }
 
