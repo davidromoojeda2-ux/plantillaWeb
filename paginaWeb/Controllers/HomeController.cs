@@ -77,10 +77,23 @@ public class HomeController : Controller
             coverImage = await _imageService.GetByIdAsync(article.CoverImageId);
         }
 
-        // Artículos recomendados con imágenes
+        // Artículos recomendados
         var recommended = await _articleService.GetRecommendedAsync(article.Id, article.CategoryId, 3);
-        var recommendedImages = await _imageService.GetVariantsDictAsync(
-            recommended.Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
+
+        // Artículos adyacentes (Anterior / Siguiente) para la navegabilidad
+        var (prevArticle, nextArticle) = await _articleService.GetAdjacentArticlesAsync(article.Id, article.PublishedAt);
+
+        // Obtener variantes de imágenes para recomendados y artículos adyacentes en una sola llamada
+        var imageIdsToFetch = recommended
+            .Select(a => a.CoverImageId)
+            .Concat(new[] { prevArticle?.CoverImageId, nextArticle?.CoverImageId })
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Distinct()
+            .ToList();
+
+        var imagesDict = imageIdsToFetch.Count > 0
+            ? await _imageService.GetVariantsDictAsync(imageIdsToFetch!)
+            : new Dictionary<string, ImageMetadataResponseDto>();
 
         ViewBag.Comments = comments;
         ViewBag.Category = category;
@@ -88,7 +101,10 @@ public class HomeController : Controller
         ViewBag.CoverImage = coverImage;
         ViewBag.ReadingMinutes = article.ReadingTimeMinutes;
         ViewBag.RecommendedArticles = recommended;
-        ViewBag.RecommendedImages = recommendedImages;
+        ViewBag.RecommendedImages = imagesDict;
+        ViewBag.PreviousArticle = prevArticle;
+        ViewBag.NextArticle = nextArticle;
+        ViewBag.AdjacentImages = imagesDict;
         ViewBag.RecommendedCategories = category is not null
             ? new Dictionary<string, string> { { category.Id, category.Name } }
             : new Dictionary<string, string>();

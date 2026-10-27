@@ -39,6 +39,7 @@ public interface IArticleRepository
     Task<List<Article>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
     Task<List<Article>> GetMostReadAsync(int take = 5);
     Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
+    Task<(Article? Previous, Article? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt);
 }
 
 // ─── Comment Repository Interface ─────────────────────────────────────────────

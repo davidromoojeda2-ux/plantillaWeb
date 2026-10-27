@@ -1,0 +1,139 @@
+@model (ArticleResponseDto? Previous, ArticleResponseDto? Next, Dictionary<string, ImageMetadataResponseDto>? Images)
+@{
+    if (Model.Previous == null && Model.Next == null)
+    {
+        return;
+    }
+}
+
+<nav class="mt-12 pt-8 border-t border-slate-200" aria-label="Navegación entre artículos">
+    <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#00509D]"></span>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 font-sans">
+                Navegación entre artículos
+            </h3>
+        </div>
+        <span class="text-[11px] text-slate-400 font-medium hidden sm:flex items-center gap-1.5">
+            <kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-600 shadow-2xs">←</kbd>
+            <kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-600 shadow-2xs">→</kbd>
+            <span>Navega con el teclado</span>
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <!-- ─── Botón / Tarjeta Artículo Anterior ─── -->
+        @if (Model.Previous != null)
+        {
+            var prevImg = Model.Previous.CoverImageId != null && Model.Images != null && Model.Images.TryGetValue(Model.Previous.CoverImageId, out var pi) ? pi : null;
+            var prevUrl = !string.IsNullOrWhiteSpace(Model.Previous.CoverImageUrl) ? Model.Previous.CoverImageUrl : ImageMapper.GetBestUrl(prevImg);
+
+            <a id="nav-prev-article"
+               asp-controller="Home"
+               asp-action="Articulo"
+               asp-route-slug="@Model.Previous.Slug"
+               rel="prev"
+               aria-label="Artículo anterior: @Model.Previous.Title"
+               class="group relative flex items-center gap-4 p-4 sm:p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-[#00509D]/50 hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-white shadow-xs hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
+                <div class="w-11 h-11 rounded-full bg-slate-100 group-hover:bg-[#00296B] text-slate-600 group-hover:text-[#FDC500] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:-translate-x-1 shadow-xs">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-[#00509D] transition-colors flex items-center gap-1">
+                        ← Anterior
+                    </span>
+                    <h4 class="font-serif font-bold text-slate-900 group-hover:text-[#00296B] text-sm sm:text-base leading-snug line-clamp-2 transition-colors mt-0.5">
+                        @Model.Previous.Title
+                    </h4>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
+                        @if (Model.Previous.PublishedAt.HasValue)
+                        {
+                            <span>@Model.Previous.PublishedAt.Value.ToString("dd MMM yyyy")</span>
+                            <span>•</span>
+                        }
+                        <span>@Model.Previous.ReadingTimeMinutes min lectura</span>
+                    </div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(prevUrl))
+                {
+                    <div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-200/60 hidden sm:block">
+                        <img src="@prevUrl" alt="@Model.Previous.Title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                }
+            </a>
+        }
+        else
+        {
+            <div class="flex items-center gap-4 p-4 sm:p-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 text-slate-400 select-none">
+                <div class="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">← Anterior</span>
+                    <p class="text-xs text-slate-400 mt-0.5">Estás en la primera publicación</p>
+                </div>
+            </div>
+        }
+
+        <!-- ─── Botón / Tarjeta Artículo Siguiente ─── -->
+        @if (Model.Next != null)
+        {
+            var nextImg = Model.Next.CoverImageId != null && Model.Images != null && Model.Images.TryGetValue(Model.Next.CoverImageId, out var ni) ? ni : null;
+            var nextUrl = !string.IsNullOrWhiteSpace(Model.Next.CoverImageUrl) ? Model.Next.CoverImageUrl : ImageMapper.GetBestUrl(nextImg);
+
+            <a id="nav-next-article"
+               asp-controller="Home"
+               asp-action="Articulo"
+               asp-route-slug="@Model.Next.Slug"
+               rel="next"
+               aria-label="Artículo siguiente: @Model.Next.Title"
+               class="group relative flex items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-[#00509D]/50 hover:bg-gradient-to-l hover:from-blue-50/30 hover:to-white shadow-xs hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 text-right">
+                @if (!string.IsNullOrWhiteSpace(nextUrl))
+                {
+                    <div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-200/60 hidden sm:block order-first">
+                        <img src="@nextUrl" alt="@Model.Next.Title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                }
+                <div class="flex-1 min-w-0">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-[#00509D] transition-colors flex items-center justify-end gap-1">
+                        Siguiente →
+                    </span>
+                    <h4 class="font-serif font-bold text-slate-900 group-hover:text-[#00296B] text-sm sm:text-base leading-snug line-clamp-2 transition-colors mt-0.5">
+                        @Model.Next.Title
+                    </h4>
+                    <div class="flex items-center justify-end gap-2 text-[11px] text-slate-400 mt-1">
+                        @if (Model.Next.PublishedAt.HasValue)
+                        {
+                            <span>@Model.Next.PublishedAt.Value.ToString("dd MMM yyyy")</span>
+                            <span>•</span>
+                        }
+                        <span>@Model.Next.ReadingTimeMinutes min lectura</span>
+                    </div>
+                </div>
+                <div class="w-11 h-11 rounded-full bg-slate-100 group-hover:bg-[#00296B] text-slate-600 group-hover:text-[#FDC500] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:translate-x-1 shadow-xs">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+            </a>
+        }
+        else
+        {
+            <div class="flex items-center justify-end gap-4 p-4 sm:p-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 text-slate-400 select-none text-right">
+                <div class="flex-1 min-w-0">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Siguiente →</span>
+                    <p class="text-xs text-slate-400 mt-0.5">Estás en la publicación más reciente</p>
+                </div>
+                <div class="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+            </div>
+        }
+    </div>
+</nav>

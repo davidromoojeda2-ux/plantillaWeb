@@ -299,11 +299,16 @@
         window.openMediaLibraryModalForInline = function(callback) {
             activeInlineImageCallback = callback;
             window.openMediaLibraryModal();
+            if (mediaLibraryModal) mediaLibraryModal.style.zIndex = '9999';
+            const confirmBtnText = btnConfirmSelectMediaImage?.querySelector('span');
+            if (confirmBtnText) confirmBtnText.textContent = 'Insertar en el Artículo';
         };
 
         window.closeMediaLibraryModal = function(e) {
             if (e) e.preventDefault();
             activeInlineImageCallback = null;
+            const confirmBtnText = btnConfirmSelectMediaImage?.querySelector('span');
+            if (confirmBtnText) confirmBtnText.textContent = 'Usar como Portada';
             if (!mediaLibraryModal) return;
             mediaLibraryModal.classList.add('hidden');
             mediaLibraryModal.style.display = 'none';

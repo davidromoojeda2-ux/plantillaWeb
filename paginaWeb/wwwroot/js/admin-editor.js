@@ -753,8 +753,9 @@ class BlockEditor {
     buildImageEditorHtml(src, meta = {}) {
         const hasSrc = !!src;
         return `
-            <div class="image-block-widget border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 p-4 space-y-3">
-                <div class="image-preview-box text-center bg-white border border-slate-200 rounded-xl overflow-hidden relative ${hasSrc ? '' : 'hidden'}">
+            <div class="image-block-widget border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/70 p-5 space-y-4 shadow-2xs">
+                <!-- Previsualización de la Imagen -->
+                <div class="image-preview-box text-center bg-white border border-slate-200 rounded-xl overflow-hidden relative ${hasSrc ? '' : 'hidden'} shadow-xs">
                     <img src="${src || ''}" alt="${meta.alt || ''}" referrerpolicy="no-referrer"
                          class="max-h-80 mx-auto object-cover rounded-lg w-full transition-opacity"
                          onload="this.parentElement.querySelector('.img-error-badge')?.classList.add('hidden'); this.classList.remove('opacity-30');"
@@ -764,34 +765,44 @@ class BlockEditor {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                    <div>
-                        <label class="block font-semibold text-slate-700 mb-1">Ruta o URL de la Imagen</label>
-                        <div class="flex items-center gap-1.5">
-                            <input type="text" class="img-url-input flex-1 px-3 py-2 bg-white rounded-lg border border-slate-300 text-slate-800 font-mono text-xs outline-none focus:ring-1 focus:ring-[#00509D]"
-                                   placeholder="https://... o /uploads/..." value="${src || ''}" />
-                            <button type="button" class="img-library-btn px-2.5 py-2 bg-blue-50 hover:bg-blue-100 text-[#00296B] font-bold rounded-lg border border-blue-200 transition flex items-center gap-1 shrink-0 text-xs" title="Seleccionar de la Biblioteca">
+                <!-- Fila 1: Ruta o URL con acciones alineadas y espacio completo -->
+                <div class="space-y-1.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <label class="block font-bold text-slate-700 text-xs tracking-wide">
+                            Ruta o URL de la Imagen
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="img-library-btn px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#00296B] font-bold rounded-lg border border-blue-200 transition-all flex items-center gap-1.5 text-xs shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer" title="Explorar Biblioteca de Medios">
                                 ${BLOCK_ICONS.image}
                                 <span>Biblioteca</span>
                             </button>
-                            <button type="button" class="img-upload-btn px-2.5 py-2 bg-[#00296B] hover:bg-[#003F88] text-white font-bold rounded-lg shadow-xs transition flex items-center gap-1 shrink-0 text-xs" title="Subir archivo desde el equipo">
+                            <button type="button" class="img-upload-btn px-3 py-1.5 bg-[#00296B] hover:bg-[#003F88] text-white font-bold rounded-lg shadow-xs transition-all flex items-center gap-1.5 text-xs active:scale-95 cursor-pointer" title="Subir archivo desde el equipo">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                 <span>Subir</span>
                             </button>
                             <input type="file" accept="image/*" class="img-file-hidden hidden" />
                         </div>
                     </div>
-                    <div>
-                        <label class="block font-semibold text-slate-700 mb-1">Texto Alternativo (SEO / Alt)</label>
-                        <input type="text" class="img-alt-input w-full px-3 py-2 bg-white rounded-lg border border-slate-300 text-slate-800 text-xs outline-none focus:ring-1 focus:ring-[#00509D]"
-                               placeholder="Descripción breve de la imagen para accesibilidad" value="${meta.alt || ''}" />
-                    </div>
+                    <input type="text" class="img-url-input w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 text-slate-800 font-mono text-xs outline-none focus:ring-2 focus:ring-[#00509D] focus:border-transparent transition shadow-2xs"
+                           placeholder="https://ejemplo.com/imagen.jpg o /uploads/..." value="${src || ''}" />
                 </div>
 
-                <div>
-                    <label class="block font-semibold text-slate-700 mb-1 text-xs">Pie de Foto / Leyenda Editorial (Figcaption)</label>
-                    <input type="text" class="img-caption-input w-full px-3 py-2 bg-white rounded-lg border border-slate-300 text-slate-600 text-xs outline-none focus:ring-1 focus:ring-[#00509D]"
-                           placeholder="Leyenda que se mostrará debajo de la imagen (ej: Vista panorámica del evento)..." value="${meta.caption || ''}" />
+                <!-- Fila 2: Cuadrícula equilibrada para SEO Alt y Pie de Foto -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-0.5">
+                    <div class="space-y-1.5">
+                        <label class="block font-bold text-slate-700 text-xs tracking-wide">
+                            Texto Alternativo (SEO / Alt)
+                        </label>
+                        <input type="text" class="img-alt-input w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 text-slate-800 text-xs outline-none focus:ring-2 focus:ring-[#00509D] focus:border-transparent transition shadow-2xs"
+                               placeholder="Descripción breve de la imagen para accesibilidad..." value="${meta.alt || ''}" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block font-bold text-slate-700 text-xs tracking-wide">
+                            Pie de Foto / Leyenda Editorial (Figcaption)
+                        </label>
+                        <input type="text" class="img-caption-input w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-300 text-slate-600 text-xs outline-none focus:ring-2 focus:ring-[#00509D] focus:border-transparent transition shadow-2xs"
+                               placeholder="Leyenda que se mostrará debajo de la imagen..." value="${meta.caption || ''}" />
+                    </div>
                 </div>
             </div>
         `;
@@ -822,24 +833,23 @@ class BlockEditor {
             this.syncContent();
         });
 
-        libraryBtn?.addEventListener('click', () => {
-            if (typeof window.openMediaLibraryModalForInline === 'function') {
-                window.openMediaLibraryModalForInline((selectedImg) => {
-                    const chosenUrl = selectedImg.url || selectedImg.thumbnailUrl;
-                    urlInput.value = chosenUrl;
-                    previewImg.src = chosenUrl;
-                    previewImg.referrerPolicy = 'no-referrer';
-                    previewBox.classList.remove('hidden');
-                    errorBadge?.classList.add('hidden');
-                    previewImg.classList.remove('opacity-30');
-                    if (!altInput.value && selectedImg.alt) {
-                        altInput.value = selectedImg.alt;
-                    }
-                    this.syncContent();
-                });
-            } else if (typeof window.openMediaLibraryModal === 'function') {
-                window.openMediaLibraryModal();
-            }
+        libraryBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.openMediaPicker((selectedImg) => {
+                const chosenUrl = selectedImg.url || selectedImg.thumbnailUrl;
+                if (!chosenUrl) return;
+                urlInput.value = chosenUrl;
+                previewImg.src = chosenUrl;
+                previewImg.referrerPolicy = 'no-referrer';
+                previewBox.classList.remove('hidden');
+                errorBadge?.classList.add('hidden');
+                previewImg.classList.remove('opacity-30');
+                if (!altInput.value && (selectedImg.alt || selectedImg.fileName)) {
+                    altInput.value = selectedImg.alt || selectedImg.fileName;
+                }
+                this.syncContent();
+            });
         });
 
         altInput?.addEventListener('input', () => {
@@ -890,6 +900,136 @@ class BlockEditor {
                 `;
             }
         });
+    }
+
+    /* ─── Selector de Medios (Integrado o con Fallback Autónomo) ───────── */
+    openMediaPicker(callback) {
+        if (typeof window.openMediaLibraryModalForInline === 'function') {
+            window.openMediaLibraryModalForInline(callback);
+            return;
+        }
+        this.showBuiltInMediaLibraryModal(callback);
+    }
+
+    async showBuiltInMediaLibraryModal(callback) {
+        let modal = document.getElementById('editorBuiltInMediaModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'editorBuiltInMediaModal';
+            modal.className = 'fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full flex flex-col max-h-[88vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                    <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                        <div class="flex items-center gap-2.5">
+                            <span class="p-2 bg-blue-100 text-[#00509D] rounded-xl">${BLOCK_ICONS.image}</span>
+                            <div>
+                                <h3 class="text-base font-bold text-slate-800">Biblioteca de Medios</h3>
+                                <p class="text-xs text-slate-500">Selecciona una imagen disponible para insertarla en el artículo</p>
+                            </div>
+                        </div>
+                        <button type="button" class="modal-close-btn text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <div class="p-4 border-b border-slate-100 bg-white">
+                        <input type="text" class="modal-search-input w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#00509D] outline-none"
+                               placeholder="Buscar imágenes por nombre o descripción..." />
+                    </div>
+                    <div class="modal-grid-container flex-1 overflow-y-auto p-4 bg-slate-50/50 min-h-[300px]">
+                        <div class="modal-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            <div class="col-span-full py-12 text-center text-slate-400 text-xs">Cargando biblioteca...</div>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                        <button type="button" class="modal-cancel-btn px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="button" class="modal-insert-btn px-5 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer" disabled>
+                            <span>Insertar en el Artículo</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.body.classList.add('overflow-hidden');
+
+        const searchInput = modal.querySelector('.modal-search-input');
+        const grid = modal.querySelector('.modal-grid');
+        const insertBtn = modal.querySelector('.modal-insert-btn');
+        const closeBtn = modal.querySelector('.modal-close-btn');
+        const cancelBtn = modal.querySelector('.modal-cancel-btn');
+
+        let selected = null;
+        let images = [];
+
+        const closeModal = () => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.classList.remove('overflow-hidden');
+        };
+
+        closeBtn.onclick = closeModal;
+        cancelBtn.onclick = closeModal;
+        modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+        const render = () => {
+            const term = (searchInput.value || '').trim().toLowerCase();
+            const filtered = images.filter(img => {
+                if (!term) return true;
+                return (img.fileName || '').toLowerCase().includes(term) || (img.alt || '').toLowerCase().includes(term);
+            });
+
+            grid.innerHTML = '';
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-xs">No se encontraron imágenes en la biblioteca.</div>`;
+                insertBtn.disabled = true;
+                return;
+            }
+
+            filtered.forEach(img => {
+                const card = document.createElement('div');
+                const isSel = selected && selected.id === img.id;
+                card.className = `p-2 rounded-xl border bg-white cursor-pointer transition shadow-2xs hover:shadow-md ${isSel ? 'ring-2 ring-[#00509D] border-[#00509D] bg-blue-50/30' : 'border-slate-200 hover:border-slate-300'}`;
+                card.innerHTML = `
+                    <div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-100 relative mb-1.5">
+                        <img src="${img.thumbnailUrl || img.url}" alt="${img.alt || img.fileName || ''}" class="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <p class="text-[11px] font-semibold text-slate-700 truncate" title="${img.fileName || ''}">${img.fileName || 'Imagen'}</p>
+                `;
+                card.onclick = () => {
+                    selected = img;
+                    insertBtn.disabled = false;
+                    render();
+                };
+                card.ondblclick = () => {
+                    callback(img);
+                    closeModal();
+                };
+                grid.appendChild(card);
+            });
+        };
+
+        insertBtn.onclick = () => {
+            if (!selected) return;
+            callback(selected);
+            closeModal();
+        };
+
+        searchInput.oninput = () => render();
+
+        try {
+            const res = await fetch('/admin/articulos/imagenes-disponibles');
+            images = await res.json();
+            if (!Array.isArray(images)) images = [];
+        } catch (e) {
+            console.warn('Error cargando imágenes:', e);
+            images = [];
+        }
+        render();
     }
 
     /* ─── Bloque Callout Contextual ──────────────────────────────────────── */

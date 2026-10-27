@@ -10,6 +10,9 @@
 ImageMapper.GetBestUrl(coverImage);
     var recommended = (List<ArticleResponseDto>?)ViewBag.RecommendedArticles ?? new();
     var recommendedImages = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.RecommendedImages ?? new();
+    var previousArticle = (ArticleResponseDto?)ViewBag.PreviousArticle;
+    var nextArticle = (ArticleResponseDto?)ViewBag.NextArticle;
+    var adjacentImages = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.AdjacentImages ?? new();
     var pageUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/articulos/{Model.Slug}";
 }
 
@@ -34,24 +37,57 @@ ImageMapper.GetBestUrl(coverImage);
 <article class="container py-10 space-y-12">
     <!-- ─── Cabecera Editorial ──────────────────────────────────────────────── -->
     <header class="max-w-4xl mx-auto space-y-6 text-center">
-        <!-- Breadcrumbs y Categoría / Subcategoría -->
-        <div
-            class="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            <a asp-controller="Home" asp-action="Index" class="hover:underline">Inicio</a>
-            <span>/</span>
-            @if (category != null)
-            {
-                <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@category.Slug"
-                   class="text-[#00509D] hover:underline font-bold">@category.Name</a>
+        <!-- Breadcrumbs y Navegabilidad Rápida -->
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200/80 pb-3">
+            <div class="flex items-center gap-2 flex-wrap">
+                <a asp-controller="Home" asp-action="Index" class="hover:underline">Inicio</a>
                 <span>/</span>
-            }
-            @if (subcategory != null)
+                @if (category != null)
+                {
+                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@category.Slug"
+                       class="text-[#00509D] hover:underline font-bold">@category.Name</a>
+                    <span>/</span>
+                }
+                @if (subcategory != null)
+                {
+                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@subcategory.Slug"
+                       class="text-[#00509D] hover:underline font-bold">@subcategory.Name</a>
+                    <span>/</span>
+                }
+                <span class="text-slate-400">Lectura</span>
+            </div>
+
+            @if (previousArticle != null || nextArticle != null)
             {
-                <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@subcategory.Slug"
-                   class="text-[#00509D] hover:underline font-bold">@subcategory.Name</a>
-                <span>/</span>
+                <div class="flex items-center gap-1.5 ml-auto">
+                    @if (previousArticle != null)
+                    {
+                        <a id="nav-prev-quick"
+                           asp-controller="Home" asp-action="Articulo" asp-route-slug="@previousArticle.Slug"
+                           title="Artículo anterior: @previousArticle.Title"
+                           aria-label="Artículo anterior: @previousArticle.Title"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-[#00296B] hover:text-[#FDC500] text-slate-600 transition-all text-xs font-bold shadow-2xs group">
+                            <svg class="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span class="hidden sm:inline">Anterior</span>
+                        </a>
+                    }
+                    @if (nextArticle != null)
+                    {
+                        <a id="nav-next-quick"
+                           asp-controller="Home" asp-action="Articulo" asp-route-slug="@nextArticle.Slug"
+                           title="Artículo siguiente: @nextArticle.Title"
+                           aria-label="Artículo siguiente: @nextArticle.Title"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-[#00296B] hover:text-[#FDC500] text-slate-600 transition-all text-xs font-bold shadow-2xs group">
+                            <span class="hidden sm:inline">Siguiente</span>
+                            <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    }
+                </div>
             }
-            <span class="text-slate-400">Lectura</span>
         </div>
 
         <!-- H1 Principal -->
@@ -160,6 +196,10 @@ ImageMapper.GetBestUrl(coverImage);
             <div class="mt-12 pt-8 border-t border-slate-200">
                 <partial name="Partials/_AuthorBioCard" model="AuthorMapper.ToAuthorDto(Model)" />
             </div>
+
+            <!-- ─── Navegabilidad entre Artículos (Anterior / Siguiente) ───────── -->
+            <partial name="Partials/_ArticleNavigation"
+                     model="(Previous: previousArticle, Next: nextArticle, Images: adjacentImages)" />
         </main>
     </div>
 

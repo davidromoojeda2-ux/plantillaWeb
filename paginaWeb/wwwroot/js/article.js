@@ -141,12 +141,34 @@
         });
     }
 
+    // 6. Navegación por teclado entre artículos (Flecha izquierda / Flecha derecha)
+    function initKeyboardNav() {
+        document.addEventListener('keydown', function (e) {
+            var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) {
+                return;
+            }
+            if (e.key === 'ArrowLeft') {
+                var prevLink = document.getElementById('nav-prev-article') || document.getElementById('nav-prev-quick');
+                if (prevLink && prevLink.href) {
+                    window.location.href = prevLink.href;
+                }
+            } else if (e.key === 'ArrowRight') {
+                var nextLink = document.getElementById('nav-next-article') || document.getElementById('nav-next-quick');
+                if (nextLink && nextLink.href) {
+                    window.location.href = nextLink.href;
+                }
+            }
+        });
+    }
+
     function initAll() {
         initReadingProgress();
         initTableOfContents();
         initCopyLink();
         initResponsiveTables();
         initCodeCopy();
+        initKeyboardNav();
     }
 
     if (document.readyState === 'loading') {

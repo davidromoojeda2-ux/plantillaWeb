@@ -143,4 +143,27 @@ public class ArticleRepository : IArticleRepository
 
         return set;
     }
+
+    public async Task<(Article? Previous, Article? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt)
+    {
+        var pubDate = publishedAt ?? DateTime.UtcNow;
+
+        var prevFilter = Builders<Article>.Filter.Eq(a => a.Status, ArticleStatus.Publicado) &
+                         Builders<Article>.Filter.Ne(a => a.Id, currentArticleId) &
+                         Builders<Article>.Filter.Lt(a => a.PublishedAt, pubDate);
+
+        var previous = await _col.Find(prevFilter)
+                                 .SortByDescending(a => a.PublishedAt)
+                                 .FirstOrDefaultAsync();
+
+        var nextFilter = Builders<Article>.Filter.Eq(a => a.Status, ArticleStatus.Publicado) &
+                         Builders<Article>.Filter.Ne(a => a.Id, currentArticleId) &
+                         Builders<Article>.Filter.Gt(a => a.PublishedAt, pubDate);
+
+        var next = await _col.Find(nextFilter)
+                             .SortBy(a => a.PublishedAt)
+                             .FirstOrDefaultAsync();
+
+        return (previous, next);
+    }
 }
