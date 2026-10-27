@@ -193,7 +193,11 @@
             this.activeEditable = null;
             this.inlineToolbar = null;
             this.hideTimer = null;
+            this.selectionTimer = null;
             this.noticeTimer = null;
+            this.selectedBlock = null;
+            this.inserterMenu = null;
+            this.inserterMenuCleanup = null;
 
             this.allowedImageHosts = (root.dataset.allowedImageHosts || '')
                 .split(',').map(host => host.trim().toLowerCase()).filter(Boolean);
@@ -223,6 +227,19 @@
             this.sync();
             const form = this.input.closest('form');
             form?.addEventListener('submit', () => this.sync());
+
+            document.addEventListener('selectionchange', () => this.handleSelectionChange());
+
+            document.addEventListener('pointerdown', event => {
+                if (this.root.contains(event.target)) return;
+                if (this.inserterMenu?.contains(event.target)) return;
+                this.clearSelectedBlock();
+                this.closeInserterMenu();
+            });
+
+            this.canvas.addEventListener('pointerdown', event => {
+                if (event.target === this.canvas) this.clearSelectedBlock();
+            });
         }
 
         buildToolbar() {
@@ -293,19 +310,129 @@
         }
 
         addBlock(type, data, focus = true, runSync = true) {
+            return this.insertBlockAt(this.blocks.length, type, data, focus, runSync);
+        }
+
+        insertBlockAt(index, type, data, focus = true, runSync = true) {
             if (this.blocks.length >= this.maxBlocks) {
                 this.notify(`El cuerpo no puede superar los ${this.maxBlocks} bloques.`);
                 return null;
             }
 
             const block = this.createBlock(type, data);
-            this.blocks.push(block);
-            this.canvas.appendChild(block.el);
-            this.refreshIndices();
+            const target = Math.max(0, Math.min(index, this.blocks.length));
+            this.blocks.splice(target, 0, block);
+            this.renderCanvas();
 
             if (runSync) this.sync();
-            if (focus) this.focusFirstField(block.el);
+            if (focus) {
+                this.focusFirstField(block.el);
+                this.selectBlock(block);
+            }
             return block;
+        }
+
+        createBlockInserter(index) {
+            const row = element('div', 'cbe-block-inserter');
+            const lineBefore = element('span', 'cbe-inserter-line');
+            const button = element('button', 'cbe-inserter-btn', ICONS.plus);
+            button.type = 'button';
+            button.title = 'Insertar bloque aquí';
+            button.setAttribute('aria-label', 'Insertar bloque aquí');
+            button.addEventListener('click', event => {
+                event.stopPropagation();
+                this.openInserterMenu(button, index);
+            });
+            const lineAfter = element('span', 'cbe-inserter-line');
+
+            row.append(lineBefore, button, lineAfter);
+            return row;
+        }
+
+        openInserterMenu(anchor, index) {
+            this.closeInserterMenu();
+
+            const menu = element('div', 'cbe-inserter-menu');
+            menu.setAttribute('role', 'menu');
+            menu.setAttribute('aria-label', 'Insertar bloque');
+
+            BLOCK_TYPES.forEach(item => {
+                const option = element('button', 'cbe-inserter-item', escapeHtml(item.label));
+                option.type = 'button';
+                option.setAttribute('role', 'menuitem');
+                option.addEventListener('click', () => {
+                    this.closeInserterMenu();
+                    this.insertBlockAt(index, item.type, defaultsFor(item.type));
+                });
+                menu.appendChild(option);
+            });
+
+            document.body.appendChild(menu);
+            const rect = anchor.getBoundingClientRect();
+            const width = menu.offsetWidth;
+            const left = Math.min(
+                Math.max(8, rect.left - width / 2),
+                Math.max(8, window.innerWidth - width - 8));
+            menu.style.left = `${left}px`;
+
+            const estimatedHeight = menu.offsetHeight;
+            const below = rect.bottom + 8;
+            const top = below + estimatedHeight > window.innerHeight - 8
+                ? Math.max(8, rect.top - estimatedHeight - 8)
+                : below;
+            menu.style.top = `${top}px`;
+
+            const onPointerDown = event => {
+                if (menu.contains(event.target) || anchor.contains(event.target)) return;
+                this.closeInserterMenu();
+            };
+            const onKeyDown = event => {
+                if (event.key !== 'Escape') return;
+                this.closeInserterMenu();
+                anchor.focus();
+            };
+
+            document.addEventListener('pointerdown', onPointerDown, true);
+            document.addEventListener('keydown', onKeyDown);
+            this.inserterMenuCleanup = () => {
+                document.removeEventListener('pointerdown', onPointerDown, true);
+                document.removeEventListener('keydown', onKeyDown);
+            };
+            this.inserterMenu = menu;
+            menu.querySelector('button')?.focus();
+        }
+
+        closeInserterMenu() {
+            if (this.inserterMenuCleanup) {
+                this.inserterMenuCleanup();
+                this.inserterMenuCleanup = null;
+            }
+            this.inserterMenu?.remove();
+            this.inserterMenu = null;
+        }
+
+        renderCanvas() {
+            if (!this.canvas) return;
+            this.canvas.innerHTML = '';
+
+            this.blocks.forEach((block, index) => {
+                this.canvas.appendChild(block.el);
+                this.canvas.appendChild(this.createBlockInserter(index + 1));
+            });
+
+            this.refreshIndices();
+        }
+
+        selectBlock(block) {
+            if (!block || this.selectedBlock === block) return;
+            this.selectedBlock?.el.classList.remove('is-selected');
+            this.selectedBlock = block;
+            block.el.classList.add('is-selected');
+        }
+
+        clearSelectedBlock() {
+            this.selectedBlock?.el.classList.remove('is-selected');
+            this.selectedBlock = null;
         }
 
         createBlock(type, data) {
@@ -318,11 +445,14 @@
             const body = this.buildBlockBody(block, type, normalized);
             card.append(header, body);
             block.el = card;
+
+            card.addEventListener('pointerdown', () => this.selectBlock(block));
+            card.addEventListener('focusin', () => this.selectBlock(block));
             return block;
         }
 
         buildBlockHeader(block, type) {
-            const header = element('div', 'cbe-block-header');
+            const header = element('div', 'cbe-block-header cbe-block-toolbar');
             const position = element('span', 'cbe-block-index');
             position.textContent = '1';
             const typeLabel = element('span', 'cbe-block-type', TYPE_LABEL[type] || 'Bloque');
@@ -340,6 +470,8 @@
                 if (select.value !== block.type) this.changeType(block, select.value);
             });
 
+            const formatGroup = this.buildBlockFormatActions(block, type);
+
             const actions = element('div', 'cbe-block-actions');
             actions.append(
                 this.iconButton('Mover bloque arriba', ICONS.up, () => this.moveBlock(block, -1)),
@@ -347,8 +479,45 @@
                 this.iconButton('Eliminar bloque', ICONS.trash, () => this.removeBlock(block), 'cbe-icon-btn-danger')
             );
 
-            header.append(position, typeLabel, select, actions);
+            header.append(position, typeLabel, select);
+            if (formatGroup) header.appendChild(formatGroup);
+            header.appendChild(actions);
             return header;
+        }
+
+        buildBlockFormatActions(block, type) {
+            if (!['paragraph', 'quote', 'callout', 'ordered-list', 'bullet-list'].includes(type)) {
+                return null;
+            }
+
+            const group = element('div', 'cbe-block-format');
+            const formats = [
+                ['bold', ICONS.bold, 'Negrita'],
+                ['italic', ICONS.italic, 'Cursiva'],
+                ['createLink', ICONS.link, 'Insertar enlace']
+            ];
+
+            formats.forEach(([command, icon, label]) => {
+                const button = element('button', 'cbe-format-btn', icon);
+                button.type = 'button';
+                button.title = label;
+                button.setAttribute('aria-label', label);
+                button.addEventListener('mousedown', event => {
+                    event.preventDefault();
+                    const field = this.richFieldForBlock(block);
+                    if (field) this.applyInlineCommand(command, field, false);
+                });
+                group.appendChild(button);
+            });
+
+            return group;
+        }
+
+        richFieldForBlock(block) {
+            if (this.activeEditable && block.el.contains(this.activeEditable)) {
+                return this.activeEditable;
+            }
+            return block.el.querySelector('.cbe-rich');
         }
 
         buildBlockBody(block, type, data) {
@@ -387,7 +556,7 @@
             const body = element('div', 'cbe-block-body');
             const row = element('div', 'cbe-row cbe-row-heading');
 
-            const level = element('select', 'cbe-select');
+            const level = element('select', 'cbe-select cbe-heading-level');
             level.dataset.field = 'level';
             level.setAttribute('aria-label', 'Nivel del encabezado');
             [2, 3].forEach(value => {
@@ -399,10 +568,11 @@
             });
             level.addEventListener('change', () => this.sync());
 
-            const text = this.createPlainInput(data.text, 'Texto del encabezado', 'text');
+            const text = this.createPlainInput(data.text, 'Escribe un encabezado...', 'text');
             text.classList.add('cbe-heading-input');
+            text.setAttribute('aria-label', 'Texto del encabezado');
 
-            row.append(this.fieldGroup('Nivel', level), this.fieldGroup('Texto', text));
+            row.append(level, text);
             body.appendChild(row);
             return body;
         }
@@ -470,16 +640,17 @@
         }
 
         buildQuoteBody(data) {
-            const body = element('div', 'cbe-block-body');
+            const body = element('div', 'cbe-block-body cbe-quote');
             const text = this.createRich(data.text, 'Escribe la cita...', () => {
                 document.execCommand('insertLineBreak');
             });
+            text.classList.add('cbe-quote-text');
+
             const attribution = this.createPlainInput(
                 data.attribution || '', 'Autor o fuente de la cita', 'attribution');
+            attribution.classList.add('cbe-quote-attribution');
 
-            body.append(
-                this.fieldGroup('Cita', text),
-                this.fieldGroup('Atribución (opcional)', attribution));
+            body.append(text, attribution);
             return body;
         }
 
@@ -898,7 +1069,9 @@
             rich.innerHTML = sanitizeInline(value);
 
             rich.addEventListener('input', () => this.sync());
-            rich.addEventListener('focus', () => this.showInlineToolbar(rich));
+            rich.addEventListener('focus', () => {
+                this.activeEditable = rich;
+            });
             rich.addEventListener('blur', () => this.scheduleHideInlineToolbar());
             rich.addEventListener('paste', event => {
                 const html = event.clipboardData?.getData('text/html');
@@ -958,10 +1131,34 @@
             return button;
         }
 
+        handleSelectionChange() {
+            clearTimeout(this.selectionTimer);
+            this.selectionTimer = setTimeout(() => {
+                const selection = document.getSelection();
+                if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+                    this.scheduleHideInlineToolbar();
+                    return;
+                }
+
+                const container = selection.getRangeAt(0).commonAncestorContainer;
+                const element = container.nodeType === Node.ELEMENT_NODE
+                    ? container
+                    : container.parentElement;
+                const field = element?.closest('.cbe-rich');
+                if (!field || !this.root.contains(field)) {
+                    this.scheduleHideInlineToolbar();
+                    return;
+                }
+
+                this.showInlineToolbar(field);
+            }, 10);
+        }
+
         showInlineToolbar(field) {
             this.activeEditable = field;
             if (!this.inlineToolbar) return;
 
+            this.root.classList.add('cbe-bubble-open');
             const rect = field.getBoundingClientRect();
             this.inlineToolbar.hidden = false;
             const top = rect.top < 60 ? rect.bottom + 6 : rect.top - 42;
@@ -976,12 +1173,12 @@
                 if (!this.inlineToolbar) return;
                 if (this.inlineToolbar.contains(document.activeElement)) return;
                 this.inlineToolbar.hidden = true;
+                this.root.classList.remove('cbe-bubble-open');
                 this.activeEditable = null;
             }, 180);
         }
 
-        applyInlineCommand(command) {
-            const field = this.activeEditable;
+        applyInlineCommand(command, field = this.activeEditable, showBubble = true) {
             if (!field) return;
             field.focus();
 
@@ -998,7 +1195,7 @@
             }
 
             this.sync();
-            this.showInlineToolbar(field);
+            if (showBubble) this.showInlineToolbar(field);
         }
 
         moveBlock(block, delta) {
@@ -1008,7 +1205,7 @@
 
             this.blocks.splice(from, 1);
             this.blocks.splice(to, 0, block);
-            this.reorderCanvas();
+            this.renderCanvas();
             this.sync();
         }
 
@@ -1016,18 +1213,20 @@
             const index = this.blocks.indexOf(block);
             if (index < 0) return;
 
+            if (this.selectedBlock === block) this.clearSelectedBlock();
             this.blocks.splice(index, 1);
-            block.el.remove();
             if (this.blocks.length === 0) {
                 this.addBlock('paragraph', defaultsFor('paragraph'), false, false);
+            } else {
+                this.renderCanvas();
             }
-            this.refreshIndices();
             this.sync();
         }
 
         changeType(block, newType) {
             if (!TYPE_LABEL[newType] || block.type === newType) return;
 
+            const wasSelected = this.selectedBlock === block;
             const oldData = this.readBlock(block);
             const newData = this.convertData(oldData, newType);
             const index = this.blocks.indexOf(block);
@@ -1035,6 +1234,10 @@
 
             block.el.replaceWith(newBlock.el);
             if (index >= 0) this.blocks[index] = newBlock;
+            if (wasSelected) {
+                this.selectedBlock = newBlock;
+                newBlock.el.classList.add('is-selected');
+            }
             this.refreshIndices();
             this.sync();
         }
@@ -1245,12 +1448,6 @@
             }
 
             return merged;
-        }
-
-        reorderCanvas() {
-            if (!this.canvas) return;
-            this.blocks.forEach(block => this.canvas.appendChild(block.el));
-            this.refreshIndices();
         }
 
         refreshIndices() {
