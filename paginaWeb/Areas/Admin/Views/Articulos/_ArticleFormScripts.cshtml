@@ -1,0 +1,168 @@
+@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
+@{
+    var isEdit = ViewData["IsEdit"] as bool? == true;
+}
+
+<script src="~/js/content-blocks-editor.js" asp-append-version="true"></script>
+<script>
+    // El editor sincroniza el JSON en cada cambio; se fuerza una última
+    // sincronización por si el navegador envía el formulario con el foco activo.
+    const articleForm = document.getElementById('articleForm');
+    articleForm?.addEventListener('submit', () => window.contentBlocksEditor?.sync());
+
+@if (!isEdit)
+{
+    <text>
+    // Generador automático de Slug basado en el Título
+    const titleInput = document.getElementById('titleInput');
+    const slugInput = document.getElementById('slugInput');
+    titleInput?.addEventListener('input', () => {
+        if (!slugInput.dataset.manual) {
+            slugInput.value = titleInput.value
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+    });
+    slugInput?.addEventListener('input', () => {
+        slugInput.dataset.manual = 'true';
+    });
+    </text>
+}
+
+    const coverUploadBox = document.getElementById('coverUploadBox');
+    const coverFileInput = document.getElementById('coverFileInput');
+    const coverImageUrlInput = document.getElementById('coverImageUrlInput');
+    const coverImageIdInput = document.getElementById('coverImageIdInput');
+    const coverPreviewContainer = document.getElementById('coverPreviewContainer');
+    const coverPreviewImg = document.getElementById('coverPreviewImg');
+    const coverFullViewLink = document.getElementById('coverFullViewLink');
+    const toggleFitBtn = document.getElementById('toggleFitBtn');
+    const removeCoverBtn = document.getElementById('removeCoverBtn');
+
+    window.updateCoverPreview = function(url) {
+        if (url) {
+            coverPreviewImg.src = url;
+            coverPreviewImg.referrerPolicy = 'no-referrer';
+            coverPreviewImg.classList.remove('opacity-30');
+            document.getElementById('coverErrorBadge')?.classList.add('hidden');
+            if (coverFullViewLink) coverFullViewLink.href = url;
+            coverPreviewContainer.classList.remove('hidden');
+        } else {
+            coverPreviewContainer.classList.add('hidden');
+            coverImageIdInput.value = '';
+            if (coverFullViewLink) coverFullViewLink.href = '#';
+        }
+        if (typeof window.checkCurrentCoverUsage === 'function') {
+            window.checkCurrentCoverUsage();
+        }
+    };
+
+    // Alternar ajuste de imagen (cover vs contain)
+    toggleFitBtn?.addEventListener('click', () => {
+        if (coverPreviewImg.classList.contains('object-cover')) {
+            coverPreviewImg.classList.remove('object-cover');
+            coverPreviewImg.classList.add('object-contain');
+            toggleFitBtn.title = "Modo: Ajustar completa (Clic para Llenar 16:9)";
+        } else {
+            coverPreviewImg.classList.remove('object-contain');
+            coverPreviewImg.classList.add('object-cover');
+            toggleFitBtn.title = "Modo: Llenar 16:9 (Clic para Ajustar completa)";
+        }
+    });
+
+    // Actualizar vista previa cuando el usuario edite la ruta o URL manualmente
+    coverImageUrlInput?.addEventListener('input', () => {
+        window.updateCoverPreview(coverImageUrlInput.value.trim());
+    });
+
+    coverUploadBox?.addEventListener('click', () => coverFileInput?.click());
+    coverFileInput?.addEventListener('change', async () => {
+        if (!coverFileInput.files || coverFileInput.files.length === 0) return;
+        const file = coverFileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+@if (isEdit)
+{
+    <text>
+        formData.append('articleId', '@(Model.Id ?? string.Empty)');
+    </text>
+}
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        try {
+            const res = await fetch('/admin/articulos/upload-inline', {
+                method: 'POST',
+                headers: token ? { 'RequestVerificationToken': token } : {},
+                body: formData
+            });
+            const data = await res.json();
+            if (data.id) {
+                coverImageIdInput.value = data.id;
+                coverImageUrlInput.value = data.url;
+                window.updateCoverPreview(data.url);
+            }
+        } catch (err) {
+            alert('Error al subir portada: ' + err);
+        }
+    });
+
+    removeCoverBtn?.addEventListener('click', () => {
+        coverImageIdInput.value = '';
+        coverImageUrlInput.value = '';
+        window.updateCoverPreview('');
+        coverFileInput.value = '';
+    });
+
+    // Filtrado dinámico de subcategorías según la categoría seleccionada
+    const categorySelect = document.getElementById('categorySelect');
+    const subcategorySelect = document.getElementById('subcategorySelect');
+
+    window.filterSubcategories = function() {
+        const selectedCat = categorySelect?.value;
+        const currentSubVal = subcategorySelect?.value;
+        let currentSubStillValid = false;
+
+        Array.from(subcategorySelect?.options || []).forEach((opt, idx) => {
+            if (idx === 0) return; // Opción "-- Ninguna --"
+            const parent = opt.getAttribute('data-parent');
+            if (!selectedCat || parent === selectedCat) {
+                opt.hidden = false;
+                opt.disabled = false;
+                if (opt.value === currentSubVal) currentSubStillValid = true;
+            } else {
+                opt.hidden = true;
+                opt.disabled = true;
+            }
+        });
+
+        if (!currentSubStillValid && selectedCat && subcategorySelect) {
+            subcategorySelect.value = '';
+        }
+    };
+
+    categorySelect?.addEventListener('change', window.filterSubcategories);
+    window.filterSubcategories();
+
+    function toggleFeaturedStyling(input) {
+        const card = document.getElementById('featuredCardWrapper');
+        if (!card) return;
+
+        const currentCount = parseInt(card.getAttribute('data-featured-count') || '0', 10);
+        const wasInitiallyFeatured = card.getAttribute('data-initial-featured') === 'true';
+
+        if (input.checked && !wasInitiallyFeatured && currentCount >= 3) {
+            alert('Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos destacados. Debes desmarcar uno existente antes de designar este.');
+            input.checked = false;
+            return;
+        }
+
+        if (input.checked) {
+            card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-amber-50/70 border-amber-300 shadow-2xs";
+        } else {
+            card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-slate-50/60 border-slate-200 hover:border-slate-300";
+        }
+    }
+</script>

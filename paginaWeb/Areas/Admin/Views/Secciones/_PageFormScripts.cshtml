@@ -1,0 +1,30 @@
+@model paginaWeb.Areas.Admin.Models.PageFormViewModel
+@{
+    var isEdit = ViewData["IsEdit"] as bool? == true;
+}
+
+<script src="~/js/content-blocks-editor.js" asp-append-version="true"></script>
+<script>
+    document.querySelector('form')?.addEventListener('submit', () => window.contentBlocksEditor?.sync());
+
+@if (!isEdit)
+{
+    <text>
+    const titleInput = document.getElementById('titleInput');
+    const slugInput = document.getElementById('slugInput');
+    titleInput?.addEventListener('input', () => {
+        if (!slugInput.dataset.manual) {
+            slugInput.value = titleInput.value
+                .toLowerCase()
+                .trim()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+    });
+    slugInput?.addEventListener('input', () => {
+        slugInput.dataset.manual = 'true';
+    });
+    </text>
+}
+</script>
