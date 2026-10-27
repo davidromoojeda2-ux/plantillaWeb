@@ -94,16 +94,6 @@ public sealed record PostCardViewModel(
     }
 }
 
-/// <summary>Bloque de la fila "Destacados".</summary>
-public sealed record FeaturedBlockViewModel(
-    string Title,
-    string Excerpt,
-    string Category,
-    string Author,
-    int ReadingMinutes,
-    string Href,
-    CardImage Image);
-
 /// <summary>Encabezado h2 de sección con enlace opcional con flecha.</summary>
 public sealed record SectionHeaderViewModel(
     string HeadingId,
@@ -127,7 +117,6 @@ public sealed record CategoryBentoCardViewModel(
     string? ParentName,
     string? ParentSlug,
     IReadOnlyList<CategoryResponseDto> Subcategories,
-    int ArticleCount = 0,
     string? ImageUrl = null);
 
 /// <summary>Sección 'Encuentra el tema de tu interés' estructurada en formato Bento de 2 columnas.</summary>
@@ -146,14 +135,7 @@ public sealed record HomePageViewModel(
     SectionHeaderViewModel EntriesHeader,
     IReadOnlyList<PostCardViewModel> FeaturedEntries,
     IReadOnlyList<PostCardViewModel> MostReadEntries,
-    CategorySectionViewModel CategorySection,
-    SectionHeaderViewModel? PostsHeader = null,
-    IReadOnlyList<PostCardViewModel>? Posts = null,
-    SectionHeaderViewModel? FeaturedHeader = null,
-    IReadOnlyList<FeaturedBlockViewModel>? Featured = null)
-{
-    public IReadOnlyList<PostCardViewModel> RecentEntries => MostReadEntries;
-}
+    CategorySectionViewModel CategorySection);
 
 /// <summary>
 /// Construye el <see cref="HomePageViewModel"/> a partir de los datos entregados por
@@ -321,11 +303,7 @@ public static class HomePageViewModelFactory
             EntriesHeader: entriesHeader,
             FeaturedEntries: featuredEntries,
             MostReadEntries: mostReadEntries,
-            CategorySection: categorySection,
-            PostsHeader: entriesHeader,
-            Posts: mostReadEntries,
-            FeaturedHeader: entriesHeader,
-            Featured: []);
+            CategorySection: categorySection);
     }
 
     private static string? GetRandomImageForCategory(

@@ -31,7 +31,6 @@ public class CategoryController : Controller
 
         var allCategories = await _categoryService.GetAllAsync();
         CategoryResponseDto? parentCategory = null;
-        CategoryResponseDto? subcategory = null;
         List<CategoryResponseDto> subcategories = [];
 
         if (!string.IsNullOrEmpty(category.ParentId))
@@ -39,7 +38,6 @@ public class CategoryController : Controller
             // La entidad consultada por slug es una subcategoría
             parentCategory = allCategories.FirstOrDefault(c => c.Id == category.ParentId)
                              ?? await _categoryService.GetByIdAsync(category.ParentId);
-            subcategory = category;
             // Subcategorías hermanas del mismo padre
             subcategories = allCategories
                 .Where(c => c.ParentId == category.ParentId && c.IsActive)
@@ -64,9 +62,7 @@ public class CategoryController : Controller
         var cardItems = articles.Select(art =>
         {
             var artCover = art.CoverImageId != null && images.TryGetValue(art.CoverImageId, out var img) ? img : null;
-            var artImgUrl = !string.IsNullOrWhiteSpace(art.CoverImageUrl)
-                ? art.CoverImageUrl
-                : (ImageMapper.GetThumbnailUrl(artCover) ?? ImageMapper.GetBestUrl(artCover));
+            var artImgUrl = ImageMapper.GetCardUrl(art, artCover);
 
             var catName = parentCategory != null
                 ? $"{parentCategory.Name} • {category.Name}"
@@ -84,8 +80,7 @@ public class CategoryController : Controller
             TotalCount: total,
             Articles: cardItems,
             ParentCategory: parentCategory,
-            Subcategories: subcategories,
-            Subcategory: subcategory);
+            Subcategories: subcategories);
 
         return View(viewModel);
     }

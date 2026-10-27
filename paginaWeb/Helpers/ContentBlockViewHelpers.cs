@@ -1,13 +1,12 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Aplication.DTOs.ContentBlocks;
 
 namespace paginaWeb.Helpers;
 
 /// <summary>
 /// Helpers de presentación para los bloques editoriales: ids deterministas de
-/// encabezados, clases de callout y estilos de tabla.
+/// encabezados, clases de callout e índice del bloque.
 /// </summary>
 public static class ContentBlockViewHelpers
 {
@@ -17,7 +16,7 @@ public static class ContentBlockViewHelpers
         return string.IsNullOrEmpty(slug) ? $"seccion-{index}" : $"seccion-{slug}-{index}";
     }
 
-    public static string Slugify(string? text)
+    private static string Slugify(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
 
@@ -39,14 +38,6 @@ public static class ContentBlockViewHelpers
         "warning" => "callout callout-warning",
         "success" => "callout callout-success",
         _ => "callout callout-info"
-    };
-
-    public static string CalloutLabel(string? variant) => variant?.ToLowerInvariant() switch
-    {
-        "tip" => "Consejo",
-        "warning" => "Atención",
-        "success" => "Confirmado",
-        _ => "Nota"
     };
 
     public static int ContentBlockIndex(object? viewData) => viewData is int index ? index : 0;

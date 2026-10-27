@@ -92,7 +92,6 @@ public interface IImageMetadataRepository
     Task<List<ImageMetadata>> GetPagedAsync(int skip, int take, string? search = null, string? storage = null, string? articleId = null, CancellationToken ct = default);
     Task InsertAsync(ImageMetadata image);
     Task UpdateAltAsync(string id, string alt);
-    Task UpdateArticleIdAsync(string id, string? articleId);
     Task DeleteAsync(string id);
 }
 

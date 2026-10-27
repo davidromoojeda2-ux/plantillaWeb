@@ -111,26 +111,7 @@ public static class ArticleMapper
             .Distinct()
             .ToList();
 
-    public static ArticleDto ToEditDto(Article article) => new()
-    {
-        Title = article.Title,
-        Slug = article.Slug,
-        Summary = article.Summary,
-        Blocks = ContentBlockMapper.ToDtoList(article.Blocks),
-        Author = article.Author,
-        AuthorBio = article.AuthorBio,
-        AuthorAvatarUrl = article.AuthorAvatarUrl,
-        AuthorRole = article.AuthorRole,
-        AuthorSocialUrl = article.AuthorSocialUrl,
-        CategoryId = article.CategoryId,
-        SubcategoryId = article.SubcategoryId,
-        Tags = [.. article.Tags],
-        CoverImageId = article.CoverImageId,
-        CoverImageUrl = article.CoverImageUrl,
-        ImageIds = [.. article.ImageIds],
-        Featured = article.Featured,
-        Status = article.Status.ToString()
-    };
+    public static ArticleDto ToEditDto(Article article) => ToEditDto(ToDto(article));
 
     public static ArticleDto ToEditDto(ArticleResponseDto article) => new()
     {

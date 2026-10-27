@@ -27,20 +27,4 @@ public sealed record CategoryPageViewModel(
     long TotalCount,
     IReadOnlyList<ArticleCardViewModel> Articles,
     CategoryResponseDto? ParentCategory = null,
-    IReadOnlyList<CategoryResponseDto>? Subcategories = null,
-    CategoryResponseDto? Subcategory = null)
-{
-    /// <summary>
-    /// Retorna la subcategoría si la categoría actual es una subcategoría o si Subcategory fue asignada.
-    /// </summary>
-    public CategoryResponseDto? Subcategoria => Subcategory ?? (ParentCategory != null ? Category : null);
-
-    /// <summary>Alias en español para la categoría padre.</summary>
-    public CategoryResponseDto? CategoriaPadre => ParentCategory;
-
-    /// <summary>Indica si la vista actual corresponde a una subcategoría.</summary>
-    public bool IsSubcategory => ParentCategory != null || !string.IsNullOrEmpty(Category.ParentId);
-
-    /// <summary>Indica si existen subcategorías asociadas para mostrar.</summary>
-    public bool HasSubcategories => Subcategories is { Count: > 0 };
-}
+    IReadOnlyList<CategoryResponseDto>? Subcategories = null);

@@ -199,15 +199,4 @@ public class Article
         ValidarInvariantes();
     }
 
-    /// <summary>
-    /// Cambia el estado a Borrador y valida las invariantes del dominio.
-    /// </summary>
-    public void MarcarBorrador()
-    {
-        Status = ArticleStatus.Borrador;
-        UpdatedAt = DateTime.UtcNow;
-        SearchText = BuildSearchText();
-        ReadingTimeMinutes = EstimateReadingTime(Blocks);
-        ValidarInvariantes();
-    }
 }

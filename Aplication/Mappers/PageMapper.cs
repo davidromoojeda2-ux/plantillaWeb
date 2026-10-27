@@ -46,14 +46,4 @@ public static class PageMapper
 
     public static List<PageResponseDto> ToDtoList(IEnumerable<InformativePage> pages) =>
         pages.Select(ToDto).ToList();
-
-    public static PageDto ToEditDto(PageResponseDto page) => new()
-    {
-        Title = page.Title,
-        Slug = page.Slug,
-        Blocks = [.. page.Blocks],
-        Subtitle = page.Subtitle,
-        Order = page.Order,
-        ShowInFooter = page.ShowInFooter
-    };
 }

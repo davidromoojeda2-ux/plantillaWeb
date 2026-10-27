@@ -44,10 +44,7 @@ public class DashboardController : Controller
 
         var coverIds = articles.Where(a => !string.IsNullOrEmpty(a.CoverImageId)).Select(a => a.CoverImageId!).Distinct().ToList();
         var images = await _imageService.GetVariantsDictAsync(coverIds);
-        ViewBag.CoverImages = images.ToDictionary(
-            kvp => kvp.Key,
-            kvp => ImageMapper.GetThumbnailUrl(kvp.Value) ?? ImageMapper.GetBestUrl(kvp.Value) ?? string.Empty
-        );
+        ViewBag.CoverImages = ImageMapper.ToThumbnailDictionary(images);
 
         return View();
     }

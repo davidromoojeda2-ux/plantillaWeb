@@ -53,10 +53,7 @@ public class ArticulosController : Controller
             .Distinct()
             .ToList();
         var images = await _imageService.GetVariantsDictAsync(coverIds);
-        ViewBag.CoverImages = images.ToDictionary(
-            kvp => kvp.Key,
-            kvp => ImageMapper.GetThumbnailUrl(kvp.Value) ?? ImageMapper.GetBestUrl(kvp.Value) ?? string.Empty
-        );
+        ViewBag.CoverImages = ImageMapper.ToThumbnailDictionary(images);
 
         return View(articles);
     }
