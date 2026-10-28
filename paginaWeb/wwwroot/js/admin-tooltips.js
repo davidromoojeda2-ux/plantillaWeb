@@ -11,7 +11,7 @@
     let tooltipArrow = null;
     let currentTrigger = null;
     let showTimeout = null;
-    const SHOW_DELAY_MS = 90;
+    const SHOW_DELAY_MS = 60;
     const ARROW_SIZE = 8;
     const OFFSET_PX = 8;
 
@@ -65,7 +65,7 @@
         const tooltip = getOrCreateTooltip();
         const triggerRect = trigger.getBoundingClientRect();
 
-        // Limpiar clases previas
+        // Limpiar clases de posicionamiento previas manteniendo la base
         tooltip.className = 'cms-tooltip';
 
         // Aplicar variante si corresponde
@@ -74,13 +74,18 @@
             tooltip.classList.add(`cms-tooltip--${explicitVariant}`);
         } else if (trigger.closest('button[type="submit"]') && trigger.closest('form[action*="Delete"]')) {
             tooltip.classList.add('cms-tooltip--danger');
-        } else if (trigger.classList.contains('bg-amber-100') || (trigger.textContent && trigger.textContent.trim() === 'Hero')) {
+        } else if (
+            trigger.classList.contains('cms-tooltip-icon--amber') ||
+            trigger.closest('.border-amber-300') ||
+            trigger.classList.contains('bg-amber-100') ||
+            trigger.classList.contains('bg-amber-200/80') ||
+            (trigger.textContent && trigger.textContent.trim() === 'Hero')
+        ) {
             tooltip.classList.add('cms-tooltip--hero');
         }
 
-        const tooltipRect = tooltip.getBoundingClientRect();
-        const tooltipW = tooltipRect.width;
-        const tooltipH = tooltipRect.height;
+        const tooltipW = tooltip.offsetWidth || 200;
+        const tooltipH = tooltip.offsetHeight || 40;
         const arrowOffset = ARROW_SIZE / 2;
 
         let finalPos = trigger.getAttribute('data-tooltip-position') || 'top';
@@ -175,6 +180,7 @@
                     tooltip.setAttribute('aria-hidden', 'false');
                     tooltip.classList.add('is-visible');
                     tooltip.style.visibility = 'visible';
+                    tooltip.style.opacity = '1';
                 }
             });
         }, SHOW_DELAY_MS);
@@ -182,12 +188,14 @@
 
     function hideTooltip() {
         clearTimeout(showTimeout);
-        if (!tooltipEl || !tooltipEl.classList.contains('is-visible')) {
+        if (!tooltipEl) {
             currentTrigger = null;
             return;
         }
         tooltipEl.classList.remove('is-visible');
         tooltipEl.setAttribute('aria-hidden', 'true');
+        tooltipEl.style.opacity = '0';
+        tooltipEl.style.visibility = 'hidden';
         currentTrigger = null;
     }
 
@@ -202,6 +210,9 @@
         document.addEventListener('mouseout', function (e) {
             const trigger = e.target.closest('[data-tooltip], [title], [data-cms-title]');
             if (trigger && trigger === currentTrigger) {
+                if (e.relatedTarget && trigger.contains(e.relatedTarget)) {
+                    return;
+                }
                 hideTooltip();
             }
         }, { passive: true });

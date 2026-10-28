@@ -8,6 +8,7 @@ namespace Domine.Entities;
 /// Categoría del portal de noticias con soporte de jerarquía (padre/hijo).
 /// Permite hasta dos niveles: categoría raíz (ParentId == null) y subcategoría.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class Category
 {
     [BsonId]

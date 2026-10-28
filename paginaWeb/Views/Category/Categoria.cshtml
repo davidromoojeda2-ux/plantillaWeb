@@ -31,48 +31,55 @@
                 <span class="page-hero__breadcrumb-current">@Model.Category.Name</span>
             </nav>
 
-            <div class="flex flex-wrap items-center gap-3">
-                <h1 class="page-hero__title">@Model.Category.Name</h1>
-            </div>
+            <div class="page-hero__layout">
+                <div class="page-hero__content">
+                    <h1 class="page-hero__title">@Model.Category.Name</h1>
 
-            @if (!string.IsNullOrEmpty(Model.Category.Description))
-            {
-                <p class="page-hero__subtitle">
-                    @Model.Category.Description
-                </p>
-            }
+                    @if (!string.IsNullOrEmpty(Model.Category.Description))
+                    {
+                        <p class="page-hero__subtitle">
+                            @Model.Category.Description
+                        </p>
+                    }
 
-            <!-- Subcategorías asociadas / hermanas -->
-            @if (Model.Subcategories != null && Model.Subcategories.Any())
-            {
-                <div class="pt-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-white/70 block mb-2">
-                        @(Model.ParentCategory != null ? "Otras subcategorías relacionadas:" : "Especialidades y Subcategorías:")
-                    </span>
-                    <div class="page-hero__pills">
-                        @if (Model.ParentCategory != null)
-                        {
-                            <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.ParentCategory.Slug"
-                               class="page-hero__pill">
-                                Todas en @Model.ParentCategory.Name
-                            </a>
-                        }
-                        @foreach (var sub in Model.Subcategories)
-                        {
-                            var isCurrent = sub.Slug == Model.Category.Slug;
-                            <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@sub.Slug"
-                               class="page-hero__pill @(isCurrent ? "page-hero__pill--active" : "")">
-                                @sub.Name
-                            </a>
-                        }
+                    <div class="page-hero__count">
+                        <span>Total de publicaciones disponibles: <strong class="text-[#FDC500]">@Model.TotalCount</strong>
+                            artículos</span>
                     </div>
                 </div>
-            }
 
-            <div class="page-hero__count">
-                <span>Total de publicaciones disponibles: <strong class="text-[#FDC500]">@Model.TotalCount</strong>
-                    artículos</span>
-                </div>
+                <!-- Subcategorías asociadas / hermanas en el margen derecho -->
+                @if (Model.Subcategories != null && Model.Subcategories.Any())
+                {
+                    <aside class="page-hero__aside"
+                           aria-label="@(Model.ParentCategory != null ? "Otras subcategorías relacionadas" : "Especialidades y subcategorías")">
+                        <span class="page-hero__aside-title">
+                            @(Model.ParentCategory != null ? "Otras subcategorías relacionadas:" : "Especialidades y Subcategorías:")
+                        </span>
+                        <ul class="page-hero__sublist" role="list">
+                            @if (Model.ParentCategory != null)
+                            {
+                                <li>
+                                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@Model.ParentCategory.Slug"
+                                       class="page-hero__sublink">
+                                        <span>Todas en @Model.ParentCategory.Name</span>
+                                    </a>
+                                </li>
+                            }
+                            @foreach (var sub in Model.Subcategories)
+                            {
+                                var isCurrent = sub.Slug == Model.Category.Slug;
+                                <li>
+                                    <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@sub.Slug"
+                                       class="page-hero__sublink @(isCurrent ? "page-hero__sublink--active" : "")"
+                                       aria-current="@(isCurrent ? "page" : null)">
+                                        <span>@sub.Name</span>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </aside>
+                }
             </div>
         </header>
 

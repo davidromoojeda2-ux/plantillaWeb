@@ -7,8 +7,9 @@ using Infrastructure.Security;
 namespace Infrastructure.Persistence;
 
 /// <summary>
-/// Convierte el HTML histórico de los seeds a bloques tipados. Se usa únicamente
-/// para datos de prueba; no es un conversor de contenido legado en producción.
+/// Convierte HTML histórico en bloques tipados y sanitizados. Se usa para los datos
+/// de prueba (seed) y para migrar el campo legado <c>Content</c> de las páginas
+/// informativas. La conversión es de mejor esfuerzo: cubre los elementos soportados.
 /// </summary>
 public static class SeedContentBlocks
 {

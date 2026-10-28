@@ -1,4 +1,5 @@
 using Infrastructure.Persistence;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Infrastructure.Persistence;
@@ -146,6 +147,56 @@ public static class MongoDbIndexer
 
         // ─── Auto-vincular artículos huérfanos sin categoría (CategoryId == null) ───
         await EnsureOrphanArticlesLinkedAsync(context);
+    }
+
+    /// <summary>
+    /// Migra las páginas informativas guardadas antes del refactor a bloques estructurados.
+    /// Si el documento conserva el campo legado <c>Content</c> (HTML) y todavía no tiene
+    /// <c>Blocks</c>, convierte el HTML a bloques sanitizados; en cualquier caso elimina el
+    /// campo obsoleto. Es idempotente: los documentos ya migrados no se vuelven a tocar.
+    /// </summary>
+    /// <returns>Número de documentos procesados.</returns>
+    public static async Task<int> MigrateLegacyPageContentAsync(MongoDbContext context)
+    {
+        var rawPages = context.Database.GetCollection<BsonDocument>("pages");
+        var legacyFilter = Builders<BsonDocument>.Filter.And(
+            Builders<BsonDocument>.Filter.Exists("Content"),
+            Builders<BsonDocument>.Filter.Ne("Content", BsonNull.Value));
+
+        var legacyPages = await rawPages.Find(legacyFilter).ToListAsync();
+        if (legacyPages.Count == 0) return 0;
+
+        var migrated = 0;
+        foreach (var document in legacyPages)
+        {
+            var rawId = document["_id"];
+            var id = rawId.IsObjectId ? rawId.AsObjectId.ToString() : rawId.ToString();
+
+            var page = await context.Pages.Find(p => p.Id == id).FirstOrDefaultAsync();
+            if (page is null) continue;
+
+            var update = Builders<Domine.Entities.InformativePage>.Update
+                .Set(p => p.UpdatedAt, DateTime.UtcNow)
+                .Unset("Content");
+
+            if (page.Blocks.Count == 0)
+            {
+                var html = document["Content"].IsString ? document["Content"].AsString : string.Empty;
+                var blocks = SeedContentBlocks.FromHtml(html);
+
+                if (blocks.Count > 0)
+                {
+                    update = update
+                        .Set(p => p.Blocks, blocks)
+                        .Set(p => p.SchemaVersion, Domine.Content.ContentLimits.CurrentSchemaVersion);
+                }
+            }
+
+            await context.Pages.UpdateOneAsync(p => p.Id == id, update);
+            migrated++;
+        }
+
+        return migrated;
     }
 
     public static async Task EnsureOrphanArticlesLinkedAsync(MongoDbContext context)

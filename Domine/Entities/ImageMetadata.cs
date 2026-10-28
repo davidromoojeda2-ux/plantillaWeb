@@ -7,6 +7,7 @@ namespace Domine.Entities;
 /// Metadatos de una imagen procesada y almacenada en Cloudflare R2.
 /// Los binarios viven en R2; este documento registra las variantes y metadatos.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class ImageMetadata
 {
     [BsonId]

@@ -93,6 +93,9 @@ En la ficha de tu servicio `web` en Dokploy, ve a la pestaña **"Environment"** 
 ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://+:8080
 
+# ─── URL Pública (robots.txt y sitemap.xml) ───────────────────────────────────
+Site__BaseUrl=https://tu-dominio.com
+
 # ─── Base de Datos MongoDB Atlas ──────────────────────────────────────────────
 MongoDB__ConnectionString=mongodb+srv://davidromoojeda2_db_user:TU_PASSWORD@cluster0.cqouh1v.mongodb.net/?retryWrites=true&w=majority
 MongoDB__DatabaseName=portal_noticias

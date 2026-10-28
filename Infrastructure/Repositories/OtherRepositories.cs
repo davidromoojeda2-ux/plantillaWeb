@@ -53,6 +53,14 @@ public class ImageMetadataRepository : IImageMetadataRepository
     public async Task<List<ImageMetadata>> GetAllAsync(int skip = 0, int take = 50) =>
         await _col.Find(_ => true).SortByDescending(i => i.UploadedAt).Skip(skip).Limit(take).ToListAsync();
 
+    public async Task<List<ImageMetadata>> GetByIdsAsync(IEnumerable<string> ids)
+    {
+        var idList = ids.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        if (idList.Count == 0) return [];
+
+        return await _col.Find(i => idList.Contains(i.Id)).ToListAsync();
+    }
+
     public async Task<List<ImageMetadata>> GetByArticleIdAsync(string articleId) =>
         await _col.Find(i => i.ArticleId == articleId).SortByDescending(i => i.UploadedAt).ToListAsync();
 
