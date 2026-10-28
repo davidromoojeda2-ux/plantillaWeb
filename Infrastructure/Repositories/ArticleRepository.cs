@@ -15,6 +15,10 @@ public class ArticleRepository : IArticleRepository
         await _col.Find(a => a.Status == ArticleStatus.Publicado)
                   .SortByDescending(a => a.PublishedAt).Skip(skip).Limit(take).ToListAsync();
 
+    public async Task<List<Article>> GetAllPublishedAsync() =>
+        await _col.Find(a => a.Status == ArticleStatus.Publicado)
+                  .SortByDescending(a => a.PublishedAt).ToListAsync();
+
     public async Task<List<Article>> GetFeaturedAsync(int take = 3) =>
         await _col.Find(a => a.Status == ArticleStatus.Publicado && a.Featured)
                   .SortByDescending(a => a.PublishedAt).Limit(take).ToListAsync();

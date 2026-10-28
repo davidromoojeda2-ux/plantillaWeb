@@ -226,13 +226,11 @@ public class ImageService
 
     public async Task<Dictionary<string, ImageMetadataResponseDto>> GetVariantsDictAsync(IEnumerable<string> ids)
     {
-        var dict = new Dictionary<string, ImageMetadataResponseDto>();
-        foreach (var id in ids.Distinct())
-        {
-            var img = await _metadataRepo.GetByIdAsync(id);
-            if (img != null) dict[id] = ImageMapper.ToDto(img);
-        }
-        return dict;
+        var idList = ids.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        if (idList.Count == 0) return [];
+
+        var images = await _metadataRepo.GetByIdsAsync(idList);
+        return images.ToDictionary(img => img.Id, ImageMapper.ToDto);
     }
 
     public Task UpdateAltAsync(string id, string alt) =>

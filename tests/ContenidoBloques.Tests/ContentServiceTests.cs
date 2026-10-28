@@ -85,6 +85,7 @@ public class ContentServiceTests
         public Task InsertAsync(Article article) { Inserted = article; return Task.CompletedTask; }
 
         public Task<List<Article>> GetPublishedAsync(int skip = 0, int take = 9) => throw new NotImplementedException();
+        public Task<List<Article>> GetAllPublishedAsync() => throw new NotImplementedException();
         public Task<List<Article>> GetFeaturedAsync(int take = 3) => throw new NotImplementedException();
         public Task<List<Article>> GetByCategoryAsync(string categoryId, int skip = 0, int take = 9) => throw new NotImplementedException();
         public Task<long> CountByCategoryAsync(string categoryId) => throw new NotImplementedException();

@@ -22,6 +22,7 @@ public interface ICategoryRepository
 public interface IArticleRepository
 {
     Task<List<Article>> GetPublishedAsync(int skip = 0, int take = 9);
+    Task<List<Article>> GetAllPublishedAsync();
     Task<List<Article>> GetFeaturedAsync(int take = 3);
     Task<List<Article>> GetByCategoryAsync(string categoryId, int skip = 0, int take = 9);
     Task<long> CountByCategoryAsync(string categoryId);
@@ -84,6 +85,7 @@ public interface IInformativePageRepository
 public interface IImageMetadataRepository
 {
     Task<List<ImageMetadata>> GetAllAsync(int skip = 0, int take = 50);
+    Task<List<ImageMetadata>> GetByIdsAsync(IEnumerable<string> ids);
     Task<List<ImageMetadata>> GetByArticleIdAsync(string articleId);
     Task<ImageMetadata?> GetByIdAsync(string id);
     Task<ImageMetadata?> GetByNameAsync(string fileName, CancellationToken ct = default);
