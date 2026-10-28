@@ -13,6 +13,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
+      - Site__BaseUrl=${SITE_BASE_URL:-}
       - MongoDB__ConnectionString=${MONGO_CONNECTION_STRING}
       - MongoDB__DatabaseName=${MONGO_DB:-portal_noticias}
       - Storage__Provider=${STORAGE_PROVIDER:-Local}

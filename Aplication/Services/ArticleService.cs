@@ -8,6 +8,7 @@ namespace Aplication.Services;
 public interface IArticleService
 {
     Task<(List<ArticleResponseDto> Items, long Total)> GetPublishedAsync(int page = 1, int pageSize = 9);
+    Task<List<ArticleResponseDto>> GetAllPublishedAsync();
     Task<(List<ArticleResponseDto> Items, long Total)> GetByCategoryAsync(string categoryId, int page = 1, int pageSize = 9);
     Task<(List<ArticleResponseDto> Items, long Total)> SearchAsync(string query, int page = 1, int pageSize = 9);
     Task<List<ArticleResponseDto>> GetFeaturedAsync(int take = 3);
@@ -50,6 +51,9 @@ public class ArticleService : IArticleService
         var total = await _repo.CountPublishedAsync();
         return (ArticleMapper.ToDtoList(items), total);
     }
+
+    public async Task<List<ArticleResponseDto>> GetAllPublishedAsync() =>
+        ArticleMapper.ToDtoList(await _repo.GetAllPublishedAsync());
 
     public async Task<(List<ArticleResponseDto> Items, long Total)> GetByCategoryAsync(string categoryId, int page = 1, int pageSize = 9)
     {
