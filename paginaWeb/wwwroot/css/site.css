@@ -1131,3 +1131,15 @@ html {
         transform: none;
     }
 }
+
+
+/* ─── Validación ASP.NET Core ───────────────────────────────────────────── */
+.validation-summary-valid,
+[data-valmsg-summary="true"].validation-summary-valid,
+[data-valmsg-summary="true"]:not(.validation-summary-errors) {
+    display: none !important;
+}
+
+.field-validation-valid {
+    display: none !important;
+}

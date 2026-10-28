@@ -12,7 +12,7 @@
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    transform: translate3d(0, 4px, 0) scale(0.96);
+    transform: translate3d(0, 4px, 0);
     transform-origin: center bottom;
     transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1),
                 transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
@@ -21,24 +21,22 @@
 }
 
 .cms-tooltip.is-visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translate3d(0, 0, 0);
 }
 
 .cms-tooltip__inner {
     position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    display: block;
     max-width: 280px;
-    padding: 5px 10px;
+    padding: 6px 12px;
     background: #0B132B;
     color: #FFFFFF;
     font-family: "Inter", system-ui, -apple-system, sans-serif;
     font-size: 11px;
-    font-weight: 600;
-    line-height: 1.35;
+    font-weight: 500;
+    line-height: 1.4;
     letter-spacing: 0.015em;
     text-align: center;
     border-radius: 6px;
@@ -162,3 +160,27 @@
     color: #FFFFFF;
 }
 
+/* ─── Resumen de Validación y Mensajes ASP.NET Core ───────────────────────── */
+.validation-summary-valid,
+[data-valmsg-summary="true"].validation-summary-valid,
+[data-valmsg-summary="true"]:not(.validation-summary-errors) {
+    display: none !important;
+}
+
+.validation-summary-errors {
+    display: block !important;
+}
+
+.validation-summary-errors ul {
+    list-style-type: disc;
+    margin-left: 1.25rem;
+    margin-top: 0.25rem;
+}
+
+.field-validation-valid {
+    display: none !important;
+}
+
+.field-validation-error {
+    display: block !important;
+}
