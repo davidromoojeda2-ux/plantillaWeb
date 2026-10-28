@@ -699,23 +699,123 @@
 
   .cbe-block {
     position: relative;
-    padding: 0.35rem 0.55rem 0.45rem 2.75rem;
-    border: 1px solid transparent;
-    border-radius: 2px;
-    background: transparent;
-    box-shadow: none;
-    transition: background-color 0.12s ease, box-shadow 0.12s ease;
+    padding: 0.5rem 2.35rem 0.5rem 2.35rem;
+    border: 1px solid #e2e7f0;
+    border-radius: 10px;
+    background: #fbfcfe;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.035);
+    transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
   }
 
   .cbe-block:hover {
-    background: #fbfbfc;
-    box-shadow: inset 0 0 0 1px #ececec;
+    border-color: #cfd8ea;
+    background: #f8faff;
+    box-shadow: 0 2px 8px rgb(15 23 42 / 0.06);
   }
 
   .cbe-block:focus-within,
   .cbe-block.is-selected {
-    background: #ffffff;
-    box-shadow: inset 0 0 0 1.5px #3858e9;
+    border-color: #b9c8e8;
+    background: #f8faff;
+    box-shadow: 0 0 0 2px rgb(56 88 233 / 0.1), 0 2px 8px rgb(15 23 42 / 0.05);
+  }
+
+  .cbe-block.is-dragging {
+    opacity: 0.5;
+  }
+
+  .cbe-block.is-drop-before::before,
+  .cbe-block.is-drop-after::before {
+    content: "";
+    position: absolute;
+    right: 0.6rem;
+    left: 0.6rem;
+    height: 3px;
+    border-radius: 2px;
+    background: #3858e9;
+  }
+
+  .cbe-block.is-drop-before::before {
+    top: -2px;
+  }
+
+  .cbe-block.is-drop-after::before {
+    bottom: -2px;
+  }
+
+  .cbe-block-side {
+    position: absolute;
+    top: 0.45rem;
+    bottom: 0.45rem;
+    left: 0.35rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.2rem;
+    width: 1.35rem;
+    opacity: 0.45;
+    transition: opacity 0.12s ease;
+  }
+
+  .cbe-block:hover .cbe-block-side,
+  .cbe-block:focus-within .cbe-block-side,
+  .cbe-block.is-selected .cbe-block-side {
+    opacity: 1;
+  }
+
+  .cbe-side-btn {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #6b7280;
+  }
+
+  .cbe-side-btn svg {
+    width: 0.78rem;
+    height: 0.78rem;
+  }
+
+  .cbe-drag-handle {
+    display: grid;
+    grid-template-columns: repeat(2, 3px);
+    grid-template-rows: repeat(3, 3px);
+    gap: 2px;
+    padding: 0.25rem 0.15rem;
+    color: #8c8f94;
+    cursor: grab;
+  }
+
+  .cbe-drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .cbe-drag-handle span {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .cbe-block-delete {
+    position: absolute;
+    top: 0.42rem;
+    right: 0.4rem;
+    width: 1.45rem;
+    height: 1.45rem;
+    color: #757575;
+    opacity: 0;
+    transition: opacity 0.12s ease, background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .cbe-block:hover .cbe-block-delete,
+  .cbe-block:focus-within .cbe-block-delete,
+  .cbe-block.is-selected .cbe-block-delete {
+    opacity: 1;
+  }
+
+  .cbe-block-delete:hover {
+    background: #fcf0f1;
+    color: #cc1818;
   }
 
   .cbe-block-header {
@@ -759,9 +859,38 @@
     display: none;
   }
 
+  .cbe-type-control {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding-left: 0.2rem;
+  }
+
+  .cbe-type-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex-shrink: 0;
+    color: #3858e9;
+  }
+
+  .cbe-type-icon svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .cbe-type-glyph {
+    font-size: 0.64rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
   .cbe-type-select {
     width: auto;
-    max-width: 9rem;
+    max-width: 10rem;
     height: 1.9rem;
     margin-left: 0;
     padding: 0.2rem 0.35rem;
@@ -984,6 +1113,21 @@
     box-shadow: none;
   }
 
+  .cbe-rich b,
+  .cbe-rich strong {
+    font-weight: 700;
+  }
+
+  .cbe-rich i,
+  .cbe-rich em {
+    font-style: italic;
+  }
+
+  .cbe-rich a {
+    color: #3858e9;
+    text-decoration: underline;
+  }
+
   .cbe-rich:empty::before {
     content: attr(data-placeholder);
     color: #94a3b8;
@@ -1001,24 +1145,8 @@
   }
 
   .cbe-row-heading {
-    grid-template-columns: 3.6rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
-  }
-
-  .cbe-heading-level {
-    width: 3.4rem;
-    padding: 0.15rem 0.25rem;
-    border: 1px solid transparent;
-    background: transparent;
-    color: #757575;
-    font-size: 0.72rem;
-    font-weight: 600;
-  }
-
-  .cbe-heading-level:focus {
-    border-color: #3858e9;
-    background: #ffffff;
-    box-shadow: none;
   }
 
   .cbe-heading-input {
@@ -1360,6 +1488,12 @@
     color: #1e1e1e;
   }
 
+  .cbe-format-btn.is-active,
+  .cbe-format-btn[aria-pressed="true"] {
+    background: #e5edff;
+    color: #3858e9;
+  }
+
   .cbe-modal-open {
     overflow: hidden;
   }
@@ -1498,8 +1632,13 @@
     }
 
     .cbe-block {
-      padding-right: 0.2rem;
-      padding-left: 0.35rem;
+      padding-right: 0.55rem;
+      padding-left: 0.55rem;
+    }
+
+    .cbe-block-side,
+    .cbe-block-delete {
+      display: none;
     }
 
     .cbe-block-header {

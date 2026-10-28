@@ -198,6 +198,8 @@
             this.selectedBlock = null;
             this.inserterMenu = null;
             this.inserterMenuCleanup = null;
+            this.draggedBlock = null;
+            this.ignoreSelectionUntil = 0;
 
             this.allowedImageHosts = (root.dataset.allowedImageHosts || '')
                 .split(',').map(host => host.trim().toLowerCase()).filter(Boolean);
@@ -273,9 +275,9 @@
             const bar = element('div', 'cbe-inline-toolbar');
             bar.hidden = true;
             bar.innerHTML = `
-                <button type="button" class="cbe-format-btn" data-cmd="bold" title="Negrita" aria-label="Negrita">${ICONS.bold}</button>
-                <button type="button" class="cbe-format-btn" data-cmd="italic" title="Cursiva" aria-label="Cursiva">${ICONS.italic}</button>
-                <button type="button" class="cbe-format-btn" data-cmd="createLink" title="Insertar enlace" aria-label="Insertar enlace">${ICONS.link}</button>
+                <button type="button" class="cbe-format-btn" data-cmd="bold" title="Negrita" aria-label="Negrita" aria-pressed="false">${ICONS.bold}</button>
+                <button type="button" class="cbe-format-btn" data-cmd="italic" title="Cursiva" aria-label="Cursiva" aria-pressed="false">${ICONS.italic}</button>
+                <button type="button" class="cbe-format-btn" data-cmd="createLink" title="Insertar enlace" aria-label="Insertar enlace" aria-pressed="false">${ICONS.link}</button>
             `;
 
             bar.querySelectorAll('button[data-cmd]').forEach(button => {
@@ -441,25 +443,114 @@
             const card = element('article', 'cbe-block');
             card.dataset.type = type;
 
-            const header = this.buildBlockHeader(block, type);
+            const header = this.buildBlockHeader(block, type, normalized);
+            const side = this.buildBlockSideControls(block);
             const body = this.buildBlockBody(block, type, normalized);
-            card.append(header, body);
+            const remove = this.iconButton('Eliminar bloque', ICONS.trash, () => this.removeBlock(block), 'cbe-block-delete');
+            card.append(header, side, body, remove);
             block.el = card;
 
             card.addEventListener('pointerdown', () => this.selectBlock(block));
             card.addEventListener('focusin', () => this.selectBlock(block));
+            this.attachBlockDrag(block);
             return block;
         }
 
-        buildBlockHeader(block, type) {
+        buildBlockSideControls(block) {
+            const side = element('div', 'cbe-block-side');
+            const up = this.iconButton('Mover bloque arriba', ICONS.up, () => this.moveBlock(block, -1), 'cbe-side-btn');
+            const handle = element('span', 'cbe-drag-handle', '<span></span>'.repeat(6));
+            handle.title = 'Arrastrar bloque';
+            handle.setAttribute('aria-hidden', 'true');
+            handle.draggable = true;
+            const down = this.iconButton('Mover bloque abajo', ICONS.down, () => this.moveBlock(block, 1), 'cbe-side-btn');
+
+            side.append(up, handle, down);
+            return side;
+        }
+
+        attachBlockDrag(block) {
+            const handle = block.el.querySelector('.cbe-drag-handle');
+            if (!handle) return;
+
+            handle.addEventListener('dragstart', event => {
+                this.draggedBlock = block;
+                block.el.classList.add('is-dragging');
+                if (event.dataTransfer) {
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', String(this.blocks.indexOf(block)));
+                }
+            });
+
+            handle.addEventListener('dragend', () => this.finishBlockDrag());
+
+            block.el.addEventListener('dragover', event => {
+                if (!this.draggedBlock || this.draggedBlock === block) return;
+                event.preventDefault();
+                if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+                const rect = block.el.getBoundingClientRect();
+                const after = event.clientY > rect.top + rect.height / 2;
+                block.el.classList.toggle('is-drop-after', after);
+                block.el.classList.toggle('is-drop-before', !after);
+            });
+
+            block.el.addEventListener('dragleave', event => {
+                if (event.relatedTarget && block.el.contains(event.relatedTarget)) return;
+                block.el.classList.remove('is-drop-before', 'is-drop-after');
+            });
+
+            block.el.addEventListener('drop', event => {
+                if (!this.draggedBlock || this.draggedBlock === block) return;
+                event.preventDefault();
+
+                const dragged = this.draggedBlock;
+                const from = this.blocks.indexOf(dragged);
+                const rect = block.el.getBoundingClientRect();
+                const after = event.clientY > rect.top + rect.height / 2;
+                let to = this.blocks.indexOf(block) + (after ? 1 : 0);
+                if (from < to) to -= 1;
+
+                this.finishBlockDrag();
+                if (from < 0 || to < 0 || from === to) return;
+
+                this.blocks.splice(from, 1);
+                this.blocks.splice(to, 0, dragged);
+                this.renderCanvas();
+                this.sync();
+                this.selectBlock(dragged);
+            });
+        }
+
+        finishBlockDrag() {
+            this.draggedBlock = null;
+            this.canvas?.querySelectorAll('.cbe-block').forEach(card => {
+                card.classList.remove('is-dragging', 'is-drop-before', 'is-drop-after');
+            });
+        }
+
+        buildBlockHeader(block, type, data) {
             const header = element('div', 'cbe-block-header cbe-block-toolbar');
             const position = element('span', 'cbe-block-index');
             position.textContent = '1';
-            const typeLabel = element('span', 'cbe-block-type', TYPE_LABEL[type] || 'Bloque');
+            const typeLabel = element('span', 'cbe-block-type', this.typeDisplayLabel(type, data));
 
+            const typeControl = element('div', 'cbe-type-control');
+            const typeIcon = element('span', 'cbe-type-icon', this.typeIconMarkup(type, data));
             const select = element('select', 'cbe-select cbe-type-select');
             select.setAttribute('aria-label', 'Cambiar tipo de bloque');
             BLOCK_TYPES.forEach(item => {
+                if (item.type === 'heading') {
+                    [2, 3].forEach(level => {
+                        const option = document.createElement('option');
+                        option.value = 'heading';
+                        option.dataset.headingLevel = String(level);
+                        option.textContent = `Encabezado H${level}`;
+                        option.selected = type === 'heading' && Number(data.level) === level;
+                        select.appendChild(option);
+                    });
+                    return;
+                }
+
                 const option = document.createElement('option');
                 option.value = item.type;
                 option.textContent = item.label;
@@ -467,8 +558,33 @@
                 select.appendChild(option);
             });
             select.addEventListener('change', () => {
-                if (select.value !== block.type) this.changeType(block, select.value);
+                const option = select.selectedOptions[0];
+                if (!option) return;
+
+                const targetType = option.value;
+                const headingLevel = option.dataset.headingLevel
+                    ? Number(option.dataset.headingLevel)
+                    : null;
+
+                if (targetType === 'heading' && headingLevel) {
+                    if (block.type === 'heading') {
+                        const levelField = block.el.querySelector('[data-field="level"]');
+                        const currentLevel = Number(levelField?.value) === 3 ? 3 : 2;
+                        if (currentLevel === headingLevel) return;
+
+                        if (levelField) levelField.value = String(headingLevel);
+                        this.refreshBlockTypeControl(block, { level: headingLevel });
+                        this.sync();
+                        return;
+                    }
+
+                    this.changeType(block, 'heading', { level: headingLevel });
+                    return;
+                }
+
+                if (targetType !== block.type) this.changeType(block, targetType);
             });
+            typeControl.append(typeIcon, select);
 
             const formatGroup = this.buildBlockFormatActions(block, type);
 
@@ -479,10 +595,53 @@
                 this.iconButton('Eliminar bloque', ICONS.trash, () => this.removeBlock(block), 'cbe-icon-btn-danger')
             );
 
-            header.append(position, typeLabel, select);
+            header.append(position, typeLabel, typeControl);
             if (formatGroup) header.appendChild(formatGroup);
             header.appendChild(actions);
             return header;
+        }
+
+        typeDisplayLabel(type, data = {}) {
+            if (type === 'heading') {
+                return `Encabezado H${Number(data.level) === 3 ? 3 : 2}`;
+            }
+            return TYPE_LABEL[type] || 'Bloque';
+        }
+
+        typeIconMarkup(type, data = {}) {
+            switch (type) {
+                case 'heading':
+                    return `<span class="cbe-type-glyph">H${Number(data.level) === 3 ? 3 : 2}</span>`;
+                case 'bullet-list':
+                    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></svg>';
+                case 'ordered-list':
+                    return '<span class="cbe-type-glyph">1.</span>';
+                case 'quote':
+                    return '<span class="cbe-type-glyph">“</span>';
+                case 'callout':
+                    return '<span class="cbe-type-glyph">!</span>';
+                case 'image':
+                    return ICONS.image;
+                case 'table':
+                    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><path stroke-linecap="round" d="M3 10h18M9 4v16M15 4v16"/></svg>';
+                case 'code':
+                    return '<span class="cbe-type-glyph">&lt;/&gt;</span>';
+                case 'divider':
+                    return '<span class="cbe-type-glyph">—</span>';
+                default:
+                    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/></svg>';
+            }
+        }
+
+        refreshBlockTypeControl(block, data) {
+            const level = Number(data.level) === 3 ? 3 : 2;
+            const select = block.el.querySelector('.cbe-type-select');
+            select?.querySelectorAll('option[data-heading-level]').forEach(option => {
+                option.selected = Number(option.dataset.headingLevel) === level;
+            });
+
+            const icon = block.el.querySelector('.cbe-type-icon');
+            if (icon) icon.innerHTML = this.typeIconMarkup('heading', { level });
         }
 
         buildBlockFormatActions(block, type) {
@@ -500,8 +659,10 @@
             formats.forEach(([command, icon, label]) => {
                 const button = element('button', 'cbe-format-btn', icon);
                 button.type = 'button';
+                button.dataset.cmd = command;
                 button.title = label;
                 button.setAttribute('aria-label', label);
+                button.setAttribute('aria-pressed', 'false');
                 button.addEventListener('mousedown', event => {
                     event.preventDefault();
                     const field = this.richFieldForBlock(block);
@@ -523,7 +684,7 @@
         buildBlockBody(block, type, data) {
             switch (type) {
                 case 'heading':
-                    return this.buildHeadingBody(data);
+                    return this.buildHeadingBody(block, data);
                 case 'ordered-list':
                 case 'bullet-list':
                     return this.buildListBody(block, type, data);
@@ -552,21 +713,14 @@
             return body;
         }
 
-        buildHeadingBody(data) {
+        buildHeadingBody(block, data) {
             const body = element('div', 'cbe-block-body');
             const row = element('div', 'cbe-row cbe-row-heading');
 
-            const level = element('select', 'cbe-select cbe-heading-level');
+            const level = element('input');
+            level.type = 'hidden';
             level.dataset.field = 'level';
-            level.setAttribute('aria-label', 'Nivel del encabezado');
-            [2, 3].forEach(value => {
-                const option = document.createElement('option');
-                option.value = String(value);
-                option.textContent = `H${value}`;
-                option.selected = Number(data.level) === value;
-                level.appendChild(option);
-            });
-            level.addEventListener('change', () => this.sync());
+            level.value = String(Number(data.level) === 3 ? 3 : 2);
 
             const text = this.createPlainInput(data.text, 'Escribe un encabezado...', 'text');
             text.classList.add('cbe-heading-input');
@@ -1134,8 +1288,11 @@
         handleSelectionChange() {
             clearTimeout(this.selectionTimer);
             this.selectionTimer = setTimeout(() => {
+                if (Date.now() < this.ignoreSelectionUntil) return;
+
                 const selection = document.getSelection();
                 if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+                    this.updateFormatState(null);
                     this.scheduleHideInlineToolbar();
                     return;
                 }
@@ -1146,11 +1303,13 @@
                     : container.parentElement;
                 const field = element?.closest('.cbe-rich');
                 if (!field || !this.root.contains(field)) {
+                    this.updateFormatState(null);
                     this.scheduleHideInlineToolbar();
                     return;
                 }
 
                 this.showInlineToolbar(field);
+                this.updateFormatState(field);
             }, 10);
         }
 
@@ -1159,12 +1318,48 @@
             if (!this.inlineToolbar) return;
 
             this.root.classList.add('cbe-bubble-open');
-            const rect = field.getBoundingClientRect();
+            let rect = field.getBoundingClientRect();
+            const selection = document.getSelection();
+            if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+                const rangeRect = selection.getRangeAt(0).getBoundingClientRect();
+                if (rangeRect && (rangeRect.width || rangeRect.height)) rect = rangeRect;
+            }
+
             this.inlineToolbar.hidden = false;
-            const top = rect.top < 60 ? rect.bottom + 6 : rect.top - 42;
-            const left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - 180));
+            const top = rect.top < 60 ? rect.bottom + 8 : rect.top - 44;
+            const left = Math.min(Math.max(8, rect.left - 8), Math.max(8, window.innerWidth - 180));
             this.inlineToolbar.style.top = `${top}px`;
             this.inlineToolbar.style.left = `${left}px`;
+        }
+
+        updateFormatState(field = null) {
+            const activeField = field && this.root.contains(field) ? field : null;
+            const activeBlock = activeField?.closest('.cbe-block') || null;
+            const selection = document.getSelection();
+            const hasSelection = !!selection && !selection.isCollapsed && selection.rangeCount > 0;
+            const states = { bold: false, italic: false, createLink: false };
+
+            if (activeField && hasSelection && activeField.contains(selection.anchorNode)) {
+                try {
+                    states.bold = document.queryCommandState('bold');
+                    states.italic = document.queryCommandState('italic');
+                } catch (error) {
+                    states.bold = false;
+                    states.italic = false;
+                }
+
+                const node = selection.anchorNode;
+                const elementNode = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+                states.createLink = !!elementNode?.closest('a');
+            }
+
+            this.root.querySelectorAll('.cbe-format-btn[data-cmd]').forEach(button => {
+                const buttonBlock = button.closest('.cbe-block');
+                const applies = !buttonBlock || (activeBlock && buttonBlock === activeBlock);
+                const active = !!applies && !!states[button.dataset.cmd];
+                button.classList.toggle('is-active', active);
+                button.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
         }
 
         scheduleHideInlineToolbar() {
@@ -1175,11 +1370,13 @@
                 this.inlineToolbar.hidden = true;
                 this.root.classList.remove('cbe-bubble-open');
                 this.activeEditable = null;
+                this.updateFormatState(null);
             }, 180);
         }
 
         applyInlineCommand(command, field = this.activeEditable, showBubble = true) {
             if (!field) return;
+            this.ignoreSelectionUntil = Date.now() + 250;
             field.focus();
 
             if (command === 'createLink') {
@@ -1194,6 +1391,7 @@
                 document.execCommand(command, false, null);
             }
 
+            this.updateFormatState(field);
             this.sync();
             if (showBubble) this.showInlineToolbar(field);
         }
@@ -1223,12 +1421,14 @@
             this.sync();
         }
 
-        changeType(block, newType) {
-            if (!TYPE_LABEL[newType] || block.type === newType) return;
+        changeType(block, newType, overrides = {}) {
+            if (!TYPE_LABEL[newType]) return;
+            if (block.type === newType && !overrides.level) return;
 
             const wasSelected = this.selectedBlock === block;
             const oldData = this.readBlock(block);
             const newData = this.convertData(oldData, newType);
+            if (overrides.level) newData.level = Number(overrides.level) === 3 ? 3 : 2;
             const index = this.blocks.indexOf(block);
             const newBlock = this.createBlock(newType, newData);
 
