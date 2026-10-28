@@ -4,8 +4,10 @@ using Aplication.Mappers;
 using Aplication.Services;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc;
+using paginaWeb.Models;
 using paginaWeb.Models.Category;
 using paginaWeb.Models.Home;
+using System.Diagnostics;
 
 namespace paginaWeb.Controllers;
 
@@ -161,5 +163,19 @@ public class HomeController : Controller
             : new Dictionary<string, ImageMetadataResponseDto>();
 
         return View(page);
+    }
+
+    /// <summary>
+    /// Página de error usada por <c>UseExceptionHandler("/Home/Error")</c>.
+    /// Sin esta acción el manejador respondía 404 y ocultaba la excepción original.
+    /// </summary>
+    [HttpGet]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel
+        {
+            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+        });
     }
 }

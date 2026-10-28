@@ -7,6 +7,7 @@ namespace Domine.Entities;
 /// Comentario enviado por un visitante sobre un artículo.
 /// Incluye protección honeypot y flujo de moderación.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class Comment
 {
     [BsonId]

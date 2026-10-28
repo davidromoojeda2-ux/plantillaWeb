@@ -131,4 +131,38 @@ public class DomainContentTests
         Assert.Equal("/uploads/foto.webp", ((ContentImageBlock)restored.Blocks[2]).Url!.Value);
         Assert.Equal("2", ((ContentTableBlock)restored.Blocks[3]).Rows[0][1].Value);
     }
+
+    [Fact]
+    public void InformativePage_IgnoresLegacyContentFieldOnDeserialization()
+    {
+        var document = new BsonDocument
+        {
+            { "_id", ObjectId.GenerateNewId() },
+            { "Title", "Política de Privacidad" },
+            { "Slug", "politica-de-privacidad" },
+            { "Content", "<h2>Datos personales</h2><p>Texto legado</p>" },
+            { "Blocks", new BsonArray() }
+        };
+
+        var page = BsonSerializer.Deserialize<InformativePage>(document);
+
+        Assert.Equal("politica-de-privacidad", page.Slug);
+        Assert.Empty(page.Blocks);
+    }
+
+    [Fact]
+    public void Entities_IgnoreUnknownFieldsFromOlderSchemas()
+    {
+        var document = new BsonDocument
+        {
+            { "_id", ObjectId.GenerateNewId() },
+            { "Name", "Tecnología" },
+            { "Slug", "tecnologia" },
+            { "LegacyField", "valor antiguo" }
+        };
+
+        var category = BsonSerializer.Deserialize<Category>(document);
+
+        Assert.Equal("Tecnología", category.Name);
+    }
 }

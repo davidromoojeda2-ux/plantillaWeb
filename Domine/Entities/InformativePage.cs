@@ -10,6 +10,11 @@ namespace Domine.Entities;
 /// Página informativa institucional (Nosotros, Privacidad, Cookies, etc.).
 /// Accesible en /info/{slug} y opcionalmente listada en el pie de página.
 /// </summary>
+/// <remarks>
+/// <see cref="BsonIgnoreExtraElementsAttribute"/> evita que fallen los documentos
+/// persistidos con esquemas anteriores (por ejemplo el campo legado <c>Content</c>).
+/// </remarks>
+[BsonIgnoreExtraElements]
 public class InformativePage
 {
     [BsonId]

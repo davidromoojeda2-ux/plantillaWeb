@@ -7,6 +7,7 @@ namespace Domine.Entities;
 /// Visitante anónimo que interactúa con el portal (comentarios).
 /// No almacena contraseñas; se identifica por correo con hash de IP para privacidad.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class Visitor
 {
     [BsonId]

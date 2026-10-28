@@ -25,6 +25,9 @@ public class MongoDbContext
         _database = client.GetDatabase(dbName);
     }
 
+    /// <summary>Base de datos activa, útil para migraciones que operan sobre BSON crudo.</summary>
+    public IMongoDatabase Database => _database;
+
     public IMongoCollection<Category> Categories =>
         _database.GetCollection<Category>("categories");
 

@@ -77,6 +77,16 @@ using (var scope = app.Services.CreateScope())
 {
     var ctx = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
     await MongoDbIndexer.EnsureIndexesAsync(ctx);
+
+    // Migración idempotente: páginas informativas con el campo legado "Content" (HTML) → "Blocks"
+    var migratedPages = await MongoDbIndexer.MigrateLegacyPageContentAsync(ctx);
+    if (migratedPages > 0)
+    {
+        app.Logger.LogInformation(
+            "Migración de páginas informativas: {Count} documento(s) convertidos del campo legado 'Content' a bloques estructurados.",
+            migratedPages);
+    }
+
     await MongoDbIndexer.EnsureSeedDataAsync(ctx);
 }
 

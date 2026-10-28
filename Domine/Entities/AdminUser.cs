@@ -7,6 +7,7 @@ namespace Domine.Entities;
 /// Usuario administrador del panel /admin.
 /// Las credenciales son gestionadas externamente (hash de contraseña con BCrypt).
 /// </summary>
+[BsonIgnoreExtraElements]
 public class AdminUser
 {
     [BsonId]
