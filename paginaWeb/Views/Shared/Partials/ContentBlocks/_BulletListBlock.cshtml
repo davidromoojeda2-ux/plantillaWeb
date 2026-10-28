@@ -1,0 +1,9 @@
+@model ContentBulletListBlockDto
+@inject Aplication.Interfaces.IHtmlSanitizer HtmlSanitizer
+
+<ul class="article-unordered-list">
+    @foreach (var item in Model.Items)
+    {
+        <li>@Html.Raw(HtmlSanitizer.Sanitize(item))</li>
+    }
+</ul>

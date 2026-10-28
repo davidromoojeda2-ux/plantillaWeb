@@ -1,0 +1,48 @@
+@model IReadOnlyList<ContentBlockDto>
+
+@for (var i = 0; i < Model.Count; i++)
+{
+    ViewData["ContentBlockIndex"] = i;
+    var block = Model[i];
+
+    if (block is ContentParagraphBlockDto paragraph)
+    {
+        <partial name="Partials/ContentBlocks/_ParagraphBlock" model="paragraph" />
+    }
+    else if (block is ContentHeadingBlockDto heading)
+    {
+        <partial name="Partials/ContentBlocks/_HeadingBlock" model="heading" />
+    }
+    else if (block is ContentOrderedListBlockDto ordered)
+    {
+        <partial name="Partials/ContentBlocks/_OrderedListBlock" model="ordered" />
+    }
+    else if (block is ContentBulletListBlockDto bullets)
+    {
+        <partial name="Partials/ContentBlocks/_BulletListBlock" model="bullets" />
+    }
+    else if (block is ContentQuoteBlockDto quote)
+    {
+        <partial name="Partials/ContentBlocks/_QuoteBlock" model="quote" />
+    }
+    else if (block is ContentCalloutBlockDto callout)
+    {
+        <partial name="Partials/ContentBlocks/_CalloutBlock" model="callout" />
+    }
+    else if (block is ContentImageBlockDto image)
+    {
+        <partial name="Partials/ContentBlocks/_ImageBlock" model="image" />
+    }
+    else if (block is ContentTableBlockDto table)
+    {
+        <partial name="Partials/ContentBlocks/_TableBlock" model="table" />
+    }
+    else if (block is ContentCodeBlockDto code)
+    {
+        <partial name="Partials/ContentBlocks/_CodeBlock" model="code" />
+    }
+    else if (block is ContentDividerBlockDto)
+    {
+        <partial name="Partials/ContentBlocks/_DividerBlock" />
+    }
+}

@@ -42,9 +42,7 @@ public class PublicacionesController : Controller
         var cardItems = items.Select(art =>
         {
             var artCover = art.CoverImageId != null && images.TryGetValue(art.CoverImageId, out var img) ? img : null;
-            var artImgUrl = !string.IsNullOrWhiteSpace(art.CoverImageUrl)
-                ? art.CoverImageUrl
-                : (ImageMapper.GetThumbnailUrl(artCover) ?? ImageMapper.GetBestUrl(artCover));
+            var artImgUrl = ImageMapper.GetCardUrl(art, artCover);
             var artCat = art.CategoryId != null && categories.TryGetValue(art.CategoryId, out var catName)
                 ? catName
                 : "General";

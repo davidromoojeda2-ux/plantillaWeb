@@ -11,9 +11,6 @@ public class StorageStatusDto
     /// <summary>Indica si el almacenamiento local está accesible para escritura.</summary>
     public bool IsLocalAvailable { get; set; }
 
-    /// <summary>Almacenamiento prioritario actualmente en uso ("S3" o "Local").</summary>
-    public string ActivePriorityStorage => IsS3Available ? "S3" : "Local";
-
     /// <summary>Nombre del bucket configurado en S3.</summary>
     public string S3Bucket { get; set; } = string.Empty;
 

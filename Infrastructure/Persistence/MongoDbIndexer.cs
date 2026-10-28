@@ -26,6 +26,17 @@ public static class MongoDbIndexer
         ]);
 
         // ─── articles ─────────────────────────────────────────────────────────
+        // El índice de texto anterior indexaba el HTML libre. Se elimina de forma
+        // defensiva para que la búsqueda use únicamente SearchText.
+        try
+        {
+            await context.Articles.Indexes.DropOneAsync("tx_articles_fulltext");
+        }
+        catch (MongoCommandException ex) when (ex.Code == 27)
+        {
+            // IndexNotFound: la base de datos es nueva o ya fue migrada.
+        }
+
         await context.Articles.Indexes.CreateManyAsync(
         [
             new CreateIndexModel<Domine.Entities.Article>(
@@ -45,8 +56,8 @@ public static class MongoDbIndexer
                 new CreateIndexOptions { Name = "ix_articles_category_published" }),
 
             new CreateIndexModel<Domine.Entities.Article>(
-                Builders<Domine.Entities.Article>.IndexKeys.Text(a => a.Title).Text(a => a.Summary).Text(a => a.Content),
-                new CreateIndexOptions { Name = "tx_articles_fulltext" })
+                Builders<Domine.Entities.Article>.IndexKeys.Text(a => a.SearchText),
+                new CreateIndexOptions { Name = "tx_articles_search" })
         ]);
 
         // ─── comments ─────────────────────────────────────────────────────────
@@ -123,7 +134,7 @@ public static class MongoDbIndexer
                 Title = "Política de Privacidad y Cookies",
                 Slug = "politica-de-privacidad",
                 Subtitle = "Cómo recopilamos, usamos y protegemos tus datos personales al visitar nuestro portal.",
-                Content = "<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>",
+                Blocks = SeedContentBlocks.FromHtml("<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>"),
                 Order = 1,
                 ShowInFooter = true
             };

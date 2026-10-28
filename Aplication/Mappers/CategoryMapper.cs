@@ -46,28 +46,6 @@ public static class CategoryMapper
     public static List<CategoryResponseDto> ToDtoList(IEnumerable<Category> cats) =>
         cats.Select(ToDto).ToList();
 
-    public static CategoryDto ToEditDto(Category cat) => new()
-    {
-        Name = cat.Name,
-        Slug = cat.Slug,
-        ParentId = cat.ParentId,
-        Description = cat.Description,
-        Order = cat.Order,
-        ShowInMenu = cat.ShowInMenu,
-        IsActive = cat.IsActive
-    };
-
-    public static CategoryDto ToEditDto(CategoryResponseDto cat) => new()
-    {
-        Name = cat.Name,
-        Slug = cat.Slug,
-        ParentId = cat.ParentId,
-        Description = cat.Description,
-        Order = cat.Order,
-        ShowInMenu = cat.ShowInMenu,
-        IsActive = cat.IsActive
-    };
-
     private static string? NullIfEmpty(string? s) =>
         string.IsNullOrWhiteSpace(s) ? null : s;
 }

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Aplication.DTOs.ContentBlocks;
 
 namespace Aplication.DTOs;
 
@@ -12,8 +13,8 @@ public class PageDto
     [Required(ErrorMessage = "El slug es obligatorio.")]
     public string Slug { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "El contenido es obligatorio.")]
-    public string Content { get; set; } = string.Empty;
+    /// <summary>Cuerpo estructurado; el servicio lo valida y sanitiza.</summary>
+    public List<ContentBlockDto> Blocks { get; set; } = [];
 
     /// <summary>Texto breve que aparece bajo el título en la cabecera de la página pública.</summary>
     [StringLength(300)]

@@ -21,7 +21,10 @@ public class Visitor
     /// <summary>Hash SHA-256 de la IP para control de tasa sin exponer la IP real.</summary>
     public string IpHash { get; set; } = string.Empty;
 
-    /// <summary>Indica si el visitante aceptó el aviso de cookies.</summary>
+    /// <summary>
+    /// Indica si el visitante aceptó el aviso de cookies. Se conserva por compatibilidad
+    /// con los documentos ya persistidos en MongoDB.
+    /// </summary>
     public bool ConsentCookies { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

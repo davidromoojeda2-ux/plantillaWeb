@@ -1,0 +1,94 @@
+@model paginaWeb.Areas.Admin.Models.PageFormViewModel
+@inject IOptions<ContentSecurityOptions> ContentSecurity
+@{
+    var isEdit = ViewData["IsEdit"] as bool? == true;
+    var formAction = isEdit ? "Edit" : "Create";
+    var heading = isEdit ? "Editar Sección Institucional" : "Crear Sección Institucional";
+    var submitLabel = isEdit ? "Actualizar Sección" : "Guardar Sección";
+}
+
+<div class="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200/80 shadow-xs p-8">
+    <h3 class="text-lg font-bold text-slate-800 mb-6">@heading</h3>
+
+    <form method="post" asp-area="Admin" asp-controller="Secciones" asp-action="@formAction" asp-route-id="@(isEdit ? Model.Id : null)" class="space-y-6">
+        @Html.AntiForgeryToken()
+        @if (isEdit)
+        {
+            <input type="hidden" asp-for="Id" />
+        }
+        <div asp-validation-summary="All" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label asp-for="Title" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Título</label>
+                <input asp-for="Title" id="titleInput" required placeholder="@(isEdit ? null : "ej: Políticas de Calidad")"
+                       class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+                <span asp-validation-for="Title" class="text-xs text-rose-600 mt-1 block"></span>
+            </div>
+
+            <div>
+                <label asp-for="Slug" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Slug URL</label>
+                <div class="flex items-center rounded-xl border border-slate-300 overflow-hidden bg-slate-50 focus-within:ring-2 focus-within:ring-[#00509D]">
+                    <span class="px-3 text-xs text-slate-400 font-mono select-none">/info/</span>
+                    <input asp-for="Slug" id="slugInput" required placeholder="@(isEdit ? null : "politicas-de-calidad")"
+                           class="w-full text-sm font-mono text-slate-800 bg-transparent px-2 py-2.5 outline-none" />
+                </div>
+                <span asp-validation-for="Slug" class="text-xs text-rose-600 mt-1 block"></span>
+            </div>
+        </div>
+
+        <div>
+            <label asp-for="Subtitle" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                Subtítulo <span class="text-slate-400 normal-case font-normal">(aparece bajo el título en la página pública)</span>
+            </label>
+            <input asp-for="Subtitle"
+                   placeholder="ej: Lineamientos y compromisos que rigen nuestro ejercicio periodístico."
+                   class="w-full text-sm rounded-xl border border-slate-300 px-4 py-2.5 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+            <span asp-validation-for="Subtitle" class="text-xs text-rose-600 mt-1 block"></span>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Contenido Estructurado (Editor por Bloques)</label>
+            <div id="contentBlocksEditor"
+                 class="content-blocks-editor"
+                 data-content-blocks-editor
+                 data-input-id="BlocksJsonInput"
+                 data-upload-url="@Url.Action("UploadInline", "Articulos", new { area = "Admin" })"
+                 data-article-id="@Model.Id"
+                 data-allowed-image-hosts="@string.Join(",", ContentSecurity.Value.AllowedImageHosts)"
+                 data-max-blocks="@ContentSecurity.Value.MaxBlocks"
+                 data-max-list-items="@ContentSecurity.Value.MaxListItems"
+                 data-max-table-rows="@ContentSecurity.Value.MaxTableRows"
+                 data-max-table-columns="@ContentSecurity.Value.MaxTableColumns"
+                 data-max-url-length="@ContentSecurity.Value.MaxUrlLength">
+                <div data-cbe-toolbar class="cbe-toolbar"></div>
+                <div data-cbe-canvas class="cbe-canvas" id="editorCanvas"></div>
+            </div>
+            <textarea asp-for="BlocksJson" id="BlocksJsonInput" class="hidden" aria-hidden="true"></textarea>
+            <span asp-validation-for="BlocksJson" class="text-xs text-rose-600 mt-1 block"></span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div>
+                <label asp-for="Order" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Orden</label>
+                <input asp-for="Order" type="number" min="0" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2" />
+            </div>
+
+            <div class="flex items-center pt-5">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input asp-for="ShowInFooter" type="checkbox" class="rounded border-slate-300 text-[#00296B]" />
+                    <span class="text-xs font-semibold text-slate-700">Mostrar enlace en el Pie de Página (Footer)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-100 flex gap-3">
+            <button type="submit" class="py-2.5 px-6 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-sm transition">
+                @submitLabel
+            </button>
+            <a asp-area="Admin" asp-controller="Secciones" asp-action="Index" class="py-2.5 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>

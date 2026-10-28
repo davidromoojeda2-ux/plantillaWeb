@@ -1,4 +1,6 @@
+using Aplication.Content;
 using Aplication.DTOs;
+using Aplication.DTOs.ContentBlocks;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
@@ -8,6 +10,7 @@ using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using paginaWeb.Areas.Admin.Models;
+using paginaWeb.Helpers;
 
 namespace paginaWeb.Areas.Admin.Controllers;
 
@@ -41,12 +44,16 @@ public class ArticulosController : Controller
         ViewBag.Categories = categories.ToDictionary(c => c.Id, c => c.Name);
         ViewBag.Page = page;
 
-        var coverIds = articles.Where(a => !string.IsNullOrEmpty(a.CoverImageId)).Select(a => a.CoverImageId!).Distinct().ToList();
+        var coverIds = articles
+            .Select(a => !string.IsNullOrEmpty(a.CoverImageId)
+                ? a.CoverImageId
+                : ContentImageResolver.FindFirstImage(a.Blocks)?.ImageId)
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Select(id => id!)
+            .Distinct()
+            .ToList();
         var images = await _imageService.GetVariantsDictAsync(coverIds);
-        ViewBag.CoverImages = images.ToDictionary(
-            kvp => kvp.Key,
-            kvp => ImageMapper.GetThumbnailUrl(kvp.Value) ?? ImageMapper.GetBestUrl(kvp.Value) ?? string.Empty
-        );
+        ViewBag.CoverImages = ImageMapper.ToThumbnailDictionary(images);
 
         return View(articles);
     }
@@ -64,7 +71,7 @@ public class ArticulosController : Controller
         if (willBeFeatured)
         {
             var (isValid, errorMsg) = await ValidateHeroEligibilityAsync(
-                editDto.CoverImageId, editDto.CoverImageUrl, editDto.Content, id);
+                editDto.CoverImageId, editDto.CoverImageUrl, editDto.Blocks, id);
 
             if (!isValid && errorMsg != null)
             {
@@ -117,7 +124,8 @@ public class ArticulosController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ArticleFormViewModel model)
     {
-        await ValidateFeaturedHeroAsync(model);
+        ContentBlockFormHelper.TryParse(model.BlocksJson, ModelState, out var blocks);
+        await ValidateFeaturedHeroAsync(model, blocks);
 
         if (!ModelState.IsValid)
         {
@@ -127,7 +135,7 @@ public class ArticulosController : Controller
 
         try
         {
-            await _articleService.CreateAsync(model.ToDto());
+            await _articleService.CreateAsync(model.ToDto(blocks));
             _menuService.InvalidateMenu();
             TempData["Success"] = "Artículo publicado exitosamente.";
             return RedirectToAction(nameof(Index));
@@ -170,7 +178,8 @@ public class ArticulosController : Controller
     public async Task<IActionResult> Edit(string id, ArticleFormViewModel model)
     {
         model.Id = id;
-        await ValidateFeaturedHeroAsync(model, id);
+        ContentBlockFormHelper.TryParse(model.BlocksJson, ModelState, out var blocks);
+        await ValidateFeaturedHeroAsync(model, blocks, id);
 
         if (!ModelState.IsValid)
         {
@@ -180,7 +189,7 @@ public class ArticulosController : Controller
 
         try
         {
-            await _articleService.UpdateAsync(id, model.ToDto());
+            await _articleService.UpdateAsync(id, model.ToDto(blocks));
             _menuService.InvalidateMenu();
             TempData["Success"] = "Artículo actualizado exitosamente.";
             return RedirectToAction(nameof(Index));
@@ -314,12 +323,12 @@ public class ArticulosController : Controller
     private async Task<(bool IsValid, string? ErrorMessage)> ValidateHeroEligibilityAsync(
         string? coverImageId,
         string? coverImageUrl,
-        string? content,
+        IEnumerable<ContentBlockDto>? blocks,
         string? excludeArticleId = null)
     {
         bool hasImage = !string.IsNullOrEmpty(coverImageId)
                      || !string.IsNullOrWhiteSpace(coverImageUrl)
-                     || (!string.IsNullOrWhiteSpace(content) && content.Contains("<img"));
+                     || ContentImageResolver.HasImage(blocks);
 
         if (!hasImage)
         {
@@ -336,12 +345,15 @@ public class ArticulosController : Controller
         return (true, null);
     }
 
-    private async Task ValidateFeaturedHeroAsync(ArticleFormViewModel model, string? excludeArticleId = null)
+    private async Task ValidateFeaturedHeroAsync(
+        ArticleFormViewModel model,
+        IEnumerable<ContentBlockDto>? blocks,
+        string? excludeArticleId = null)
     {
         if (!model.Featured) return;
 
         var (isValid, errorMessage) = await ValidateHeroEligibilityAsync(
-            model.CoverImageId, model.CoverImageUrl, model.Content, excludeArticleId);
+            model.CoverImageId, model.CoverImageUrl, blocks, excludeArticleId);
 
         if (!isValid && errorMessage != null)
         {
@@ -370,13 +382,18 @@ public class ArticulosController : Controller
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(article.Content))
+        var firstBodyImage = ContentImageResolver.FindFirstImage(article.Blocks);
+        if (firstBodyImage is not null)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(
-                article.Content,
-                @"<img[^>]+src=[""']([^""']+)[""']",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (match.Success) return match.Groups[1].Value;
+            if (!string.IsNullOrWhiteSpace(firstBodyImage.ImageId))
+            {
+                var bodyImg = await _imageService.GetByIdAsync(firstBodyImage.ImageId);
+                var bodyUrl = ImageMapper.GetBestUrl(bodyImg);
+                if (!string.IsNullOrEmpty(bodyUrl)) return bodyUrl;
+            }
+
+            if (!string.IsNullOrWhiteSpace(firstBodyImage.Url))
+                return firstBodyImage.Url;
         }
 
         return null;

@@ -238,9 +238,6 @@ public class ImageService
     public Task UpdateAltAsync(string id, string alt) =>
         _metadataRepo.UpdateAltAsync(id, alt);
 
-    public Task UpdateArticleIdAsync(string id, string? articleId) =>
-        _metadataRepo.UpdateArticleIdAsync(id, articleId);
-
     public async Task<List<ImageMetadataResponseDto>> GetByArticleIdAsync(string articleId) =>
         ImageMapper.ToDtoList(await _metadataRepo.GetByArticleIdAsync(articleId));
 

@@ -11,4 +11,7 @@
   <Folder Name="/4. UI/">
     <Project Path="paginaWeb/paginaWeb.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ContenidoBloques.Tests/ContenidoBloques.Tests.csproj" />
+  </Folder>
 </Solution>

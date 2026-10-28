@@ -67,7 +67,7 @@
             <!-- Contenido Estructurado -->
             <article class="lg:col-span-8 bg-white p-8 sm:p-12 rounded-2xl border border-slate-200/90 shadow-xs">
                 <div class="article-prose max-w-none space-y-6">
-                    @Html.Raw(Model.Content)
+                    <partial name="Partials/ContentBlocks/_ContentBlocks" model="Model.Blocks" />
                 </div>
             </article>
         </div>

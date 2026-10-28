@@ -47,4 +47,20 @@ public static class ImageMapper
         image?.Variants
               .OrderBy(v => Math.Abs(v.Width - targetWidth))
               .FirstOrDefault()?.PublicUrl;
+
+    /// <summary>
+    /// Resuelve la URL de una tarjeta priorizando la portada explícita del artículo
+    /// y, si no existe, la variante optimizada de la imagen asociada.
+    /// </summary>
+    public static string? GetCardUrl(ArticleResponseDto? article, ImageMetadataResponseDto? image) =>
+        !string.IsNullOrWhiteSpace(article?.CoverImageUrl)
+            ? article.CoverImageUrl
+            : GetThumbnailUrl(image) ?? GetBestUrl(image);
+
+    /// <summary>Construye el diccionario de miniaturas usado por los listados administrativos.</summary>
+    public static Dictionary<string, string> ToThumbnailDictionary(
+        IReadOnlyDictionary<string, ImageMetadataResponseDto> images) =>
+        images.ToDictionary(
+            kvp => kvp.Key,
+            kvp => GetThumbnailUrl(kvp.Value) ?? GetBestUrl(kvp.Value) ?? string.Empty);
 }

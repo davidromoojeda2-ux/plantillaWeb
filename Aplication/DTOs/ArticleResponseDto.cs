@@ -1,3 +1,5 @@
+using Aplication.DTOs.ContentBlocks;
+
 namespace Aplication.DTOs;
 
 /// <summary>DTO de respuesta / lectura de un articulo, incluye campos calculados.</summary>
@@ -7,7 +9,7 @@ public class ArticleResponseDto
     public string Title { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public string Summary { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
+    public List<ContentBlockDto> Blocks { get; set; } = [];
     public string Author { get; set; } = string.Empty;
     public string? AuthorBio { get; set; }
     public string? AuthorAvatarUrl { get; set; }

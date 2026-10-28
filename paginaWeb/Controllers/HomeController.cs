@@ -1,4 +1,5 @@
 using Aplication.DTOs;
+using Aplication.DTOs.ContentBlocks;
 using Aplication.Mappers;
 using Aplication.Services;
 using Infrastructure.Storage;
@@ -84,9 +85,15 @@ public class HomeController : Controller
         var (prevArticle, nextArticle) = await _articleService.GetAdjacentArticlesAsync(article.Id, article.PublishedAt);
 
         // Obtener variantes de imágenes para recomendados y artículos adyacentes en una sola llamada
+        var bodyImageIds = article.Blocks
+            .OfType<ContentImageBlockDto>()
+            .Select(b => b.ImageId)
+            .Where(id => !string.IsNullOrEmpty(id))!;
+
         var imageIdsToFetch = recommended
             .Select(a => a.CoverImageId)
             .Concat(new[] { prevArticle?.CoverImageId, nextArticle?.CoverImageId })
+            .Concat(bodyImageIds)
             .Where(id => !string.IsNullOrEmpty(id))
             .Distinct()
             .ToList();
@@ -102,6 +109,7 @@ public class HomeController : Controller
         ViewBag.ReadingMinutes = article.ReadingTimeMinutes;
         ViewBag.RecommendedArticles = recommended;
         ViewBag.RecommendedImages = imagesDict;
+        ViewBag.BodyImages = imagesDict;
         ViewBag.PreviousArticle = prevArticle;
         ViewBag.NextArticle = nextArticle;
         ViewBag.AdjacentImages = imagesDict;
@@ -141,6 +149,16 @@ public class HomeController : Controller
 
         var allPages = await _pageService.GetFooterPagesAsync();
         ViewBag.OtherPages = allPages;
+
+        var bodyImageIds = page.Blocks
+            .OfType<ContentImageBlockDto>()
+            .Select(b => b.ImageId)
+            .Where(id => !string.IsNullOrEmpty(id))
+            .ToList();
+
+        ViewBag.BodyImages = bodyImageIds.Count > 0
+            ? await _imageService.GetVariantsDictAsync(bodyImageIds!)
+            : new Dictionary<string, ImageMetadataResponseDto>();
 
         return View(page);
     }

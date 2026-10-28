@@ -125,12 +125,18 @@
                             {
                                 coverUrl = art.CoverImageUrl;
                             }
-                            else if (!string.IsNullOrWhiteSpace(art.Content))
+                            else
                             {
-                                var imgMatch = System.Text.RegularExpressions.Regex.Match(art.Content, @"<img[^>]+src=[""']([^""']+)[""']", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                                if (imgMatch.Success)
+                                var bodyImage = Aplication.Content.ContentImageResolver.FindFirstImage(art.Blocks);
+                                if (!string.IsNullOrWhiteSpace(bodyImage?.ImageId)
+                                    && coverImages.TryGetValue(bodyImage.ImageId, out var bodyImageUrl)
+                                    && !string.IsNullOrWhiteSpace(bodyImageUrl))
                                 {
-                                    coverUrl = imgMatch.Groups[1].Value;
+                                    coverUrl = bodyImageUrl;
+                                }
+                                else if (!string.IsNullOrWhiteSpace(bodyImage?.Url))
+                                {
+                                    coverUrl = bodyImage.Url;
                                 }
                             }
 

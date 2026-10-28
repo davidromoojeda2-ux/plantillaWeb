@@ -174,7 +174,7 @@ ImageMapper.GetBestUrl(coverImage);
         <!-- Columna Derecha (Cuerpo del Artículo + Autor) -->
         <main class="lg:col-span-8 xl:col-span-9 bg-white p-8 sm:p-12 rounded-xl border border-slate-200/90 shadow-xs">
             <div id="articleBody" class="article-prose max-w-none font-sans leading-relaxed text-slate-800 space-y-6">
-                @Html.Raw(Model.Content)
+                <partial name="Partials/ContentBlocks/_ContentBlocks" model="Model.Blocks" />
             </div>
 
             <!-- Tags del Artículo -->

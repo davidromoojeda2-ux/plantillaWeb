@@ -1,8 +1,10 @@
+using Aplication.Configuration;
 using Aplication.Interfaces;
 using Aplication.Services;
 using Infrastructure.Auth;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
+using Infrastructure.Security;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -25,6 +27,12 @@ builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
 builder.Services.AddScoped<IInformativePageRepository, InformativePageRepository>();
 builder.Services.AddScoped<IImageMetadataRepository, ImageMetadataRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+
+// ─── Seguridad del contenido editorial ────────────────────────────────────────
+builder.Services.Configure<ContentSecurityOptions>(
+    builder.Configuration.GetSection(ContentSecurityOptions.SectionName));
+builder.Services.AddSingleton<IHtmlSanitizer, GanssHtmlSanitizer>();
+builder.Services.AddScoped<ContentBodySanitizer>();
 
 // ─── Servicios de aplicación ──────────────────────────────────────────────────
 builder.Services.AddScoped<IMenuService, MenuService>();

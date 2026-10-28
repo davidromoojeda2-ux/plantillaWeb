@@ -26,7 +26,6 @@ public class S3Storage : IImageStorage
 
     public string BucketName => _bucket;
     public string PublicDomain => _publicDomain;
-    public bool IsConfigured => _isConfigured;
     public string StorageType => _isR2 ? "r2" : "s3";
 
     public S3Storage(IConfiguration config, ILogger<S3Storage>? logger = null)

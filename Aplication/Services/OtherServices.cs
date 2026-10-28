@@ -97,8 +97,13 @@ public interface IPageService
 public class PageService : IPageService
 {
     private readonly IInformativePageRepository _repo;
+    private readonly ContentBodySanitizer _contentSanitizer;
 
-    public PageService(IInformativePageRepository repo) => _repo = repo;
+    public PageService(IInformativePageRepository repo, ContentBodySanitizer contentSanitizer)
+    {
+        _repo = repo;
+        _contentSanitizer = contentSanitizer;
+    }
 
     public async Task<List<PageResponseDto>> GetAllAsync() =>
         PageMapper.ToDtoList(await _repo.GetAllAsync());
@@ -120,7 +125,8 @@ public class PageService : IPageService
 
     public async Task<PageResponseDto> CreateAsync(PageDto dto)
     {
-        var page = PageMapper.ToEntity(dto);
+        var blocks = _contentSanitizer.Sanitize(dto.Blocks);
+        var page = PageMapper.ToEntity(dto, blocks);
         page.ValidarInvariantes();
 
         if (await _repo.SlugExistsAsync(page.Slug))
@@ -135,7 +141,8 @@ public class PageService : IPageService
         var page = await _repo.GetByIdAsync(id)
             ?? throw new NotFoundException("Sección", id);
 
-        PageMapper.ApplyUpdate(page, dto);
+        var blocks = _contentSanitizer.Sanitize(dto.Blocks);
+        PageMapper.ApplyUpdate(page, dto, blocks);
         page.ValidarInvariantes();
 
         if (await _repo.SlugExistsAsync(page.Slug, id))

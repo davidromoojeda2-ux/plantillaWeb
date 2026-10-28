@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Aplication.DTOs.ContentBlocks;
 
 namespace Aplication.DTOs;
 
@@ -17,8 +18,8 @@ public class ArticleDto
     [StringLength(500, MinimumLength = 20, ErrorMessage = "El resumen debe tener entre 20 y 500 caracteres.")]
     public string Summary { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "El contenido es obligatorio.")]
-    public string Content { get; set; } = string.Empty;
+    /// <summary>Cuerpo estructurado; el servicio lo valida y sanitiza.</summary>
+    public List<ContentBlockDto> Blocks { get; set; } = [];
 
     [Required(ErrorMessage = "El autor es obligatorio.")]
     public string Author { get; set; } = string.Empty;

@@ -1,0 +1,56 @@
+@model paginaWeb.Areas.Admin.Models.CategoryFormViewModel
+@{
+    var isEdit = ViewData["IsEdit"] as bool? == true;
+}
+
+<script>
+    const editMode = @(isEdit ? "true" : "false");
+    const parentSelect = document.getElementById('parentSelect');
+    const parentHelper = document.getElementById('parentHelper');
+
+    function updateParentHelper() {
+        if (!parentSelect || !parentHelper) return;
+        const val = parentSelect.value;
+        if (val) {
+            const text = parentSelect.options[parentSelect.selectedIndex]?.text || '';
+            const prefix = editMode ? 'Es una Subcategoría:' : 'Creando como Subcategoría:';
+            const description = editMode
+                ? 'Esta entidad pertenece a'
+                : 'Esta entidad se anidará directamente dentro de';
+            parentHelper.innerHTML = `<span class="text-amber-600 font-bold">↳ ${prefix}</span> ${description} <strong class="text-slate-800">${text.replace('Subcategoría de: ', '')}</strong>.`;
+            parentHelper.className = "mt-2 text-xs font-medium px-3 py-2 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-800";
+        } else {
+            const prefix = editMode ? 'Es Categoría Principal:' : 'Creando como Categoría Principal:';
+            const description = editMode
+                ? 'Se muestra como categoría raíz en la navegación.'
+                : 'Aparecerá en el nivel raíz de la navegación y portal.';
+            parentHelper.innerHTML = `<span class="text-[#00509D] font-bold">★ ${prefix}</span> ${description}`;
+            parentHelper.className = "mt-2 text-xs font-medium px-3 py-2 rounded-xl bg-blue-50/80 border border-blue-200 text-[#003F88]";
+        }
+    }
+
+    parentSelect?.addEventListener('change', updateParentHelper);
+    updateParentHelper();
+
+@if (!isEdit)
+{
+    <text>
+    const nameInput = document.getElementById('nameInput');
+    const slugInput = document.getElementById('slugInput');
+
+    nameInput?.addEventListener('input', () => {
+        if (!slugInput.dataset.manual) {
+            slugInput.value = nameInput.value
+                .toLowerCase()
+                .trim()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+    });
+    slugInput?.addEventListener('input', () => {
+        slugInput.dataset.manual = 'true';
+    });
+    </text>
+}
+</script>

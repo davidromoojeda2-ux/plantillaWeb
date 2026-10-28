@@ -55,7 +55,7 @@ public static class SeedArticlesData
                 Title = "Telescopios de Nueva Generación y el Mapeo de Exoplanetas Habitables",
                 Slug = "telescopios-nueva-generacion-exoplanetas-habitables",
                 Summary = "Los observatorios infrarrojos avanzados detectan firmas atmosféricas de vapor de agua y metano en mundos fuera de nuestro sistema solar.",
-                Content = @"<h2>1. La Nueva Cartografía Cósmica</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. La Nueva Cartografía Cósmica</h2>
 <p>La astronomía observacional experimenta su mayor revolución en medio siglo. Gracias a espectrómetros criogénicos de ultra alta resolución, la detección de mundos rocosos en la zona habitable de enanas rojas ha pasado de ser una posibilidad teórica a una rutina científica rigurosa.</p>
 
 <div class=""callout callout-info"" data-callout=""info"">
@@ -113,7 +113,7 @@ public static class SeedArticlesData
 <blockquote>
 <p>“Mirar la firma luminosa de una atmósfera a cuarenta años luz es aprender a escuchar el pulso químico de la galaxia.”</p>
 <cite>Dra. Claudia Benítez, Instituto de Ciencias Espaciales</cite>
-</blockquote>",
+</blockquote>"),
                 Author = "Martín Valenzuela",
                 AuthorRole = "Divulgador Científico",
                 AuthorBio = "Físico e investigador en instrumentación astronómica.",
@@ -136,7 +136,7 @@ public static class SeedArticlesData
                 Title = "Edición Genética de Precisión y la Nueva Era de la Terapia Celular",
                 Slug = "edicion-genetica-precision-terapia-celular",
                 Summary = "Los editores epigenéticos y las herramientas moleculares de segunda generación logran corregir mutaciones sin cortar la doble hebra de ADN.",
-                Content = @"<h2>1. Superando el Corte Tradicional</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. Superando el Corte Tradicional</h2>
 <p>La biotecnología molecular ha dado un salto decisivo. Las nuevas enzimas modificadas permiten el cambio preciso de una base nucleótida sin generar rupturas de doble cadena, minimizando drásticamente los efectos colaterales no deseados.</p>
 
 <div class=""callout callout-success"" data-callout=""success"">
@@ -153,7 +153,7 @@ public static class SeedArticlesData
 <blockquote>
 <p>“La precisión molecular actual nos permite reprogramar dianas biológicas con la exactitud de un tipógrafo corrigiendo una sola errata en una enciclopedia.”</p>
 <cite>Dra. Mónica Holguín, Laboratorio de Biología Sintética</cite>
-</blockquote>",
+</blockquote>"),
                 Author = "Dra. Sofía Alarcón",
                 AuthorRole = "Editora de Biotecnología",
                 CategoryId = catCiencia.Id,
@@ -175,7 +175,7 @@ public static class SeedArticlesData
                 Title = "Plasticidad Cerebral en Adultos: Cómo el Cerebro se Reconfigura Continuamente",
                 Slug = "plasticidad-cerebral-adultos-reconfiguracion-continua",
                 Summary = "Nuevos hallazgos en resonancia magnética funcional demuestran que las sinapsis adultas mantienen una notable capacidad de reorganización.",
-                Content = @"<h2>1. El Fin del Dogma de la Estructura Rígida</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. El Fin del Dogma de la Estructura Rígida</h2>
 <p>Durante décadas se creyó que tras la maduración juvenil los circuitos neuronales quedaban fijos. Hoy la evidencia científica demuestra que la mielinización dinámica y la neurogénesis en el giro dentado permanecen activas a lo largo de toda la vida.</p>
 
 <h2>2. Factores de Estimulación Sináptica</h2>
@@ -192,7 +192,7 @@ public static class SeedArticlesData
 <blockquote>
 <p>“El cerebro no es una máquina de mármol que se desgasta, sino un ecosistema plástico que responde con fidelidad a lo que le exigimos cada día.”</p>
 <cite>Dr. Andrés Pineda, Instituto de Neurociencias Aplicadas</cite>
-</blockquote>",
+</blockquote>"),
                 Author = "Dr. Andrés Pineda",
                 AuthorRole = "Investigador en Neurobiología",
                 CategoryId = catSalud.Id,
@@ -214,7 +214,7 @@ public static class SeedArticlesData
                 Title = "Microbioma Intestinal y Longevidad: La Ciencia Detrás de la Nutrición Celular",
                 Slug = "microbioma-intestinal-longevidad-nutricion-celular",
                 Summary = "Los metabolitos producidos por bacterias benéficas regulan la inflamación sistémica, la salud cardiovascular y la respuesta metabólica.",
-                Content = @"<h2>1. El Eje Intestino-Inmunidad</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. El Eje Intestino-Inmunidad</h2>
 <p>El tracto digestivo aloja más de cien billones de microorganismos cuya diversidad funcional influye directamente en el perfil lipídico y la modulación del sistema inmune adaptativo.</p>
 
 <h2>2. Ácidos Grasos de Cadena Corta (AGCC)</h2>
@@ -252,7 +252,7 @@ public static class SeedArticlesData
 </tr>
 </tbody>
 </table>
-</div>",
+</div>"),
                 Author = "Carla Mendoza",
                 AuthorRole = "Especialista en Nutrición",
                 CategoryId = catSalud.Id,
@@ -274,7 +274,7 @@ public static class SeedArticlesData
                 Title = "Rascacielos de Madera y Estructuras Vivas: La Revolución del Urbanismo Bioclimático",
                 Slug = "rascacielos-madera-estructuras-vivas-urbanismo-bioclimatico",
                 Summary = "La madera contralaminada (CLT) y el diseño biofílico reducen la huella de carbono de las metrópolis mientras transforman la calidad espacial.",
-                Content = @"<h2>1. Dejar Atrás el Monopolio del Hormigón</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. Dejar Atrás el Monopolio del Hormigón</h2>
 <p>La construcción masiva en madera contralaminada (Cross-Laminated Timber) permite levantar edificios de más de veinte plantas con una huella de carbono negativa, capturando toneladas de CO₂ en lugar de emitirlo durante el fraguado del hormigón.</p>
 
 <div class=""callout callout-info"" data-callout=""info"">
@@ -291,7 +291,7 @@ public static class SeedArticlesData
 <blockquote>
 <p>“Las ciudades del siglo XXI no deben verse como máquinas de asfalto, sino como ecosistemas habitables integrados en el ciclo del carbono.”</p>
 <cite>Arq. Mateo Echeverri, Estudio de Bioarquitectura</cite>
-</blockquote>",
+</blockquote>"),
                 Author = "Mateo Echeverri",
                 AuthorRole = "Arquitecto Urbanista",
                 CategoryId = catHabitat.Id,
@@ -313,7 +313,7 @@ public static class SeedArticlesData
                 Title = "Baterías de Estado Sólido y Redes Inteligentes: La Próxima Frontera Energética",
                 Slug = "baterias-estado-solido-redes-inteligentes-energia",
                 Summary = "El reemplazo de electrolitos líquidos por cerámicas conductoras promete triplicar la densidad de almacenamiento y estabilizar matrices solares y eólicas.",
-                Content = @"<h2>1. El Reto de la Intermitencia</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. El Reto de la Intermitencia</h2>
 <p>El despliegue masivo de generación renovable requiere sistemas de almacenamiento seguros, rápidos y de altísima densidad para abastecer la demanda nocturna y los picos industriales.</p>
 
 <h2>2. Ventajas del Electrolito Sólido</h2>
@@ -354,7 +354,7 @@ public static class SeedArticlesData
 <blockquote>
 <p>“El almacenamiento sólido es la pieza que faltaba para convertir a las energías solar y eólica en fuentes de potencia base ininterrumpida.”</p>
 <cite>Ing. Laura Tamayo, Alianza Global de Almacenamiento</cite>
-</blockquote>",
+</blockquote>"),
                 Author = "Ignacio Navarro",
                 AuthorRole = "Analista Energético",
                 CategoryId = catHabitat.Id,
@@ -376,7 +376,7 @@ public static class SeedArticlesData
                 Title = "La Nueva Estética Cinematográfica: Iluminación Natural y Narrativas Inmersivas",
                 Slug = "nueva-estetica-cinematografica-iluminacion-narrativas",
                 Summary = "Directores de fotografía contemporáneos combinan sensores de rango dinámico extremo con ópticas clásicas para rescatar la autenticidad visual.",
-                Content = @"<h2>1. El Retorno a la Luz Orgánica</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. El Retorno a la Luz Orgánica</h2>
 <p>Frente al abuso de iluminación artificial y efectos digitales pesados, el cine contemporáneo abraza el claroscuro natural, aprovechando la sensibilidad de los sensores modernos que registran gradaciones tonales antes imposibles en penumbra.</p>
 
 <h2>2. Claves de la Fotografía Atmosférica</h2>
@@ -389,7 +389,7 @@ public static class SeedArticlesData
 <blockquote>
 <p>“La luz verdadera no ilumina un set, revela la emoción contenida en el rostro de un personaje sin intermediarios técnicos.”</p>
 <cite>Felipe Arbeláez, Director de Fotografía</cite>
-</blockquote>",
+</blockquote>"),
                 Author = "Camila Restrepo",
                 AuthorRole = "Crítica de Cine",
                 CategoryId = catCultura.Id,
@@ -411,7 +411,7 @@ public static class SeedArticlesData
                 Title = "El Diseño de Auditorios Sinfónicos: La Física Detrás de la Acústica Perfecta",
                 Slug = "diseno-auditorios-sinfonicos-fisica-acustica-perfecta",
                 Summary = "La geometría de viñedo, difusores fractales de madera y simulaciones computacionales recrean el balance sonoro ideal en las grandes salas mundiales.",
-                Content = @"<h2>1. El Tiempo de Reverberación Ideal</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. El Tiempo de Reverberación Ideal</h2>
 <p>Una sala de conciertos sinfónicos busca un tiempo de reverberación de entre 1.8 y 2.2 segundos para brindar calidez sonora a las frecuencias medias sin enturbiar los pasajes percusivos rápidos.</p>
 
 <h2>2. Elementos Clave del Confort Acústico</h2>
@@ -419,7 +419,7 @@ public static class SeedArticlesData
 <li><strong>Difusores de residuo cuadrático:</strong> Superficies anguladas que dispersan la energía sonora de modo uniforme.</li>
 <li><strong>Balcones en terraza (estilo viñedo):</strong> Acercan al espectador al escenario y optimizan las reflexiones laterales tempranas.</li>
 <li><strong>Aislamiento pasivo de masa flotante:</strong> Cero intrusión de ruido exterior o vibraciones del transporte subterráneo.</li>
-</ol>",
+</ol>"),
                 Author = "Javier Morales",
                 AuthorRole = "Ingeniero Acústico y Músico",
                 CategoryId = catCultura.Id,
@@ -441,7 +441,7 @@ public static class SeedArticlesData
                 Title = "La Química del Café de Especialidad: Del Grano a la Extracción de Precisión",
                 Slug = "quimica-cafe-especialidad-grano-extraccion-precision",
                 Summary = "Altitud de cultivo, perfiles de tueste y control milimétrico del agua revelan notas florales y acidez brillante en variedades exóticas.",
-                Content = @"<h2>1. Más Allá del Tueste Oscuro</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. Más Allá del Tueste Oscuro</h2>
 <p>El movimiento de café de especialidad trata al fruto del cafeto con la misma reverencia que la vitivinicultura le otorga a la vid. Los microclimas por encima de 1,600 metros de altitud desaceleran la maduración del grano, concentrando azúcares y ácidos orgánicos complejos.</p>
 
 <div class=""callout callout-info"" data-callout=""info"">
@@ -476,7 +476,7 @@ public static class SeedArticlesData
 </tr>
 </tbody>
 </table>
-</div>",
+</div>"),
                 Author = "Valeria Ochoa",
                 AuthorRole = "Catadora Q Grader",
                 CategoryId = catGastro.Id,
@@ -498,7 +498,7 @@ public static class SeedArticlesData
                 Title = "Fermentación de Vanguardia: La Biotecnología Culinaria en la Alta Cocina",
                 Slug = "fermentacion-vanguardia-biotecnologia-culinaria-cocina",
                 Summary = "Hongos koji, vinagres de autor y garums vegetales abren una dimensión inexplorada de sabor umami en los mejores restaurantes del mundo.",
-                Content = @"<h2>1. Redescubrimiento de Sabores Ancestrales</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. Redescubrimiento de Sabores Ancestrales</h2>
 <p>Los laboratorios culinarios más reconocidos del mundo han reemplazado las técnicas de gelificación puramente visuales por fermentaciones microbianas controladas. Inocular koji (<em>Aspergillus oryzae</em>) sobre granos locales permite desdoblar proteínas complejas en aminoácidos que intensifican el sabor natural sin aditivos químicos.</p>
 
 <h2>2. Procesos Primordiales en el Laboratorio Culinario</h2>
@@ -511,7 +511,7 @@ public static class SeedArticlesData
 <blockquote>
 <p>“Fermentar es colaborar con el tiempo y los microorganismos para transformar la materia prima en una experiencia sensorial profunda.”</p>
 <cite>Chef Sebastián Londoño, Taller de Investigación Culinaria</cite>
-</blockquote>",
+</blockquote>"),
                 Author = "Sebastián Londoño",
                 AuthorRole = "Chef Investigador",
                 CategoryId = catGastro.Id,
@@ -533,11 +533,11 @@ public static class SeedArticlesData
                 Title = "Trenes de Alta Velocidad y Levitas Magnéticas: Conectando Megaciudades del Futuro",
                 Slug = "trenes-alta-velocidad-levitacion-magnetica-transporte",
                 Summary = "La tecnología Maglev y los corredores ferroviarios electrificados se consolidan como la alternativa ecológica prioritaria a los vuelos de corto alcance.",
-                Content = @"<h2>1. Eficiencia Energética por Pasajero</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. Eficiencia Energética por Pasajero</h2>
 <p>El tren de alta velocidad emite hasta un 85% menos de CO₂ por pasajero-kilómetro en comparación con la aviación comercial regional, mientras libera los cielos congestionados y reduce tiempos totales de viaje puerta a puerta.</p>
 
 <h2>2. Innovaciones en Levitas Magnéticas (Maglev)</h2>
-<p>Al eliminar el contacto físico entre la rueda y el carril, los convoyes reducen la fricción mecánica a cero, alcanzando velocidades operativas superiores a los 500 km/h con un consumo eléctrico optimizado.</p>",
+<p>Al eliminar el contacto físico entre la rueda y el carril, los convoyes reducen la fricción mecánica a cero, alcanzando velocidades operativas superiores a los 500 km/h con un consumo eléctrico optimizado.</p>"),
                 Author = "Ignacio Navarro",
                 AuthorRole = "Analista de Movilidad",
                 CategoryId = catHabitat.Id,
@@ -559,7 +559,7 @@ public static class SeedArticlesData
                 Title = "El Arte del Ensayo: Pensar con Pausa en Tiempos de Inmediatez Digital",
                 Slug = "arte-del-ensayo-pensar-pausa-inmediatez-digital",
                 Summary = "Frente al bombardeo de estímulos efímeros, la lectura y redacción pausada del ensayo recupera el valor de la duda metódica y la argumentación sólida.",
-                Content = @"<h2>1. La Resistencia de la Atención Sostenida</h2>
+                Blocks = SeedContentBlocks.FromHtml(@"<h2>1. La Resistencia de la Atención Sostenida</h2>
 <p>Vivimos en una economía de atención fragmentada donde los algoritmos recompensan la reacción instintiva y la indignación rápida. El ensayo literario y filosófico se erige como un refugio de contemplación activa y análisis pausado.</p>
 
 <h2>2. Valores del Género Humanista</h2>
@@ -572,7 +572,7 @@ public static class SeedArticlesData
 <blockquote>
 <p>“Escribir un ensayo no es defender una certeza, sino salir a caminar con el lector para descubrir lo que ignorábamos juntos.”</p>
 <cite>Helena Durán, Catedrática de Humanidades</cite>
-</blockquote>",
+</blockquote>"),
                 Author = "Helena Durán",
                 AuthorRole = "Ensayista y Docente",
                 CategoryId = catCultura.Id,
@@ -588,6 +588,12 @@ public static class SeedArticlesData
                 ViewCount = 156
             }
         };
+
+        foreach (var article in testArticles)
+        {
+            article.SearchText = article.BuildSearchText();
+            article.ReadingTimeMinutes = Article.EstimateReadingTime(article.SearchText);
+        }
 
         // Insertar los 12 artículos completos
         await context.Articles.InsertManyAsync(testArticles);
