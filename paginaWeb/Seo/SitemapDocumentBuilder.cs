@@ -3,21 +3,18 @@ using System.Xml.Linq;
 
 namespace paginaWeb.Seo;
 
-/// <summary>Entrada del índice de sitemaps.</summary>
+
 public sealed record SitemapIndexEntry(string Path, DateTime? LastModified);
 
-/// <summary>URL incluida en un sitemap, con sus imágenes asociadas.</summary>
+
 public sealed record SitemapUrlEntry(
     string Path,
     DateTime? LastModified,
     IReadOnlyCollection<SitemapImage>? Images = null);
 
-/// <summary>Imagen declarada mediante la extensión de sitemaps de imágenes de Google.</summary>
 public sealed record SitemapImage(string Url, string? Caption = null, string? Title = null);
 
-/// <summary>
-/// Construye los documentos XML de sitemaps (índice y urlset) sin depender de MVC.
-/// </summary>
+
 public static class SitemapDocumentBuilder
 {
     private static readonly XNamespace SitemapNs = "http://www.sitemaps.org/schemas/sitemap/0.9";
