@@ -1,6 +1,7 @@
-using Aplication.Interfaces;
+﻿using Aplication.Interfaces;
 using Domine.Entities;
 using Infrastructure.Persistence;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Infrastructure.Repositories;
@@ -135,12 +136,16 @@ public class ArticleRepository : IArticleRepository
         {
             if (doc.TryGetValue("CategoryId", out var catVal) && !catVal.IsBsonNull)
             {
-                var catId = catVal.AsString;
+                var catId = catVal.BsonType == BsonType.ObjectId
+                    ? catVal.AsObjectId.ToString()
+                    : catVal.IsString ? catVal.AsString : string.Empty;
                 if (!string.IsNullOrWhiteSpace(catId)) set.Add(catId);
             }
             if (doc.TryGetValue("SubcategoryId", out var subVal) && !subVal.IsBsonNull)
             {
-                var subId = subVal.AsString;
+                var subId = subVal.BsonType == BsonType.ObjectId
+                    ? subVal.AsObjectId.ToString()
+                    : subVal.IsString ? subVal.AsString : string.Empty;
                 if (!string.IsNullOrWhiteSpace(subId)) set.Add(subId);
             }
         }
