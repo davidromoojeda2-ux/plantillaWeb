@@ -1391,7 +1391,6 @@ body {
         transform: scale(var(--btn-press-scale));
     }
 }
-}
 
 @media (hover: none) {
     .card:active {
