@@ -1,0 +1,307 @@
+@model AutomationConfigViewModel
+@using Aplication.DTOs.Automation
+@{
+    ViewData["Title"] = "Configuración de Automatización";
+    var presetsJson = System.Text.Json.JsonSerializer.Serialize(
+        AiProviderPresets.All.ToDictionary(p => p.Key, p => new { baseUrl = p.BaseUrl, model = p.DefaultModel }));
+    var rootCategories = Model.Categories.Where(c => c.ParentId is null).OrderBy(c => c.Order).ToList();
+}
+
+<div class="space-y-6 max-w-4xl">
+    <form method="post" asp-area="Admin" asp-controller="Automation" asp-action="Configuracion"
+          class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-8">
+        @Html.AntiForgeryToken()
+
+        <!-- ─── Claves API ─────────────────────────────────────────────────── -->
+        <section>
+            <h3 class="font-bold text-slate-800 text-lg mb-4">Claves de API</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <!-- Serper -->
+                <div>
+                    <label asp-for="SerperApiKey" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Clave de Serper</label>
+                    <div id="serperView" class="flex items-center gap-2 @(Model.HasSerperKey ? "" : "hidden")">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Configurada
+                        </span>
+                        <button type="button" data-key-change="SerperApiKey"
+                                class="text-xs font-semibold text-[#00509D] hover:underline">Cambiar</button>
+                    </div>
+                    <input asp-for="SerperApiKey" type="password" autocomplete="off"
+                           placeholder="Ingresa la clave de Serper"
+                           class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm @(Model.HasSerperKey ? "hidden" : "")" />
+                </div>
+                <!-- IA -->
+                <div>
+                    <label asp-for="AiApiKey" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Clave de IA</label>
+                    <div id="aiView" class="flex items-center gap-2 @(Model.HasAiKey ? "" : "hidden")">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            Configurada
+                        </span>
+                        <button type="button" data-key-change="AiApiKey"
+                                class="text-xs font-semibold text-[#00509D] hover:underline">Cambiar</button>
+                    </div>
+                    <input asp-for="AiApiKey" type="password" autocomplete="off"
+                           placeholder="Ingresa la clave de la IA"
+                           class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm @(Model.HasAiKey ? "hidden" : "")" />
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Parámetros de Serper ───────────────────────────────────────── -->
+        <section>
+            <h3 class="font-bold text-slate-800 text-lg mb-4">Parámetros de Serper</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div>
+                    <label asp-for="SerperType" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tipo de búsqueda</label>
+                    <select asp-for="SerperType" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                        <option value="news" selected="@(Model.SerperType == "news")">Noticias</option>
+                        <option value="search" selected="@(Model.SerperType == "search")">Búsqueda web</option>
+                    </select>
+                </div>
+                <div>
+                    <label asp-for="SerperRecency" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Antigüedad</label>
+                    <select asp-for="SerperRecency" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.SerperRecency))">Cualquier fecha</option>
+                        <option value="qdr:d" selected="@(Model.SerperRecency == "qdr:d")">Últimas 24 horas</option>
+                        <option value="qdr:w" selected="@(Model.SerperRecency == "qdr:w")">Última semana</option>
+                        <option value="qdr:m" selected="@(Model.SerperRecency == "qdr:m")">Último mes</option>
+                        <option value="qdr:y" selected="@(Model.SerperRecency == "qdr:y")">Último año</option>
+                    </select>
+                </div>
+                <div>
+                    <label asp-for="SerperNum" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Resultados por consulta</label>
+                    <input asp-for="SerperNum" type="number" min="1" max="100" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                    <label asp-for="SerperSafe" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Búsqueda segura</label>
+                    <select asp-for="SerperSafe" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                        <option value="off" selected="@(Model.SerperSafe == "off")">Desactivada</option>
+                        <option value="active" selected="@(Model.SerperSafe == "active")">Activa</option>
+                    </select>
+                </div>
+            </div>
+            <label class="flex items-center gap-3 text-sm text-slate-700 mt-4">
+                <input type="checkbox" asp-for="SerperAutocorrect" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                Autocorrección de Serper
+            </label>
+            <p class="text-xs text-slate-400 mt-2">La antigüedad filtra la información reciente; evita artículos con datos desactualizados.</p>
+        </section>
+
+        <!-- ─── Proveedor de IA ────────────────────────────────────────────── -->
+        <section>
+            <h3 class="font-bold text-slate-800 text-lg mb-4">Proveedor de IA</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div>
+                    <label asp-for="AiProvider" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Proveedor</label>
+                    <select asp-for="AiProvider" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                        @foreach (var p in AiProviderPresets.All)
+                        {
+                            <option value="@p.Key" selected="@(Model.AiProvider == p.Key)">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label asp-for="AiBaseUrl" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">URL base</label>
+                    <input asp-for="AiBaseUrl" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono" />
+                </div>
+                <div>
+                    <label asp-for="AiModel" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Modelo</label>
+                    <input asp-for="AiModel" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono" />
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Publicación y programación ─────────────────────────────────── -->
+        <section>
+            <h3 class="font-bold text-slate-800 text-lg mb-4">Publicación y programación</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <label class="flex items-center gap-3 text-sm text-slate-700">
+                    <input type="checkbox" asp-for="AutoPublish" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                    Publicar automáticamente (si no, quedan en borrador)
+                </label>
+                <label class="flex items-center gap-3 text-sm text-slate-700">
+                    <input type="checkbox" asp-for="ScheduleEnabled" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                    Programar publicación
+                </label>
+            </div>
+
+            <div id="scheduleFields" class="mt-4 @(Model.ScheduleEnabled ? "" : "hidden")">
+                <div class="grid grid-cols-2 gap-5 max-w-xs">
+                    <div>
+                        <label asp-for="PublishHour" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Hora</label>
+                        <input asp-for="PublishHour" type="number" min="0" max="23" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                    </div>
+                    <div>
+                        <label asp-for="PublishMinute" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Minuto</label>
+                        <input asp-for="PublishMinute" type="number" min="0" max="59" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Los artículos se programan para la siguiente ocurrencia de esta hora.</p>
+            </div>
+        </section>
+
+        <!-- ─── General ────────────────────────────────────────────────────── -->
+        <section>
+            <h3 class="font-bold text-slate-800 text-lg mb-4">General</h3>
+            <label class="flex items-center gap-3 text-sm text-slate-700 mb-4">
+                <input type="checkbox" asp-for="Enabled" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                Automatización habilitada
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div>
+                    <label asp-for="FrequencyMinutes" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Frecuencia (minutos)</label>
+                    <input asp-for="FrequencyMinutes" type="number" min="1" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                    <label asp-for="MaxArticlesPerRun" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Máx. artículos/corrida</label>
+                    <input asp-for="MaxArticlesPerRun" type="number" min="1" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+                <div>
+                    <label asp-for="MaxTokensPerArticle" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Máx. tokens/artículo</label>
+                    <input asp-for="MaxTokensPerArticle" type="number" min="256" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
+                <div>
+                    <label asp-for="Country" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">País</label>
+                    <select asp-for="Country" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                        @foreach (var c in LocaleOptions.Countries)
+                        {
+                            <option value="@c.Code" selected="@(Model.Country == c.Code)">@c.Name</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label asp-for="Language" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Idioma</label>
+                    <select asp-for="Language" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                        @foreach (var l in LocaleOptions.Languages)
+                        {
+                            <option value="@l.Code" selected="@(Model.Language == l.Code)">@l.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <label asp-for="BaseTopicsText" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Temáticas base (una por línea)</label>
+                <textarea asp-for="BaseTopicsText" rows="4"
+                          class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono"></textarea>
+            </div>
+        </section>
+
+        <!-- ─── Categorías habilitadas ─────────────────────────────────────── -->
+        <section>
+            <h3 class="font-bold text-slate-800 text-lg mb-4">Categorías habilitadas</h3>
+            @if (!Model.Categories.Any())
+            {
+                <p class="text-xs text-slate-400">No hay categorías configuradas. Crea una abajo.</p>
+            }
+            else
+            {
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @foreach (var cat in Model.Categories.OrderBy(c => c.Order))
+                    {
+                        var isSub = cat.ParentId is not null;
+                        <label class="flex items-center gap-2 text-sm text-slate-700 @(isSub ? "pl-4" : "")">
+                            <input type="checkbox" name="CategoryIds" value="@cat.Id"
+                                   checked="@Model.CategoryIds.Contains(cat.Id)"
+                                   class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                            @cat.Name
+                        </label>
+                    }
+                </div>
+            }
+        </section>
+
+        <div class="pt-2 flex flex-wrap items-center gap-3">
+            <button type="submit"
+                    class="px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
+                Guardar configuración
+            </button>
+            <button type="submit" name="exit" value="true"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                Validar y salir
+            </button>
+        </div>
+    </form>
+
+    <!-- ─── Crear categoría / subcategoría (inline) ───────────────────────── -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Crear categoría o subcategoría</h3>
+        <form method="post" asp-area="Admin" asp-controller="Automation" asp-action="CrearCategoria"
+              class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nombre</label>
+                <input name="name" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required />
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Categoría padre (opcional)</label>
+                <select name="parentId" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                    <option value="">— Sin padre (categoría raíz) —</option>
+                    @foreach (var c in rootCategories)
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                + Categoría
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // Autocompletar URL base y modelo según el proveedor
+            var presets = @Html.Raw(presetsJson);
+            var provider = document.getElementById('AiProvider');
+            var baseUrl = document.getElementById('AiBaseUrl');
+            var model = document.getElementById('AiModel');
+            if (provider) {
+                provider.addEventListener('change', function () {
+                    var p = presets[provider.value];
+                    if (p) {
+                        baseUrl.value = p.baseUrl;
+                        model.value = p.model;
+                    }
+                });
+            }
+
+            // Mostrar el formulario de horario solo si se activa la programación
+            var scheduleToggle = document.getElementById('ScheduleEnabled');
+            var scheduleFields = document.getElementById('scheduleFields');
+            if (scheduleToggle && scheduleFields) {
+                var syncSchedule = function () {
+                    scheduleFields.classList.toggle('hidden', !scheduleToggle.checked);
+                };
+                scheduleToggle.addEventListener('change', syncSchedule);
+                syncSchedule();
+            }
+
+            // Claves: mostrar/ocultar el campo al pulsar "Cambiar"
+            document.querySelectorAll('[data-key-change]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var inputId = btn.getAttribute('data-key-change');
+                    var input = document.getElementById(inputId);
+                    var view = document.getElementById(inputId === 'SerperApiKey' ? 'serperView' : 'aiView');
+                    if (input) {
+                        input.classList.remove('hidden');
+                        input.value = '';
+                        input.focus();
+                    }
+                    if (view) view.classList.add('hidden');
+                });
+            });
+        })();
+    </script>
+}

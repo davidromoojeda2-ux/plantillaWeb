@@ -33,7 +33,8 @@ public static class ArticleMapper
             ImageIds = MergeImageIds(dto.ImageIds, blocks),
             Featured = dto.Featured,
             Status = status,
-            PublishedAt = status == ArticleStatus.Publicado ? DateTime.UtcNow : null
+            PublishedAt = status == ArticleStatus.Publicado ? DateTime.UtcNow : null,
+            ScheduledAt = status == ArticleStatus.Programado ? dto.ScheduledAt : null
         };
     }
 
@@ -88,6 +89,7 @@ public static class ArticleMapper
         Featured = article.Featured,
         Status = article.Status.ToString(),
         PublishedAt = article.PublishedAt,
+        ScheduledAt = article.ScheduledAt,
         CreatedAt = article.CreatedAt,
         UpdatedAt = article.UpdatedAt,
         ViewCount = article.ViewCount,
@@ -131,7 +133,8 @@ public static class ArticleMapper
         CoverImageUrl = article.CoverImageUrl,
         ImageIds = [.. article.ImageIds],
         Featured = article.Featured,
-        Status = article.Status
+        Status = article.Status,
+        ScheduledAt = article.ScheduledAt
     };
 
     private static ArticleStatus ParseStatus(string status) =>

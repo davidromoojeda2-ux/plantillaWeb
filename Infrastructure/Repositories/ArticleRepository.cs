@@ -175,4 +175,8 @@ public class ArticleRepository : IArticleRepository
 
         return (previous, next);
     }
+
+    public async Task<List<Article>> GetScheduledToPublishAsync(DateTime now) =>
+        await _col.Find(a => a.Status == ArticleStatus.Programado && a.ScheduledAt <= now)
+                  .ToListAsync();
 }

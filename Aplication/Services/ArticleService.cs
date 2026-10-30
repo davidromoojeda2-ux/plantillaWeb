@@ -23,6 +23,7 @@ public interface IArticleService
     Task<List<ArticleResponseDto>> GetMostReadAsync(int take = 5);
     Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
     Task<(ArticleResponseDto? Previous, ArticleResponseDto? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt);
+    Task<int> PublishScheduledAsync(DateTime now);
 }
 
 public class ArticleService : IArticleService
@@ -194,5 +195,18 @@ public class ArticleService : IArticleService
         var (prev, next) = await _repo.GetAdjacentArticlesAsync(currentArticleId, publishedAt);
         return (prev != null ? ArticleMapper.ToDto(prev) : null,
                 next != null ? ArticleMapper.ToDto(next) : null);
+    }
+
+    /// <summary>Publica los artículos programados cuya fecha ya venció. Devuelve la cantidad publicada.</summary>
+    public async Task<int> PublishScheduledAsync(DateTime now)
+    {
+        var due = await _repo.GetScheduledToPublishAsync(now);
+        foreach (var article in due)
+        {
+            article.Publicar();
+            await _repo.UpdateAsync(article);
+        }
+
+        return due.Count;
     }
 }

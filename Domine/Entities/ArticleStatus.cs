@@ -4,5 +4,6 @@ namespace Domine.Entities;
 public enum ArticleStatus
 {
     Borrador,
+    Programado,
     Publicado
 }

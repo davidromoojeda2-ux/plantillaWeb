@@ -1,12 +1,16 @@
 using Aplication.Configuration;
 using Aplication.Interfaces;
 using Aplication.Services;
+using Infrastructure.Ai;
 using Infrastructure.Auth;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
+using Infrastructure.Serper;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.Hosting;
+using paginaWeb.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +31,7 @@ builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
 builder.Services.AddScoped<IInformativePageRepository, InformativePageRepository>();
 builder.Services.AddScoped<IImageMetadataRepository, ImageMetadataRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+builder.Services.AddScoped<IAutomationStateRepository, AutomationStateRepository>();
 
 // ─── Seguridad del contenido editorial ────────────────────────────────────────
 builder.Services.Configure<ContentSecurityOptions>(
@@ -41,6 +46,8 @@ builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IPageService, PageService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAutomationService, ArticleAutomationService>();
+builder.Services.AddSingleton<AutomationCoordinator>();
 
 // ─── Almacenamiento de imágenes ───────────────────────────────────────────────
 builder.Services.AddScoped<LocalStorage>();
@@ -48,6 +55,15 @@ builder.Services.AddScoped<S3Storage>();
 builder.Services.AddScoped<CloudflareR2Storage>();
 builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<S3Storage>());
 builder.Services.AddScoped<ImageService>();
+
+// ─── Automatización: Serper + IA ─────────────────────────────────────────────
+builder.Services.AddHttpClient<ITopicDiscoveryService, SerperTopicDiscoveryService>();
+builder.Services.AddHttpClient<IAiArticleGenerator, OpenAiCompatibleArticleGenerator>();
+
+// ─── Worker de automatización (embebido, a prueba de fallos) ─────────────────
+builder.Services.AddHostedService<ArticleAutomationWorker>();
+builder.Services.Configure<HostOptions>(options =>
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
 
 
 // ─── Autenticación por cookies ────────────────────────────────────────────────

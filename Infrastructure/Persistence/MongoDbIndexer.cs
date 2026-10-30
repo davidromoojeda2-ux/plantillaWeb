@@ -106,6 +106,30 @@ public static class MongoDbIndexer
                 Builders<Domine.Entities.ImageMetadata>.IndexKeys.Ascending(i => i.ArticleId),
                 new CreateIndexOptions { Name = "ix_images_article_id" })
         ]);
+
+        // ─── automation_runs ──────────────────────────────────────────────────
+        await EnsureCollectionExistsAsync(context.Database, "automation_runs");
+        await context.AutomationRuns.Indexes.CreateManyAsync(
+        [
+            new CreateIndexModel<Domine.Entities.AutomationRun>(
+                Builders<Domine.Entities.AutomationRun>.IndexKeys.Descending(r => r.CreatedAt),
+                new CreateIndexOptions { Name = "ix_automation_runs_created" }),
+
+            new CreateIndexModel<Domine.Entities.AutomationRun>(
+                Builders<Domine.Entities.AutomationRun>.IndexKeys.Ascending(r => r.TopicHashes),
+                new CreateIndexOptions { Name = "ix_automation_runs_hashes" })
+        ]);
+
+        // ─── automation_settings (documento único) ─────────────────────────────
+        await EnsureCollectionExistsAsync(context.Database, "automation_settings");
+    }
+
+    private static async Task EnsureCollectionExistsAsync(IMongoDatabase database, string name)
+    {
+        var names = await database.ListCollectionNamesAsync();
+        var list = await names.ToListAsync();
+        if (!list.Contains(name))
+            await database.CreateCollectionAsync(name);
     }
 
     public static async Task EnsureSeedDataAsync(MongoDbContext context)

@@ -32,6 +32,21 @@ dotnet user-secrets set "CloudflareR2:BucketName" "portal-noticias" --project pa
 dotnet user-secrets set "CloudflareR2:PublicDomain" "https://pub-ejemplo.r2.dev" --project paginaWeb/paginaWeb.csproj
 ```
 
+### Configurar la automatización (Serper + IA)
+Las claves de Serper e IA, el proveedor, la URL base y el modelo se configuran desde el panel
+`Admin → Automatización → Configuración` (`/admin/automatizacion/configuracion`). Se guardan en
+la base de datos y se muestran enmascaradas.
+
+### Control de la automatización desde el panel Admin
+- Panel: `Admin → Automatización` (`/admin/automatizacion`).
+- **Ejecutar ahora**: dispara una corrida manual (descubrir → generar → publicar/borrador/programar).
+- **Pausar/Reanudar**: detiene/reanuda las corridas programadas.
+- **Configuración**: habilita/deshabilita, auto-publicar, programación de publicación (hora), frecuencia,
+  categorías, temáticas base, país/idioma (desplegables), claves y proveedor de IA, y límites.
+- **Decisiones pendientes**: cuando una temática se repite, el sistema la deja pendiente para que decidas
+  **Continuar** (con fecha de publicación opcional) u **Omitir**.
+- **Crear categoría/subcategoría**: desde la propia vista de configuración, sin salir de ella.
+
 ### Borrar un secreto específico
 ```powershell
 dotnet user-secrets remove "MongoDB:ConnectionString" --project paginaWeb/paginaWeb.csproj

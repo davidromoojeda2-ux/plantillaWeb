@@ -1,0 +1,81 @@
+@model Domine.Entities.AutomationRun
+@using Domine.Entities
+@{
+    ViewData["Title"] = "Detalle de Corrida";
+}
+
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <a asp-area="Admin" asp-controller="Automation" asp-action="Historial"
+           class="text-xs font-semibold text-[#00509D] hover:underline">← Volver al historial</a>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Resumen</h3>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div><dt class="text-slate-400 text-xs uppercase">Estado</dt><dd class="text-slate-800 font-medium">@Model.Status</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Disparador</dt><dd class="text-slate-800 font-medium">@(Model.Trigger == AutomationTrigger.Manual ? "Manual" : "Programada")</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Inicio</dt><dd class="text-slate-800">@Model.StartedAt.ToString("dd/MM/yyyy HH:mm:ss")</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Fin</dt><dd class="text-slate-800">@(Model.FinishedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—")</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Temas descubiertos</dt><dd class="text-slate-800">@Model.DiscoveredTopicsCount</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Artículos creados</dt><dd class="text-slate-800">@Model.GeneratedArticles.Count</dd></div>
+        </dl>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Artículos generados</h3>
+        @if (!Model.GeneratedArticles.Any())
+        {
+            <p class="text-slate-400 text-sm">Sin artículos generados.</p>
+        }
+        else
+        {
+            <div class="divide-y divide-slate-100">
+                @foreach (var a in Model.GeneratedArticles)
+                {
+                    <div class="py-3 flex items-center justify-between">
+                        <div class="min-w-0 pr-4">
+                            <p class="font-medium text-slate-800 text-sm truncate">@a.Title</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold @(a.Status == "Publicado" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200")">
+                            @a.Status
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Decisiones pendientes</h3>
+        @if (!Model.PendingDecisions.Any())
+        {
+            <p class="text-slate-400 text-sm">Sin decisiones pendientes.</p>
+        }
+        else
+        {
+            <div class="divide-y divide-slate-100">
+                @foreach (var d in Model.PendingDecisions)
+                {
+                    <div class="py-3">
+                        <p class="text-sm text-slate-800">@d.TopicTitle</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Estado: @d.Status</p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (Model.Errors.Count > 0)
+    {
+        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-6">
+            <h3 class="font-bold text-rose-800 text-lg mb-3">Errores</h3>
+            <ul class="list-disc list-inside text-sm text-rose-700 space-y-1">
+                @foreach (var e in Model.Errors)
+                {
+                    <li>@e</li>
+                }
+            </ul>
+        </div>
+    }
+</div>

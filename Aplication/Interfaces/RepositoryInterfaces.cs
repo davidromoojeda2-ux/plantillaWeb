@@ -41,6 +41,7 @@ public interface IArticleRepository
     Task<List<Article>> GetMostReadAsync(int take = 5);
     Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
     Task<(Article? Previous, Article? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt);
+    Task<List<Article>> GetScheduledToPublishAsync(DateTime now);
 }
 
 // ─── Comment Repository Interface ─────────────────────────────────────────────
