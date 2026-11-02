@@ -3,14 +3,15 @@ using System.Text.Json;
 using Aplication.DTOs.Automation;
 using Aplication.Interfaces;
 using Infrastructure.Resilience;
+using Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
 using Polly;
 
 namespace Infrastructure.Serper;
 
 /// <summary>
-/// Descubrimiento de temáticas mediante el endpoint de noticias de Serper (api.serper.dev).
-/// La clave se recibe por solicitud (gestionada desde el panel de configuración).
+/// Descubrimiento de temáticas mediante el endpoint de noticias/búsqueda de Serper (api.serper.dev).
+/// La clave y los parámetros se reciben por solicitud (gestionados desde el panel).
 /// </summary>
 public sealed class SerperTopicDiscoveryService : ITopicDiscoveryService
 {
@@ -28,18 +29,22 @@ public sealed class SerperTopicDiscoveryService : ITopicDiscoveryService
         _pipeline = ResiliencePolicies.CreateHttpPipeline();
     }
 
-    public async Task<List<DiscoveredTopic>> DiscoverAsync(TopicDiscoveryRequest request, CancellationToken ct = default)
+    public async Task<DiscoveryResult> DiscoverAsync(TopicDiscoveryRequest request, CancellationToken ct = default)
     {
+        var result = new DiscoveryResult();
+
         if (string.IsNullOrWhiteSpace(request.ApiKey))
         {
             _logger.LogWarning("Serper no está configurado (ApiKey ausente). No se descubrirán temáticas.");
-            return [];
+            return result;
         }
 
-        if (request.Topics is null || request.Topics.Count == 0) return [];
+        if (request.Topics is null || request.Topics.Count == 0) return result;
 
         var path = string.Equals(request.SearchType, "search", StringComparison.OrdinalIgnoreCase) ? "/search" : "/news";
-        var results = new List<DiscoveredTopic>();
+        var perQuery = new List<List<DiscoveredTopic>>();
+        var credits = 0;
+
         foreach (var query in request.Topics)
         {
             if (string.IsNullOrWhiteSpace(query)) continue;
@@ -65,55 +70,71 @@ public sealed class SerperTopicDiscoveryService : ITopicDiscoveryService
                 return await resp.Content.ReadAsStringAsync(inner);
             }, ct);
 
-            results.AddRange(ParseItems(json));
-        }
+            var payload = TryParse(json);
+            if (payload is null) continue;
 
-        return results
-            .Where(t => !string.IsNullOrWhiteSpace(t.Title))
-            .DistinctBy(t => t.Title.Trim(), StringComparer.OrdinalIgnoreCase)
-            .Take(Math.Max(1, request.Limit))
-            .ToList();
-    }
-
-    private static List<DiscoveredTopic> ParseItems(string json)
-    {
-        try
-        {
-            var payload = JsonSerializer.Deserialize<SerperNewsResponse>(json, JsonDefaults);
-            var items = payload?.News is { Count: > 0 } news ? news : payload?.Organic ?? [];
-
-            return items
+            credits += payload.Credits;
+            var items = (payload.News is { Count: > 0 } news ? news : payload.Organic)
                 .Select(n => new DiscoveredTopic
                 {
                     Title = n.Title ?? string.Empty,
                     Source = n.Source,
-                    Link = n.Link,
                     Snippet = n.Snippet
                 })
                 .ToList();
+            perQuery.Add(items);
         }
-        catch (JsonException)
+
+        var combined = request.RoundRobin ? Interleave(perQuery) : perQuery.SelectMany(x => x);
+        result.Topics = combined
+            .Where(t => !string.IsNullOrWhiteSpace(t.Title))
+            .DistinctBy(t => t.Title.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Take(Math.Max(1, request.Limit))
+            .ToList();
+        result.Credits = credits;
+
+        return result;
+    }
+
+    /// <summary>Intercala los resultados de cada consulta (1.º de cada una, 2.º de cada una, …).</summary>
+    private static IEnumerable<DiscoveredTopic> Interleave(List<List<DiscoveredTopic>> perQuery)
+    {
+        var max = perQuery.Count == 0 ? 0 : perQuery.Max(list => list.Count);
+        for (var i = 0; i < max; i++)
         {
-            return [];
+            foreach (var list in perQuery)
+            {
+                if (i < list.Count)
+                    yield return list[i];
+            }
         }
     }
 
-    private static readonly JsonSerializerOptions JsonDefaults = new()
+    private static SerperNewsResponse? TryParse(string json)
     {
-        PropertyNameCaseInsensitive = true
-    };
+        try
+        {
+            return JsonSerializer.Deserialize<SerperNewsResponse>(json, JsonDefaults.CaseInsensitive);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 }
 
 internal sealed class SerperNewsResponse
 {
     public List<SerperNewsItem> News { get; set; } = [];
     public List<SerperNewsItem> Organic { get; set; } = [];
+
+    /// <summary>Créditos consumidos por la consulta (Serper los informa en la respuesta).</summary>
+    public int Credits { get; set; }
 }
 
 internal sealed class SerperNewsItem
 {
     public string? Title { get; set; }
-    public string? Link { get; set; }
     public string? Snippet { get; set; }
     public string? Source { get; set; }
 }

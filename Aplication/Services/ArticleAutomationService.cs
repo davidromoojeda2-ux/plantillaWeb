@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Aplication.DTOs;
 using Aplication.DTOs.Automation;
 using Aplication.Exceptions;
@@ -82,7 +83,7 @@ public sealed class ArticleAutomationService : IAutomationService
 
             try
             {
-                var topics = await _discovery.DiscoverAsync(new TopicDiscoveryRequest
+                var discovery = await _discovery.DiscoverAsync(new TopicDiscoveryRequest
                 {
                     Topics = settings.BaseTopics,
                     Country = settings.Country,
@@ -93,12 +94,14 @@ public sealed class ArticleAutomationService : IAutomationService
                     Recency = settings.SerperRecency,
                     SearchType = settings.SerperType,
                     Safe = settings.SerperSafe,
-                    Autocorrect = settings.SerperAutocorrect
+                    Autocorrect = settings.SerperAutocorrect,
+                    RoundRobin = settings.RoundRobinTopics
                 }, ct);
-                run.DiscoveredTopicsCount = topics.Count;
+                run.DiscoveredTopicsCount = discovery.Topics.Count;
+                run.SerperCredits += discovery.Credits;
 
                 var generated = 0;
-                foreach (var topic in topics)
+                foreach (var topic in discovery.Topics)
                 {
                     if (generated >= settings.MaxArticlesPerRun) break;
                     ct.ThrowIfCancellationRequested();
@@ -115,19 +118,23 @@ public sealed class ArticleAutomationService : IAutomationService
                         run.PendingDecisions.Add(new AutomationDecision
                         {
                             TopicTitle = topic.Title,
-                            Source = topic.Source,
-                            TopicHash = hash
+                            Source = topic.Source
                         });
                         continue;
                     }
 
                     try
                     {
-                        var info = await GenerateAndCreateAsync(topic, settings, null, ct);
+                        var (info, pendingDecision, totalTokens) = await GenerateAndCreateAsync(topic, settings, null, ct);
+                        AccumulateUsage(run, totalTokens);
                         if (info is not null)
                         {
                             run.GeneratedArticles.Add(info);
                             generated++;
+                        }
+                        else if (pendingDecision is not null)
+                        {
+                            run.PendingDecisions.Add(pendingDecision);
                         }
                     }
                     catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -173,10 +180,10 @@ public sealed class ArticleAutomationService : IAutomationService
         var settings = await GetSettingsAsync(ct);
         var pending = await _state.GetPendingDecisionsAsync();
         var runs = await _state.GetRunsAsync(0, 1);
+        var (totalTokens, totalCredits, runCount) = await _state.GetUsageTotalsAsync();
 
         return new AutomationStatusDto
         {
-            Enabled = settings.Enabled,
             Paused = settings.Paused,
             IsRunning = _coordinator.IsBusy,
             AutoPublish = settings.AutoPublish,
@@ -185,14 +192,18 @@ public sealed class ArticleAutomationService : IAutomationService
             LastRun = runs.FirstOrDefault() is { } r
                 ? new AutomationRunSummary
                 {
-                    Id = r.Id,
                     Status = r.Status.ToString(),
                     Trigger = r.Trigger.ToString(),
-                    StartedAt = r.StartedAt,
-                    DiscoveredTopicsCount = r.DiscoveredTopicsCount,
-                    GeneratedCount = r.GeneratedArticles.Count
+                    GeneratedCount = r.GeneratedArticles.Count,
+                    TotalTokens = r.TotalTokens
                 }
-                : null
+                : null,
+            Usage = new UsageTotalsDto
+            {
+                TotalTokens = totalTokens,
+                TotalCredits = totalCredits,
+                RunCount = runCount
+            }
         };
     }
 
@@ -217,7 +228,8 @@ public sealed class ArticleAutomationService : IAutomationService
             DecisionId = i.Decision.Id,
             TopicTitle = i.Decision.TopicTitle,
             Source = i.Decision.Source,
-            CreatedAt = i.Decision.CreatedAt
+            Kind = i.Decision.Kind,
+            ValidationErrors = i.Decision.ValidationErrors
         }).ToList();
     }
 
@@ -232,18 +244,43 @@ public sealed class ArticleAutomationService : IAutomationService
         if (continueCreating)
         {
             var settings = await GetSettingsAsync(ct);
-            var topic = new DiscoveredTopic { Title = decision.TopicTitle, Source = decision.Source };
-            var info = await GenerateAndCreateAsync(topic, settings, scheduledAt, ct);
-            if (info is not null)
+
+            if (decision.Kind == AutomationDecisionKind.Validacion)
             {
+                if (string.IsNullOrWhiteSpace(decision.DraftJson))
+                    throw new InvalidOperationException("La decisión no contiene el artículo generado.");
+
+                var draft = JsonSerializer.Deserialize<GeneratedArticle>(decision.DraftJson)
+                    ?? throw new InvalidOperationException("No se pudo recuperar el artículo generado.");
+
+                var info = await CreateArticleAsync(draft, settings, scheduledAt);
+                if (info is null)
+                    throw new InvalidOperationException("No se pudo guardar el artículo pendiente (el título no genera un slug válido).");
+
                 run.GeneratedArticles.Add(info);
-                await _state.UpdateRunAsync(run);
+            }
+            else
+            {
+                var topic = new DiscoveredTopic { Title = decision.TopicTitle, Source = decision.Source };
+                var (info, pendingDecision, totalTokens) = await GenerateAndCreateAsync(topic, settings, scheduledAt, ct);
+                AccumulateUsage(run, totalTokens);
+
+                if (info is not null)
+                    run.GeneratedArticles.Add(info);
+                else if (pendingDecision is not null)
+                    run.PendingDecisions.Add(pendingDecision);
             }
         }
 
-        await _state.ResolveDecisionAsync(
-            runId, decisionId,
-            continueCreating ? AutomationDecisionStatus.Continuado : AutomationDecisionStatus.Omitido);
+        decision.Status = continueCreating
+            ? AutomationDecisionStatus.Continuado
+            : AutomationDecisionStatus.Omitido;
+
+        // El borrador ya no es necesario una vez resuelta la decisión.
+        if (decision.Kind == AutomationDecisionKind.Validacion)
+            decision.DraftJson = null;
+
+        await _state.UpdateRunAsync(run);
     }
 
     public Task<int> PublishScheduledAsync(DateTime now, CancellationToken ct = default) =>
@@ -272,24 +309,94 @@ public sealed class ArticleAutomationService : IAutomationService
         return candidate.ToUniversalTime();
     }
 
-    private async Task<GeneratedArticleInfo?> GenerateAndCreateAsync(
+    private static void AccumulateUsage(AutomationRun run, int? totalTokens)
+    {
+        if (totalTokens is null) return;
+
+        run.TotalTokens += totalTokens.Value;
+    }
+
+    private async Task<(GeneratedArticleInfo? Info, AutomationDecision? PendingDecision, int? TotalTokens)> GenerateAndCreateAsync(
         DiscoveredTopic topic, AutomationSettings settings, DateTime? scheduledAt, CancellationToken ct)
     {
-        var generated = await _ai.GenerateAsync(new TopicGenerationRequest
+        var plan = ArticleGenerationPlanner.FromSettings(settings);
+        var (generated, validationErrors, totalTokens) = await GenerateWithValidationAsync(topic, settings, plan, ct);
+
+        if (validationErrors.Count > 0)
         {
-            TopicTitle = topic.Title,
-            Snippet = topic.Snippet,
-            Source = topic.Source,
-            Language = settings.Language,
-            MaxTokens = settings.MaxTokensPerArticle,
-            ApiKey = settings.AiApiKey,
-            BaseUrl = settings.AiBaseUrl,
-            Model = settings.AiModel
-        }, ct);
+            return (null, new AutomationDecision
+            {
+                TopicTitle = topic.Title,
+                Source = topic.Source,
+                Kind = AutomationDecisionKind.Validacion,
+                ValidationErrors = validationErrors.ToList(),
+                DraftJson = JsonSerializer.Serialize(generated)
+            }, totalTokens);
+        }
 
-        if (string.IsNullOrWhiteSpace(generated.Title) || generated.Blocks.Count == 0)
-            return null;
+        var info = await CreateArticleAsync(generated, settings, scheduledAt);
+        return (info, null, totalTokens);
+    }
 
+    /// <summary>
+    /// Genera el artículo y lo valida contra el plan efectivo. Si no cumple, reintenta
+    /// enviando los errores como indicaciones de corrección hasta el máximo configurado.
+    /// Si se agotan los intentos, devuelve el último artículo y sus incumplimientos para
+    /// que el usuario decida si desea guardarlo de todos modos.
+    /// </summary>
+    private async Task<(GeneratedArticle Generated, IReadOnlyList<string> Errors, int TotalTokens)> GenerateWithValidationAsync(
+        DiscoveredTopic topic, AutomationSettings settings, ArticleGenerationPlan plan, CancellationToken ct)
+    {
+        var totalTokens = 0;
+        string? correctionHint = null;
+
+        for (var attempt = 1; ; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var generated = await _ai.GenerateAsync(new TopicGenerationRequest
+            {
+                TopicTitle = topic.Title,
+                Snippet = topic.Snippet,
+                Source = topic.Source,
+                Language = settings.Language,
+                TargetWords = plan.TargetWords,
+                MaxTokens = plan.MaxTokens,
+                Template = plan.Template,
+                Tone = plan.Tone,
+                MinBlocks = plan.MinBlocks,
+                MaxBlocks = plan.MaxBlocks,
+                IncludeList = plan.IncludeList,
+                IncludeTable = plan.IncludeTable,
+                IncludeQuote = plan.IncludeQuote,
+                IncludeConclusion = plan.IncludeConclusion,
+                Temperature = plan.Temperature,
+                CorrectionHint = correctionHint,
+                ApiKey = settings.AiApiKey,
+                BaseUrl = settings.AiBaseUrl,
+                Model = settings.AiModel
+            }, ct);
+
+            if (generated.TotalTokens is not null)
+                totalTokens += generated.TotalTokens.Value;
+
+            var validation = GeneratedArticleValidator.Validate(generated, plan);
+            if (validation.IsValid) return (generated, [], totalTokens);
+
+            correctionHint = validation.ToCorrectionHint();
+
+            if (attempt >= plan.MaxGenerationAttempts)
+                return (generated, validation.Errors, totalTokens);
+
+            _logger.LogWarning(
+                "El artículo generado para '{Topic}' no cumple la estructura (intento {Attempt}/{Attempts}): {Errors}",
+                topic.Title, attempt, plan.MaxGenerationAttempts, string.Join(" | ", validation.Errors));
+        }
+    }
+
+    private async Task<GeneratedArticleInfo?> CreateArticleAsync(
+        GeneratedArticle generated, AutomationSettings settings, DateTime? scheduledAt)
+    {
         var slug = SlugGenerator.Slugify(generated.Title);
         if (string.IsNullOrEmpty(slug)) return null;
 

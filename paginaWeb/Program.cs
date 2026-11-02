@@ -3,6 +3,7 @@ using Aplication.Interfaces;
 using Aplication.Services;
 using Infrastructure.Ai;
 using Infrastructure.Auth;
+using Infrastructure.Balances;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
@@ -59,6 +60,7 @@ builder.Services.AddScoped<ImageService>();
 // ─── Automatización: Serper + IA ─────────────────────────────────────────────
 builder.Services.AddHttpClient<ITopicDiscoveryService, SerperTopicDiscoveryService>();
 builder.Services.AddHttpClient<IAiArticleGenerator, OpenAiCompatibleArticleGenerator>();
+builder.Services.AddHttpClient<IProviderBalanceService, ProviderBalanceService>();
 
 // ─── Worker de automatización (embebido, a prueba de fallos) ─────────────────
 builder.Services.AddHostedService<ArticleAutomationWorker>();

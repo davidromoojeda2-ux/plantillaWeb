@@ -1380,16 +1380,37 @@
             field.focus();
 
             if (command === 'createLink') {
-                const url = window.prompt('URL del enlace (https://, mailto: o ruta interna):', 'https://');
-                if (!url) return;
-                if (!isSafeHref(url)) {
-                    this.notify('El enlace debe usar http, https, mailto o una ruta interna.');
-                    return;
-                }
-                document.execCommand('createLink', false, url);
-            } else {
-                document.execCommand(command, false, null);
+                const selection = document.getSelection();
+                const savedRange = selection && selection.rangeCount > 0
+                    ? selection.getRangeAt(0).cloneRange()
+                    : null;
+
+                const applyLink = (url) => {
+                    if (!url) return;
+                    if (!isSafeHref(url)) {
+                        this.notify('El enlace debe usar http, https, mailto o una ruta interna.');
+                        return;
+                    }
+
+                    field.focus();
+                    if (savedRange) {
+                        const activeSelection = document.getSelection();
+                        activeSelection.removeAllRanges();
+                        activeSelection.addRange(savedRange);
+                    }
+
+                    document.execCommand('createLink', false, url);
+                    this.updateFormatState(field);
+                    this.sync();
+                    if (showBubble) this.showInlineToolbar(field);
+                };
+
+                const message = 'URL del enlace (https://, mailto: o ruta interna):';
+                window.appPrompt(message, 'https://').then(applyLink);
+                return;
             }
+
+            document.execCommand(command, false, null);
 
             this.updateFormatState(field);
             this.sync();

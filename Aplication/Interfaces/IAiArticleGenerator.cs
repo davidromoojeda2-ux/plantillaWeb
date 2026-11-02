@@ -11,6 +11,28 @@ public sealed class TopicGenerationRequest
     public string Language { get; set; } = "es";
     public int MaxTokens { get; set; } = 2000;
 
+    /// <summary>Cantidad de palabras deseada para el artículo (se usa en el prompt).</summary>
+    public int TargetWords { get; set; } = 1000;
+
+    /// <summary>Plantilla de estructura: "news", "informative", "analysis" o "guide".</summary>
+    public string Template { get; set; } = "news";
+
+    /// <summary>Tono editorial: "informativo", "analitico" o "cronica".</summary>
+    public string Tone { get; set; } = "informativo";
+
+    public int MinBlocks { get; set; } = 5;
+    public int MaxBlocks { get; set; } = 10;
+    public bool IncludeList { get; set; } = true;
+    public bool IncludeTable { get; set; }
+    public bool IncludeQuote { get; set; }
+    public bool IncludeConclusion { get; set; } = true;
+
+    /// <summary>Temperatura del modelo (0.0–1.0).</summary>
+    public double Temperature { get; set; } = 0.5;
+
+    /// <summary>Indicaciones de corrección cuando el intento anterior no cumplió la estructura.</summary>
+    public string? CorrectionHint { get; set; }
+
     /// <summary>Clave del proveedor de IA, provista por el orquestador.</summary>
     public string ApiKey { get; set; } = string.Empty;
 

@@ -27,10 +27,13 @@ public sealed class TopicDiscoveryRequest
 
     /// <summary>Activar autocorrección.</summary>
     public bool Autocorrect { get; set; } = true;
+
+    /// <summary>Reparte los candidatos entre las temáticas base (round-robin) en lugar de concatenar.</summary>
+    public bool RoundRobin { get; set; } = true;
 }
 
 /// <summary>Descubre temáticas candidatas a partir de un proveedor de búsqueda.</summary>
 public interface ITopicDiscoveryService
 {
-    Task<List<DiscoveredTopic>> DiscoverAsync(TopicDiscoveryRequest request, CancellationToken ct = default);
+    Task<DiscoveryResult> DiscoverAsync(TopicDiscoveryRequest request, CancellationToken ct = default);
 }

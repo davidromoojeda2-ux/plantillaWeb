@@ -26,6 +26,13 @@ public enum AutomationDecisionStatus
     Omitido
 }
 
+/// <summary>Motivo de una decisión pendiente: título repetido o artículo fuera de estándar.</summary>
+public enum AutomationDecisionKind
+{
+    Duplicado,
+    Validacion
+}
+
 /// <summary>
 /// Registro de una ejecución del pipeline de automatización (descubrir → generar → publicar).
 /// </summary>
@@ -44,6 +51,12 @@ public class AutomationRun
 
     /// <summary>Total de temáticas descubiertas en la corrida.</summary>
     public int DiscoveredTopicsCount { get; set; }
+
+    /// <summary>Créditos de Serper consumidos en la corrida.</summary>
+    public int SerperCredits { get; set; }
+
+    /// <summary>Tokens totales consumidos por la IA en la corrida.</summary>
+    public int TotalTokens { get; set; }
 
     /// <summary>Artículos creados durante la corrida.</summary>
     public List<GeneratedArticleInfo> GeneratedArticles { get; set; } = [];
@@ -67,7 +80,7 @@ public class GeneratedArticleInfo
     public string ArticleId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
 
-    /// <summary>"Publicado" o "Borrador".</summary>
+    /// <summary>"Publicado", "Programado" o "Borrador".</summary>
     public string Status { get; set; } = string.Empty;
 }
 
@@ -78,7 +91,12 @@ public class AutomationDecision
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string TopicTitle { get; set; } = string.Empty;
     public string? Source { get; set; }
-    public string TopicHash { get; set; } = string.Empty;
     public AutomationDecisionStatus Status { get; set; } = AutomationDecisionStatus.Pendiente;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public AutomationDecisionKind Kind { get; set; } = AutomationDecisionKind.Duplicado;
+
+    /// <summary>Incumplimientos detectados por el validador (solo para decisiones de validación).</summary>
+    public List<string> ValidationErrors { get; set; } = [];
+
+    /// <summary>Artículo generado pendiente de confirmación, serializado como JSON.</summary>
+    public string? DraftJson { get; set; }
 }

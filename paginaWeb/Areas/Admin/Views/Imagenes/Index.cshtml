@@ -1,4 +1,4 @@
-@model paginaWeb.Areas.Admin.Models.ImageLibraryViewModel
+﻿@model paginaWeb.Areas.Admin.Models.ImageLibraryViewModel
 @{
     ViewData["Title"] = "Biblioteca de Imágenes";
 }
@@ -28,7 +28,7 @@
     }
 
     <!-- ─── Estado del Servicio de Almacenamiento (S3 Prioritario vs Local) ───── -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-3.5">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center @(Model.StorageStatus.IsS3Available ? "bg-indigo-50 text-indigo-600" : "bg-amber-50 text-amber-600")">
@@ -79,7 +79,7 @@
     </div>
 
     <!-- ─── Subida de Nuevas Imágenes con Verificación de Nombre ──────────────── -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h3 class="font-bold text-slate-800 text-base">Subir y Optimizar Nueva Imagen</h3>
@@ -165,7 +165,7 @@
     </div>
 
     <!-- ─── Filtros y Búsqueda de la Biblioteca ──────────────────────────────── -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5">
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <form method="get" asp-area="Admin" asp-controller="Imagenes" asp-action="Index" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
             <div class="lg:col-span-4">
                 <div class="relative">
@@ -206,8 +206,8 @@
     </div>
 
     <!-- ─── Galería de la Biblioteca de Imágenes ─────────────────────────────── -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
-        <div class="flex items-center justify-between mb-6">
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
+        <div class="flex items-center justify-between mb-5">
             <div>
                 <h3 class="font-bold text-slate-800 text-lg">Catálogo Multimedia</h3>
                 <p class="text-xs text-slate-400">Total encontrado: @Model.TotalCount imágenes</p>
@@ -239,7 +239,7 @@
                     var maxUrl = maxVariant?.PublicUrl ?? previewUrl;
                     var isCloud = img.Storage.Equals("r2", StringComparison.OrdinalIgnoreCase) || img.Storage.Equals("s3", StringComparison.OrdinalIgnoreCase);
 
-                    <div class="group rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 flex flex-col justify-between hover:shadow-lg transition duration-200">
+                    <div class="group rounded-2xl border border-slate-200/80 overflow-hidden bg-slate-50 flex flex-col justify-between hover:shadow-lg transition duration-200">
                         <div>
                             <!-- Miniatura con badges -->
                             <div class="aspect-video w-full overflow-hidden bg-slate-200 relative cursor-pointer" onclick="openDetailsModal('@img.Id')">
@@ -628,7 +628,7 @@
 
     function copyToClipboard(url) {
         navigator.clipboard.writeText(url).then(() => {
-            alert('URL copiada al portapapeles:\n' + url);
+            window.showToast('URL copiada al portapapeles', 'success');
         }).catch(err => {
             console.error('Error al copiar:', err);
         });

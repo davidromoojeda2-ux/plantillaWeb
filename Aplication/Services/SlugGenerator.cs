@@ -17,7 +17,7 @@ public static class SlugGenerator
     }
 
     /// <summary>Normaliza un título (minúsculas, sin acentos) para comparación.</summary>
-    public static string Normalize(string? text) =>
+    private static string Normalize(string? text) =>
         RemoveDiacritics(text ?? string.Empty).ToLowerInvariant();
 
     /// <summary>Calcula un hash estable del título normalizado.</summary>

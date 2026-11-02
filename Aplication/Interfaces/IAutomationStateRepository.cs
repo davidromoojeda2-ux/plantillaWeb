@@ -17,5 +17,6 @@ public interface IAutomationStateRepository
 
     Task<List<(AutomationRun Run, AutomationDecision Decision)>> GetPendingDecisionsAsync();
 
-    Task ResolveDecisionAsync(string runId, string decisionId, AutomationDecisionStatus status);
+    /// <summary>Totales acumulados de tokens y créditos de Serper.</summary>
+    Task<(long TotalTokens, long TotalCredits, long RunCount)> GetUsageTotalsAsync();
 }

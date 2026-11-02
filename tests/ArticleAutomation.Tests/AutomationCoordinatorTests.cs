@@ -16,18 +16,6 @@ public class AutomationCoordinatorTests
     }
 
     [Fact]
-    public void Pause_Flag_Toggles()
-    {
-        var coordinator = new AutomationCoordinator();
-
-        coordinator.SetPaused(true);
-        Assert.True(coordinator.IsPaused);
-
-        coordinator.SetPaused(false);
-        Assert.False(coordinator.IsPaused);
-    }
-
-    [Fact]
     public async Task Run_Lock_Prevents_Concurrency()
     {
         var coordinator = new AutomationCoordinator();

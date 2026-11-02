@@ -1,4 +1,4 @@
-@model List<CommentResponseDto>
+﻿@model List<CommentResponseDto>
 @{
     ViewData["Title"] = "Moderación de Comentarios";
     var estado = (string)ViewBag.Estado;
@@ -22,7 +22,7 @@
     </div>
 
     <!-- Lista de comentarios -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden">
         @if (!Model.Any())
         {
             <div class="p-12 text-center text-slate-400">
@@ -77,13 +77,14 @@
                                 <form method="post" asp-area="Admin" asp-controller="Comentarios" asp-action="Reject" asp-route-id="@c.Id">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="returnEstado" value="@estado" />
-                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-xs transition">
+                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition">
                                         ✕ Rechazar
                                     </button>
                                 </form>
                             }
 
-                            <form method="post" asp-area="Admin" asp-controller="Comentarios" asp-action="Delete" asp-route-id="@c.Id" onsubmit="return confirm('¿Eliminar definitivamente este comentario?');">
+                            <form method="post" asp-area="Admin" asp-controller="Comentarios" asp-action="Delete" asp-route-id="@c.Id"
+                                  data-confirm="¿Eliminar definitivamente este comentario?" data-confirm-type="danger">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="returnEstado" value="@estado" />
                                 <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Eliminar">

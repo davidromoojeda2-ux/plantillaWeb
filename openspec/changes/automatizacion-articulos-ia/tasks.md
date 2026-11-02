@@ -70,6 +70,36 @@
 - [x] 9.8 Añadir barra de estado del proceso (rojo en curso → verde finalizado) con polling al endpoint `/admin/automatizacion/estado`.
 - [x] 9.9 Añadir parámetros configurables de Serper (tipo de búsqueda, antigüedad/tbs, resultados por consulta, búsqueda segura y autocorrección).
 - [x] 9.10 Corregir "Omitir/Continuar": reemplazar el operador posicional no soportado (`PendingDecisions[-1]`) por carga y reemplazo del documento de corrida.
+- [x] 9.11 Reemplazar el límite de tokens por longitud en palabras (desplegable: 500–3000) con estimación interna de tokens y longitud indicada en el prompt.
+- [x] 9.12 Implementar reparto round-robin configurable entre temáticas base (checkbox en configuración) y alternar con el modo secuencial.
+- [x] 9.13 Registrar y mostrar el consumo: créditos de Serper (campo `credits` de la respuesta) y tokens de IA (`usage`) por corrida, con panel de totales y última corrida.
+- [x] 9.14 Permitir configurar la frecuencia en horas + minutos (además de activar/desactivar la generación).
+- [x] 9.15 Añadir panel de saldo disponible: Serper (`GET /account`) y DeepSeek (`GET /user/balance`), con botón de actualización.
+- [x] 9.16 Sistema global de toasts (`window.showToast`) en el layout admin, con los mensajes de TempData (éxito/error) como toasts.
+- [x] 9.17 Corregir el botón "Actualizar" del saldo (sin caché + estado "Actualizando…").
+- [x] 9.18 Dividir la configuración en secciones/cards independientes (Claves, Serper, IA, Publicación, General, Categorías).
+- [x] 9.19 Mover el bloque de consumo/saldo a la parte superior, compacto y dinámico (uso cada 3 s; saldo cada 60 s y botón).
+- [x] 9.20 Unificar la paleta con colores sólidos (base azul/amarillo + verde/rojo) en panel, botones, badges y toasts; sin pasteles ni degradados.
+- [x] 9.21 Aumentar el timeout de la IA a 180 s (el de 30 s cortaba generaciones largas) y mostrar un mensaje claro ante `finish_reason=length`.
+- [x] 9.22 Verificar generación con "Búsqueda web": 6 temas → 3 artículos, 0 errores, usando un modelo no razonador (`deepseek-chat`); el modelo de razonamiento agotaba el presupuesto en tokens de razonamiento.
+- [x] 9.23 Añadir presupuesto de tokens configurable en la configuración ("Máx. tokens/artículo", 0 = automático según la longitud) y aviso sobre modelos de razonamiento.
+- [x] 9.24 Mejorar los mensajes de error de IA con diagnóstico (finish_reason, tokens de salida y razonamiento) y sugerencia de solución.
+- [x] 9.25 Reemplazar los diálogos nativos del navegador (`confirm`, `alert` y `prompt`) por un modal global con el estilo del proyecto (colores sólidos, tarjeta redondeada, iconos y botones del panel).
+- [x] 9.26 Auditar y eliminar código muerto/repetido: exportación de diálogo sin uso, fallback nativo obsoleto, mapeo `Paused` sin uso, helper de presets sin uso, guardas inalcanzables y opciones JSON duplicadas.
+
+## 10. Generación avanzada y calidad del artículo
+
+- [x] 10.1 Añadir al dominio la configuración avanzada: plantilla, tono, bloques mín/máx, secciones requeridas, temperatura, intentos con corrección y tolerancia de palabras.
+- [x] 10.2 Construir el prompt con plantilla, tono, rango de bloques, secciones requeridas y longitud objetivo, y aplicar la temperatura configurada.
+- [x] 10.3 Crear el validador de artículos generados (extensión con tolerancia, bloques, jerarquía de encabezados, secciones requeridas, metadatos y etiquetas).
+- [x] 10.4 Reintentar la generación hasta el número de intentos configurado enviando los errores de validación como indicaciones de corrección, acumulando tokens.
+- [x] 10.5 Exponer la sección "Generación avanzada" en la configuración y mapear los campos de ida y vuelta.
+- [x] 10.6 Actualizar las pruebas del orquestador y añadir pruebas del validador.
+- [x] 10.7 Verificar una generación real con la estructura avanzada (10 bloques, lista y conclusión, extensión dentro de tolerancia).
+- [x] 10.8 Añadir la plantilla "Informativa" (explicativa) a las opciones de generación y a su descripción de prompt.
+- [x] 10.9 Calcular estándares automáticos por longitud (tokens, bloques y tolerancia) y aplicarlos salvo que el usuario desactive el ajuste.
+- [x] 10.10 Mostrar la configuración avanzada al activar un control de alternancia, recordando su estado.
+- [x] 10.11 Cuando el artículo no cumple los estándares tras los intentos, dejarlo pendiente de confirmación con los errores y permitir guardarlo de todos modos o descartarlo.
 
 ## Workflow follow-up
 

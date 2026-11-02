@@ -16,15 +16,18 @@ public class AutomationController : Controller
     private readonly IAutomationService _automation;
     private readonly AutomationCoordinator _coordinator;
     private readonly ICategoryService _categoryService;
+    private readonly IProviderBalanceService _balances;
 
     public AutomationController(
         IAutomationService automation,
         AutomationCoordinator coordinator,
-        ICategoryService categoryService)
+        ICategoryService categoryService,
+        IProviderBalanceService balances)
     {
         _automation = automation;
         _coordinator = coordinator;
         _categoryService = categoryService;
+        _balances = balances;
     }
 
     [HttpGet("")]
@@ -52,7 +55,14 @@ public class AutomationController : Controller
     public async Task<IActionResult> Estado()
     {
         var status = await _automation.GetStatusAsync();
-        return Json(new { running = status.IsRunning, lastRun = status.LastRun });
+        return Json(new { running = status.IsRunning, lastRun = status.LastRun, usage = status.Usage });
+    }
+
+    [HttpGet("saldo")]
+    public async Task<IActionResult> Saldo()
+    {
+        var balances = await _balances.GetBalancesAsync();
+        return Json(balances);
     }
 
     [HttpPost("toggle-pausa")]
@@ -62,7 +72,6 @@ public class AutomationController : Controller
         var settings = await _automation.GetSettingsAsync();
         settings.Paused = !settings.Paused;
         await _automation.SaveSettingsAsync(settings);
-        _coordinator.SetPaused(settings.Paused);
 
         TempData["Success"] = settings.Paused
             ? "Automatización pausada. Las corridas programadas quedan detenidas."
@@ -132,7 +141,6 @@ public class AutomationController : Controller
 
         var settings = model.ToSettings(existing);
         await _automation.SaveSettingsAsync(settings);
-        _coordinator.SetPaused(settings.Paused);
 
         TempData["Success"] = exit ? "Configuración validada correctamente." : "Configuración guardada.";
         return exit ? RedirectToAction(nameof(Index)) : RedirectToAction(nameof(Configuracion));
@@ -172,12 +180,20 @@ public class AutomationController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResolveDecision(string runId, string decisionId, bool continuar, DateTime? scheduledAt = null)
     {
+        var run = await _automation.GetRunAsync(runId);
+        var kind = run?.PendingDecisions.FirstOrDefault(d => d.Id == decisionId)?.Kind;
+
         try
         {
             await _automation.ResolveDecisionAsync(runId, decisionId, continuar, scheduledAt);
+
             TempData["Success"] = continuar
-                ? "Artículo generado a partir de la temática."
-                : "Temática omitida.";
+                ? (kind == AutomationDecisionKind.Validacion
+                    ? "Artículo guardado aunque no cumplía los estándares."
+                    : "Artículo generado a partir de la temática.")
+                : (kind == AutomationDecisionKind.Validacion
+                    ? "Artículo fuera de estándar descartado."
+                    : "Temática omitida.");
         }
         catch (Exception ex)
         {

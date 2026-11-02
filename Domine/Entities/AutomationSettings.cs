@@ -40,8 +40,44 @@ public class AutomationSettings
     /// <summary>Máximo de artículos a generar por corrida.</summary>
     public int MaxArticlesPerRun { get; set; } = 5;
 
-    /// <summary>Máximo de tokens solicitados a la IA por artículo.</summary>
-    public int MaxTokensPerArticle { get; set; } = 8000;
+    /// <summary>Reparte los candidatos entre las temáticas base (round-robin) en lugar de concatenar.</summary>
+    public bool RoundRobinTopics { get; set; } = true;
+
+    /// <summary>Cantidad de palabras deseada para cada artículo generado.</summary>
+    public int TargetWords { get; set; } = 1000;
+
+    /// <summary>Presupuesto máximo de tokens por artículo. 0 = automático (según TargetWords).</summary>
+    public int MaxTokensPerArticle { get; set; } = 0;
+
+    // ─── Generación avanzada ──────────────────────────────────────────────
+    /// <summary>Si es true, los estándares (bloques, tokens y tolerancia) se derivan de TargetWords.</summary>
+    public bool AutoStandards { get; set; } = true;
+
+    /// <summary>Plantilla de estructura: "news", "informative", "analysis" o "guide".</summary>
+    public string ArticleTemplate { get; set; } = "news";
+
+    /// <summary>Tono editorial: "informativo", "analitico" o "cronica".</summary>
+    public string Tone { get; set; } = "informativo";
+
+    /// <summary>Número mínimo de bloques del artículo.</summary>
+    public int MinBlocks { get; set; } = 5;
+
+    /// <summary>Número máximo de bloques del artículo.</summary>
+    public int MaxBlocks { get; set; } = 10;
+
+    public bool IncludeList { get; set; } = true;
+    public bool IncludeTable { get; set; } = false;
+    public bool IncludeQuote { get; set; } = false;
+    public bool IncludeConclusion { get; set; } = true;
+
+    /// <summary>Temperatura del modelo (0.0–1.0); menor = más estable.</summary>
+    public double Temperature { get; set; } = 0.5;
+
+    /// <summary>Intentos de generación con corrección si no cumple la estructura.</summary>
+    public int MaxGenerationAttempts { get; set; } = 2;
+
+    /// <summary>Tolerancia de palabras sobre la longitud pedida (porcentaje).</summary>
+    public int WordTolerancePercent { get; set; } = 20;
 
     /// <summary>Clave de Serper (api.serper.dev).</summary>
     public string SerperApiKey { get; set; } = string.Empty;

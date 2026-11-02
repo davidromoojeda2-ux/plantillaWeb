@@ -31,7 +31,8 @@ public class OpenAiCompatibleArticleGeneratorTests
         var content = JsonSerializer.Serialize(article);
         var chat = JsonSerializer.Serialize(new
         {
-            choices = new[] { new { message = new { content } } }
+            choices = new[] { new { message = new { content } } },
+            usage = new { prompt_tokens = 120, completion_tokens = 30, total_tokens = 150 }
         });
 
         var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
@@ -61,5 +62,7 @@ public class OpenAiCompatibleArticleGeneratorTests
         Assert.IsType<ContentHeadingBlockDto>(result.Blocks[0]);
         Assert.IsType<ContentParagraphBlockDto>(result.Blocks[1]);
         Assert.IsType<ContentBulletListBlockDto>(result.Blocks[2]);
+        Assert.NotNull(result.TotalTokens);
+        Assert.Equal(150, result.TotalTokens);
     }
 }

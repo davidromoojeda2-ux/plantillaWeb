@@ -1,6 +1,7 @@
 using Aplication.Interfaces;
 using Domine.Entities;
 using Infrastructure.Persistence;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Infrastructure.Repositories;
@@ -67,15 +68,25 @@ public class AutomationStateRepository : IAutomationStateRepository
         return result;
     }
 
-    public async Task ResolveDecisionAsync(string runId, string decisionId, AutomationDecisionStatus status)
+    public async Task<(long TotalTokens, long TotalCredits, long RunCount)> GetUsageTotalsAsync()
     {
-        // Se carga y reemplaza el documento completo para evitar el operador posicional
-        // (no soportado con índices negativos en el driver actual).
-        var run = await _runs.Find(r => r.Id == runId).FirstOrDefaultAsync();
-        var decision = run?.PendingDecisions.FirstOrDefault(d => d.Id == decisionId);
-        if (run is null || decision is null) return;
+        var pipeline = new[]
+        {
+            new BsonDocument("$group", new BsonDocument
+            {
+                { "_id", BsonNull.Value },
+                { "tokens", new BsonDocument("$sum", "$TotalTokens") },
+                { "credits", new BsonDocument("$sum", "$SerperCredits") },
+                { "runs", new BsonDocument("$sum", 1) }
+            })
+        };
 
-        decision.Status = status;
-        await _runs.ReplaceOneAsync(r => r.Id == runId, run);
+        var result = await _runs.Aggregate<BsonDocument>(pipeline).FirstOrDefaultAsync();
+        if (result is null) return (0, 0, 0);
+
+        return (
+            result.GetValue("tokens", 0).ToInt64(),
+            result.GetValue("credits", 0).ToInt64(),
+            result.GetValue("runs", 0).ToInt64());
     }
 }

@@ -104,29 +104,7 @@
             </div>
         </header>
 
-        <!-- Alertas de TempData -->
-        <div class="p-6 pb-0 space-y-3">
-            @if (TempData["Success"] != null)
-            {
-                <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-between gap-3 shadow-xs">
-                    <div class="flex items-center gap-3">
-                        <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span class="text-sm font-medium">@TempData["Success"]</span>
-                    </div>
-                    <button type="button" onclick="this.closest('div.p-4').remove()" class="text-emerald-700 hover:text-emerald-900 text-base leading-none p-1 font-bold rounded" aria-label="Cerrar notificación">✕</button>
-                </div>
-            }
-            @if (TempData["Error"] != null)
-            {
-                <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between gap-3 shadow-xs">
-                    <div class="flex items-center gap-3">
-                        <svg class="w-5 h-5 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        <span class="text-sm font-medium">@TempData["Error"]</span>
-                    </div>
-                    <button type="button" onclick="this.closest('div.p-4').remove()" class="text-rose-700 hover:text-rose-900 text-base leading-none p-1 font-bold rounded" aria-label="Cerrar alerta">✕</button>
-                </div>
-            }
-        </div>
+        <!-- Los mensajes de TempData se muestran como toasts globales (ver script al final). -->
 
         <!-- Contenido principal -->
         <div class="p-6 flex-1">
@@ -134,9 +112,109 @@
         </div>
     </main>
 
+    <!-- ─── Toasts globales ─────────────────────────────────────────────────── -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-[60] flex flex-col gap-2 w-full max-w-sm pointer-events-none"></div>
+
+    <!-- ─── Diálogo global (confirmar / avisar / pedir valor) ──────────────── -->
+    <div id="appDialog" class="fixed inset-0 z-[80] hidden" role="dialog" aria-modal="true"
+         aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage">
+        <div class="absolute inset-0 bg-slate-900/60" data-dialog-backdrop></div>
+        <div class="relative flex min-h-full items-center justify-center p-4">
+            <div class="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div class="flex items-start gap-4 p-6">
+                    <div id="appDialogIcon" class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#00296B] text-white">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h3 id="appDialogTitle" class="text-lg font-bold text-slate-800">Confirmar</h3>
+                        <p id="appDialogMessage" class="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600"></p>
+                    </div>
+                </div>
+
+                <div id="appDialogInputWrap" class="hidden px-6 pb-5">
+                    <label for="appDialogInput" class="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Valor</label>
+                    <input id="appDialogInput" type="text" autocomplete="off"
+                           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[#00509D] focus:outline-none focus:ring-2 focus:ring-[#00509D]/20" />
+                    <p id="appDialogInputError" class="mt-1 hidden text-xs font-semibold text-red-600"></p>
+                </div>
+
+                <div class="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
+                    <button type="button" id="appDialogCancel"
+                            class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                        Cancelar
+                    </button>
+                    <button type="button" id="appDialogAccept"
+                            class="inline-flex items-center justify-center rounded-xl bg-[#00296B] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#003F88] focus:outline-none focus:ring-2 focus:ring-[#00509D] focus:ring-offset-2">
+                        Aceptar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var container = document.getElementById('toastContainer');
+
+            window.showToast = function (message, type) {
+                if (!container || !message) return;
+                type = type || 'info';
+
+                var colors = {
+                    success: 'bg-green-600 text-white border-green-700',
+                    error: 'bg-red-600 text-white border-red-700',
+                    info: 'bg-[#00509D] text-white border-[#003F88]'
+                };
+                var icons = { success: '✓', error: '✕', info: 'ℹ' };
+
+                var toast = document.createElement('div');
+                toast.className = 'pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg text-sm font-medium transition-all duration-300 ' + (colors[type] || colors.info);
+
+                var icon = document.createElement('span');
+                icon.className = 'font-bold';
+                icon.textContent = icons[type] || icons.info;
+
+                var text = document.createElement('span');
+                text.className = 'flex-1';
+                text.textContent = message;
+
+                var close = document.createElement('button');
+                close.type = 'button';
+                close.className = 'opacity-60 hover:opacity-100';
+                close.setAttribute('aria-label', 'Cerrar');
+                close.textContent = '✕';
+
+                var timer;
+                function remove() {
+                    clearTimeout(timer);
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(12px)';
+                    setTimeout(function () { toast.remove(); }, 200);
+                }
+                close.addEventListener('click', remove);
+
+                toast.append(icon, text, close);
+                container.appendChild(toast);
+                timer = setTimeout(remove, 6000);
+            };
+
+            @if (TempData["Success"] != null)
+            {
+                <text>window.showToast(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Success"]?.ToString())), 'success');</text>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <text>window.showToast(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Error"]?.ToString())), 'error');</text>
+            }
+        })();
+    </script>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/js/app-dialogs.js" asp-append-version="true"></script>
     <script src="~/js/admin-tooltips.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

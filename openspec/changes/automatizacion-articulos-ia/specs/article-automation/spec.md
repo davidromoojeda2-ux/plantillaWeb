@@ -46,7 +46,7 @@ El sistema MUST detectar las temáticas candidatas que ya fueron procesadas o qu
 
 ### Requirement: Generación de artículos estructurados con IA
 
-El sistema SHALL generar, para cada temática aceptada, un artículo completo (título, resumen, bloques de contenido, etiquetas, metadatos SEO y categoría sugerida) mediante una IA con salida estructurada en el contrato de bloques del portal.
+El sistema SHALL generar, para cada temática aceptada, un artículo completo (título, resumen, bloques, etiquetas, SEO y categoría) mediante una IA con salida estructurada en el contrato de bloques del portal, respetando la plantilla, el tono y la estructura configurados. Si no cumple los estándares tras los intentos, MUST dejarlo pendiente de confirmación.
 
 #### Scenario: Generación válida
 
@@ -56,11 +56,45 @@ El sistema SHALL generar, para cada temática aceptada, un artículo completo (t
 #### Scenario: Generación inválida o incompleta
 
 - **WHEN** la IA responde con una estructura inválida o incompleta
-- **THEN** el sistema rechaza el artículo y registra el error sin publicarlo
+- **THEN** el sistema la valida antes de persistirla y, si no cumple, solicita una corrección indicando los errores detectados
+
+#### Scenario: Reintento correctivo
+
+- **WHEN** el artículo generado no cumple la extensión, el rango de bloques, la jerarquía de encabezados o las secciones requeridas
+- **THEN** el sistema reintenta la generación hasta el número de intentos configurado, enviando los errores como indicaciones de corrección
+
+#### Scenario: Confirmación de artículo fuera de estándar
+
+- **WHEN** el artículo sigue sin cumplir los estándares después de los intentos configurados
+- **THEN** el sistema lo deja pendiente de confirmación, muestra los incumplimientos y permite guardarlo de todos modos o descartarlo
+
+### Requirement: Configuración avanzada de generación
+
+El sistema SHALL permitir configurar y persistir la plantilla, el tono, los bloques mínimo/máximo, las secciones requeridas, la temperatura, los intentos y la tolerancia de palabras. La configuración avanzada MUST mostrarse al activar un control de alternancia. Los estándares automáticos por longitud (tokens, bloques y tolerancia) MUST aplicarse salvo que el usuario los desactive.
+
+#### Scenario: Ajuste de estructura y tono
+
+- **WHEN** un administrador cambia la plantilla, el tono o las secciones requeridas
+- **THEN** la siguiente generación aplica esos cambios al prompt y a la validación
+
+#### Scenario: Estándares automáticos según la longitud
+
+- **WHEN** un administrador selecciona una longitud de artículo
+- **THEN** el sistema ajusta automáticamente el presupuesto de tokens, el rango de bloques y la tolerancia de palabras recomendados para esa longitud
+
+#### Scenario: Configuración avanzada bajo demanda
+
+- **WHEN** un administrador activa el control de configuración avanzada
+- **THEN** se muestran los controles de plantilla, tono, bloques, temperatura, intentos y tolerancia
+
+#### Scenario: Validación de extensión y bloques
+
+- **WHEN** un administrador define la longitud del artículo y su tolerancia
+- **THEN** el sistema acepta únicamente artículos dentro del margen y del rango de bloques configurados, salvo que el usuario confirme guardarlos fuera de estándar
 
 ### Requirement: Sanitización y validación del contenido generado
 
-El contenido generado por la IA MUST pasar por el sanitizador y el validador del portal antes de persistirse, y el contenido que no cumpla las reglas MUST rechazarse o quedar en borrador según la configuración.
+El contenido generado por la IA MUST pasar por el sanitizador y el validador del portal antes de persistirse, y el contenido que no cumpla las reglas MUST quedar pendiente de confirmación o rechazarse según la configuración.
 
 #### Scenario: Contenido con HTML no permitido
 
@@ -70,7 +104,7 @@ El contenido generado por la IA MUST pasar por el sanitizador y el validador del
 #### Scenario: Contenido fuera de límites
 
 - **WHEN** el contenido no cumple los límites de bloques o de longitud establecidos
-- **THEN** el sistema rechaza el artículo con un error de validación
+- **THEN** el sistema lo deja pendiente de confirmación con los incumplimientos detectados para que el usuario decida
 
 ### Requirement: Publicación con control de estado
 

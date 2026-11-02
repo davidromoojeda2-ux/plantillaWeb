@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = "Dashboard";
     var recentArticles = (List<ArticleResponseDto>?)ViewBag.RecentArticles ?? new();
     var pendingComments = (List<CommentResponseDto>?)ViewBag.PendingComments ?? new();
@@ -17,12 +17,12 @@
 <div class="space-y-8">
     <!-- ─── Métricas Principales ─────────────────────────────────────────────── -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 flex items-center justify-between">
             <div>
                 <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Artículos Totales</p>
                 <h3 class="text-3xl font-bold text-slate-800 mt-1">@ViewBag.TotalArticles</h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-[#003F88] flex items-center justify-center">
+            <div class="text-slate-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-.586-1.414l-4.5-4.5A2 2 0 0015.5 3H5" />
@@ -30,12 +30,12 @@
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 flex items-center justify-between">
             <div>
                 <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Categorías</p>
                 <h3 class="text-3xl font-bold text-slate-800 mt-1">@ViewBag.TotalCategories</h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div class="text-slate-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -43,12 +43,12 @@
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 flex items-center justify-between">
             <div>
                 <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Comentarios Pendientes</p>
                 <h3 class="text-3xl font-bold text-slate-800 mt-1">@ViewBag.PendingCommentsCount</h3>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <div class="text-slate-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -56,13 +56,13 @@
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 flex items-center justify-between">
             <div>
                 <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Acción Rápida</p>
                 <a asp-area="Admin" asp-controller="Imagenes" asp-action="Index"
                    class="text-sm font-semibold text-[#00509D] hover:underline mt-1 block">Subir Imágenes →</a>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div class="text-slate-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -74,7 +74,7 @@
     <!-- ─── Contenido Reciente y Moderación ───────────────────────────────────── -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Últimas Noticias -->
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
             <div class="flex items-center justify-between mb-5">
                 <h3 class="font-bold text-slate-800 text-lg">Últimas Publicaciones</h3>
                 <a asp-area="Admin" asp-controller="Articulos" asp-action="Index"
@@ -143,7 +143,7 @@
         </div>
 
         <!-- Comentarios Pendientes -->
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
             <div class="flex items-center justify-between mb-5">
                 <h3 class="font-bold text-slate-800 text-lg">Comentarios Pendientes</h3>
                 <a asp-area="Admin" asp-controller="Comentarios" asp-action="Index"

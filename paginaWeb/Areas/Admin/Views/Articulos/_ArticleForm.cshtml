@@ -1,4 +1,4 @@
-@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
+﻿@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
 @inject IOptions<ContentSecurityOptions> ContentSecurity
 @{
     var isEdit = ViewData["IsEdit"] as bool? == true;
@@ -21,11 +21,8 @@
     @if (isEdit && Model.Featured)
     {
         <!-- ─── Indicador Hero Principal ──────────────────────────────────── -->
-        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/70 border border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-start gap-3.5">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FDC500] to-amber-500 text-[#00296B] flex items-center justify-center font-bold text-xl shadow-xs flex-shrink-0">
-                    ★
-                </div>
                 <div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-bold text-sm text-amber-950">Artículo Destacado en el Hero Principal</span>
@@ -144,16 +141,16 @@
                     <label for="FeaturedCheckbox" id="featuredCardWrapper"
                            data-featured-count="@heroCount"
                            data-initial-featured="@initialFeatured.ToString().ToLowerInvariant()"
-                           class="relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer @(Model.Featured ? "bg-amber-50/70 border-amber-300 shadow-2xs" : "bg-slate-50/60 border-slate-200 hover:border-slate-300")">
+                           class="relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer @(Model.Featured ? "bg-slate-50 border-[#00296B]/30 border-l-4 border-l-[#00296B]" : "bg-slate-50/60 border-slate-200 hover:border-slate-300")">
                         <div class="pt-0.5">
                             <input asp-for="Featured" id="FeaturedCheckbox" type="checkbox"
-                                   class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-300 cursor-pointer"
+                                   class="w-4 h-4 rounded text-[#00296B] focus:ring-[#00296B] border-slate-300 cursor-pointer"
                                    onchange="toggleFeaturedStyling(this)" />
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-1.5">
                                 <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                    <span class="text-amber-500 font-bold">★</span> Destacar en portada
+                                    Destacar en portada
                                     <button type="button" class="cms-tooltip-icon cms-tooltip-icon--amber"
                                             data-tooltip="Muestra esta noticia en el carrusel principal de la portada. Requiere imagen asignada (límite de 3 artículos)."
                                             data-tooltip-position="top"

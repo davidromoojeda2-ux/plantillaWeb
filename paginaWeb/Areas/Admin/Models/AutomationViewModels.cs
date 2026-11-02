@@ -17,12 +17,28 @@ public class AutomationConfigViewModel
 {
     public bool Enabled { get; set; } = true;
     public bool AutoPublish { get; set; }
-    public bool Paused { get; set; }
-    public int FrequencyMinutes { get; set; } = 360;
+    public int FrequencyHours { get; set; } = 6;
+    public int FrequencyMinutePart { get; set; } = 0;
+    public bool RoundRobinTopics { get; set; } = true;
     public string Country { get; set; } = "us";
     public string Language { get; set; } = "es";
     public int MaxArticlesPerRun { get; set; } = 5;
-    public int MaxTokensPerArticle { get; set; } = 8000;
+    public int TargetWords { get; set; } = 1000;
+    public int MaxTokensPerArticle { get; set; } = 0;
+
+    // Generación avanzada
+    public bool AutoStandards { get; set; } = true;
+    public string ArticleTemplate { get; set; } = "news";
+    public string Tone { get; set; } = "informativo";
+    public int MinBlocks { get; set; } = 5;
+    public int MaxBlocks { get; set; } = 10;
+    public bool IncludeList { get; set; } = true;
+    public bool IncludeTable { get; set; }
+    public bool IncludeQuote { get; set; }
+    public bool IncludeConclusion { get; set; } = true;
+    public double Temperature { get; set; } = 0.5;
+    public int MaxGenerationAttempts { get; set; } = 2;
+    public int WordTolerancePercent { get; set; } = 20;
     public string BaseTopicsText { get; set; } = string.Empty;
     public List<string> CategoryIds { get; set; } = [];
 
@@ -52,65 +68,109 @@ public class AutomationConfigViewModel
     public List<CategoryResponseDto> Categories { get; set; } = [];
 
     public static AutomationConfigViewModel FromSettings(
-        AutomationSettings s, List<CategoryResponseDto> categories) => new()
+        AutomationSettings s, List<CategoryResponseDto> categories)
     {
-        Enabled = s.Enabled,
-        AutoPublish = s.AutoPublish,
-        Paused = s.Paused,
-        FrequencyMinutes = s.FrequencyMinutes,
-        Country = s.Country,
-        Language = s.Language,
-        MaxArticlesPerRun = s.MaxArticlesPerRun,
-        MaxTokensPerArticle = s.MaxTokensPerArticle,
-        BaseTopicsText = string.Join(Environment.NewLine, s.BaseTopics),
-        CategoryIds = s.CategoryIds,
-        HasSerperKey = !string.IsNullOrWhiteSpace(s.SerperApiKey),
-        HasAiKey = !string.IsNullOrWhiteSpace(s.AiApiKey),
-        SerperType = s.SerperType,
-        SerperRecency = s.SerperRecency,
-        SerperNum = s.SerperNum,
-        SerperSafe = s.SerperSafe,
-        SerperAutocorrect = s.SerperAutocorrect,
-        AiProvider = s.AiProvider,
-        AiBaseUrl = s.AiBaseUrl,
-        AiModel = s.AiModel,
-        ScheduleEnabled = s.ScheduleEnabled,
-        PublishHour = s.PublishHour,
-        PublishMinute = s.PublishMinute,
-        Categories = categories
-    };
+        var standard = s.AutoStandards ? ArticleGenerationStandards.ForWords(s.TargetWords) : null;
 
-    public AutomationSettings ToSettings(AutomationSettings existing) => new()
+        return new AutomationConfigViewModel
+        {
+            Enabled = s.Enabled,
+            AutoPublish = s.AutoPublish,
+            FrequencyHours = s.FrequencyMinutes / 60,
+            FrequencyMinutePart = s.FrequencyMinutes % 60,
+            RoundRobinTopics = s.RoundRobinTopics,
+            Country = s.Country,
+            Language = s.Language,
+            MaxArticlesPerRun = s.MaxArticlesPerRun,
+            TargetWords = s.TargetWords,
+            MaxTokensPerArticle = standard?.MaxTokens ?? s.MaxTokensPerArticle,
+            AutoStandards = s.AutoStandards,
+            ArticleTemplate = s.ArticleTemplate,
+            Tone = s.Tone,
+            MinBlocks = standard?.MinBlocks ?? s.MinBlocks,
+            MaxBlocks = standard?.MaxBlocks ?? s.MaxBlocks,
+            IncludeList = s.IncludeList,
+            IncludeTable = s.IncludeTable,
+            IncludeQuote = s.IncludeQuote,
+            IncludeConclusion = s.IncludeConclusion,
+            Temperature = s.Temperature,
+            MaxGenerationAttempts = s.MaxGenerationAttempts,
+            WordTolerancePercent = standard?.WordTolerancePercent ?? s.WordTolerancePercent,
+            BaseTopicsText = string.Join(Environment.NewLine, s.BaseTopics),
+            CategoryIds = s.CategoryIds,
+            HasSerperKey = !string.IsNullOrWhiteSpace(s.SerperApiKey),
+            HasAiKey = !string.IsNullOrWhiteSpace(s.AiApiKey),
+            SerperType = s.SerperType,
+            SerperRecency = s.SerperRecency,
+            SerperNum = s.SerperNum,
+            SerperSafe = s.SerperSafe,
+            SerperAutocorrect = s.SerperAutocorrect,
+            AiProvider = s.AiProvider,
+            AiBaseUrl = s.AiBaseUrl,
+            AiModel = s.AiModel,
+            ScheduleEnabled = s.ScheduleEnabled,
+            PublishHour = s.PublishHour,
+            PublishMinute = s.PublishMinute,
+            Categories = categories
+        };
+    }
+
+    public AutomationSettings ToSettings(AutomationSettings existing)
     {
-        Id = existing.Id,
-        Enabled = Enabled,
-        AutoPublish = AutoPublish,
-        Paused = Paused,
-        FrequencyMinutes = Math.Max(1, FrequencyMinutes),
-        Country = string.IsNullOrWhiteSpace(Country) ? "us" : Country.Trim(),
-        Language = string.IsNullOrWhiteSpace(Language) ? "es" : Language.Trim(),
-        MaxArticlesPerRun = Math.Max(1, MaxArticlesPerRun),
-        MaxTokensPerArticle = Math.Max(256, MaxTokensPerArticle),
-        BaseTopics = (BaseTopicsText ?? string.Empty)
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToList(),
-        CategoryIds = CategoryIds ?? [],
+        var targetWords = Math.Clamp(TargetWords, 100, 5000);
+        var standard = AutoStandards ? ArticleGenerationStandards.ForWords(targetWords) : null;
+        var minBlocks = standard?.MinBlocks ?? Math.Clamp(MinBlocks, 3, 20);
+        var maxBlocks = standard?.MaxBlocks ?? Math.Clamp(MaxBlocks, minBlocks, 30);
+        var maxTokens = standard?.MaxTokens
+            ?? (MaxTokensPerArticle <= 0 ? 0 : Math.Clamp(MaxTokensPerArticle, 256, 100000));
+        var tolerance = standard?.WordTolerancePercent ?? Math.Clamp(WordTolerancePercent, 0, 60);
 
-        SerperApiKey = string.IsNullOrWhiteSpace(SerperApiKey) ? existing.SerperApiKey : SerperApiKey.Trim(),
-        SerperType = string.IsNullOrWhiteSpace(SerperType) ? "news" : SerperType.Trim(),
-        SerperRecency = SerperRecency ?? string.Empty,
-        SerperNum = Math.Clamp(SerperNum, 1, 100),
-        SerperSafe = string.IsNullOrWhiteSpace(SerperSafe) ? "off" : SerperSafe.Trim(),
-        SerperAutocorrect = SerperAutocorrect,
-        AiApiKey = string.IsNullOrWhiteSpace(AiApiKey) ? existing.AiApiKey : AiApiKey.Trim(),
-        AiProvider = string.IsNullOrWhiteSpace(AiProvider) ? "openai" : AiProvider.Trim(),
-        AiBaseUrl = string.IsNullOrWhiteSpace(AiBaseUrl) ? existing.AiBaseUrl : AiBaseUrl.Trim(),
-        AiModel = string.IsNullOrWhiteSpace(AiModel) ? existing.AiModel : AiModel.Trim(),
+        return new AutomationSettings
+        {
+            Id = existing.Id,
+            Enabled = Enabled,
+            AutoPublish = AutoPublish,
+            Paused = existing.Paused,
+            FrequencyMinutes = Math.Max(1, FrequencyHours * 60 + FrequencyMinutePart),
+            RoundRobinTopics = RoundRobinTopics,
+            Country = string.IsNullOrWhiteSpace(Country) ? "us" : Country.Trim(),
+            Language = string.IsNullOrWhiteSpace(Language) ? "es" : Language.Trim(),
+            MaxArticlesPerRun = Math.Max(1, MaxArticlesPerRun),
+            TargetWords = targetWords,
+            MaxTokensPerArticle = maxTokens,
+            AutoStandards = AutoStandards,
+            ArticleTemplate = string.IsNullOrWhiteSpace(ArticleTemplate) ? "news" : ArticleTemplate.Trim(),
+            Tone = string.IsNullOrWhiteSpace(Tone) ? "informativo" : Tone.Trim(),
+            MinBlocks = minBlocks,
+            MaxBlocks = maxBlocks,
+            IncludeList = IncludeList,
+            IncludeTable = IncludeTable,
+            IncludeQuote = IncludeQuote,
+            IncludeConclusion = IncludeConclusion,
+            Temperature = Math.Clamp(Temperature, 0.0, 1.5),
+            MaxGenerationAttempts = Math.Clamp(MaxGenerationAttempts, 1, 5),
+            WordTolerancePercent = tolerance,
+            BaseTopics = (BaseTopicsText ?? string.Empty)
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList(),
+            CategoryIds = CategoryIds ?? [],
 
-        ScheduleEnabled = ScheduleEnabled,
-        PublishHour = Math.Clamp(PublishHour, 0, 23),
-        PublishMinute = Math.Clamp(PublishMinute, 0, 59),
+            SerperApiKey = string.IsNullOrWhiteSpace(SerperApiKey) ? existing.SerperApiKey : SerperApiKey.Trim(),
+            SerperType = string.IsNullOrWhiteSpace(SerperType) ? "news" : SerperType.Trim(),
+            SerperRecency = SerperRecency ?? string.Empty,
+            SerperNum = Math.Clamp(SerperNum, 1, 100),
+            SerperSafe = string.IsNullOrWhiteSpace(SerperSafe) ? "off" : SerperSafe.Trim(),
+            SerperAutocorrect = SerperAutocorrect,
+            AiApiKey = string.IsNullOrWhiteSpace(AiApiKey) ? existing.AiApiKey : AiApiKey.Trim(),
+            AiProvider = string.IsNullOrWhiteSpace(AiProvider) ? "openai" : AiProvider.Trim(),
+            AiBaseUrl = string.IsNullOrWhiteSpace(AiBaseUrl) ? existing.AiBaseUrl : AiBaseUrl.Trim(),
+            AiModel = string.IsNullOrWhiteSpace(AiModel) ? existing.AiModel : AiModel.Trim(),
 
-        CreatedAt = existing.CreatedAt
-    };
+            ScheduleEnabled = ScheduleEnabled,
+            PublishHour = Math.Clamp(PublishHour, 0, 23),
+            PublishMinute = Math.Clamp(PublishMinute, 0, 59),
+
+            CreatedAt = existing.CreatedAt
+        };
+    }
 }

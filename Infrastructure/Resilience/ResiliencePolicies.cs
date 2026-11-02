@@ -8,7 +8,11 @@ namespace Infrastructure.Resilience;
 /// <summary>Factoría de pipelines de resiliencia compartidos para clientes HTTP externos.</summary>
 public static class ResiliencePolicies
 {
-    public static ResiliencePipeline CreateHttpPipeline() =>
+    /// <summary>
+    /// Crea un pipeline con reintentos, timeout y circuit breaker.
+    /// </summary>
+    /// <param name="timeout">Timeout por intento. Por defecto 30 s; la IA requiere más para generar.</param>
+    public static ResiliencePipeline CreateHttpPipeline(TimeSpan? timeout = null) =>
         new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
@@ -19,7 +23,7 @@ public static class ResiliencePolicies
             })
             .AddTimeout(new TimeoutStrategyOptions
             {
-                Timeout = TimeSpan.FromSeconds(30)
+                Timeout = timeout ?? TimeSpan.FromSeconds(30)
             })
             .AddCircuitBreaker(new CircuitBreakerStrategyOptions
             {

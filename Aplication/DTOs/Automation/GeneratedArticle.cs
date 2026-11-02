@@ -11,4 +11,7 @@ public sealed class GeneratedArticle
     public List<string> Tags { get; set; } = [];
     public string? CategorySuggestion { get; set; }
     public string MetaDescription { get; set; } = string.Empty;
+
+    /// <summary>Tokens totales consumidos por la generación (si el proveedor los informa).</summary>
+    public int? TotalTokens { get; set; }
 }

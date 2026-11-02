@@ -40,7 +40,6 @@ public sealed class ArticleAutomationWorker : BackgroundService
                 var manual = await _coordinator.WaitForSignalAsync(Tick, stoppingToken);
 
                 var settings = await ReadSettingsAsync(stoppingToken);
-                _coordinator.SetPaused(settings.Paused);
 
                 if (!settings.Enabled) continue;
 

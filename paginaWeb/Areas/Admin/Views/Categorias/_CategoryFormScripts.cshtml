@@ -1,4 +1,4 @@
-@model paginaWeb.Areas.Admin.Models.CategoryFormViewModel
+﻿@model paginaWeb.Areas.Admin.Models.CategoryFormViewModel
 @{
     var isEdit = ViewData["IsEdit"] as bool? == true;
 }
@@ -24,7 +24,7 @@
             const description = editMode
                 ? 'Se muestra como categoría raíz en la navegación.'
                 : 'Aparecerá en el nivel raíz de la navegación y portal.';
-            parentHelper.innerHTML = `<span class="text-[#00509D] font-bold">★ ${prefix}</span> ${description}`;
+            parentHelper.innerHTML = `<span class="text-[#00509D] font-bold">${prefix}</span> ${description}`;
             parentHelper.className = "mt-2 text-xs font-medium px-3 py-2 rounded-xl bg-blue-50/80 border border-blue-200 text-[#003F88]";
         }
     }

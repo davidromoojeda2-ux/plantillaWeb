@@ -16,7 +16,4 @@ public static class AiProviderPresets
         new("ollama", "Ollama (local)", "http://localhost:11434/v1", "llama3"),
         new("custom", "Personalizado", "", "")
     ];
-
-    public static AiProviderPreset? Find(string? key) =>
-        All.FirstOrDefault(p => string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
 }

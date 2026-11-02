@@ -37,7 +37,7 @@
                         <div class="min-w-0 pr-4">
                             <p class="font-medium text-slate-800 text-sm truncate">@a.Title</p>
                         </div>
-                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold @(a.Status == "Publicado" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200")">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold @(a.Status == "Publicado" ? "bg-green-600 text-white" : "bg-slate-600 text-white")">
                             @a.Status
                         </span>
                     </div>
@@ -58,8 +58,25 @@
                 @foreach (var d in Model.PendingDecisions)
                 {
                     <div class="py-3">
-                        <p class="text-sm text-slate-800">@d.TopicTitle</p>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="text-sm text-slate-800">@d.TopicTitle</p>
+                            @if (d.Kind == AutomationDecisionKind.Validacion)
+                            {
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                                    Fuera de estándar
+                                </span>
+                            }
+                        </div>
                         <p class="text-xs text-slate-400 mt-0.5">Estado: @d.Status</p>
+                        @if (d.ValidationErrors.Any())
+                        {
+                            <ul class="mt-2 space-y-1 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-700 list-disc list-inside">
+                                @foreach (var error in d.ValidationErrors)
+                                {
+                                    <li>@error</li>
+                                }
+                            </ul>
+                        }
                     </div>
                 }
             </div>
@@ -68,9 +85,9 @@
 
     @if (Model.Errors.Count > 0)
     {
-        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-6">
-            <h3 class="font-bold text-rose-800 text-lg mb-3">Errores</h3>
-            <ul class="list-disc list-inside text-sm text-rose-700 space-y-1">
+        <div class="bg-white border border-red-600 rounded-2xl p-6">
+            <h3 class="font-bold text-red-700 text-lg mb-3">Errores</h3>
+            <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
                 @foreach (var e in Model.Errors)
                 {
                     <li>@e</li>

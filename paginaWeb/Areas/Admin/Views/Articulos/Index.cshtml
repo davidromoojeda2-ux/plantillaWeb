@@ -20,10 +20,10 @@
 
 <div class="space-y-6">
     <!-- ─── Banner Informativo del Hero Principal ──────────────────────────────── -->
-    <div class="bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/60 rounded-2xl border border-amber-200/90 p-4 sm:p-5 shadow-xs">
+    <div class="bg-white rounded-2xl border border-amber-400 p-4 sm:p-5 shadow-xs">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-start gap-3.5">
-                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FDC500] to-amber-500 text-[#00296B] flex items-center justify-center font-bold text-xl shadow-xs flex-shrink-0">
+                <div class="w-11 h-11 rounded-xl bg-[#FDC500] text-[#00296B] flex items-center justify-center font-bold text-xl shadow-xs flex-shrink-0">
                     ★
                 </div>
                 <div>
@@ -170,7 +170,7 @@
                                             }
 
                                             <!-- Medalla de Estrella en la miniatura -->
-                                            <span class="hero-thumb-badge absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-[10px] font-black shadow-xs ring-2 ring-white @(art.Featured ? "" : "hidden")"
+                                            <span class="hero-thumb-badge absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#FDC500] text-[#00296B] flex items-center justify-center text-[10px] font-black shadow-xs ring-2 ring-white @(art.Featured ? "" : "hidden")"
                                                   title="Destacado en Hero">★</span>
                                         </div>
 
@@ -183,8 +183,7 @@
                                                     @art.Title
                                                 </a>
 
-                                                <!-- Badge HERO PRINCIPAL -->
-                                                <span class="hero-title-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-gradient-to-r from-amber-100 to-amber-200 text-amber-950 border border-amber-300 shadow-2xs @(art.Featured ? "" : "hidden")">
+                                                <span class="hero-title-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FDC500] text-[#00296B] shadow-2xs @(art.Featured ? "" : "hidden")">
                                                     ★ HERO PRINCIPAL
                                                 </span>
                                             </div>
@@ -253,7 +252,8 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </a>
                                         <form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="Delete" asp-route-id="@art.Id"
-                                              onsubmit="return confirm('¿Seguro que deseas eliminar este artículo? Esta acción no se puede deshacer.');" class="inline">
+                                              data-confirm="¿Seguro que deseas eliminar este artículo? Esta acción no se puede deshacer."
+                                              data-confirm-type="danger" class="inline">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition" title="Eliminar artículo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -276,9 +276,6 @@
         }
     </div>
 </div>
-
-<!-- Contenedor Flotante de Toasts de Notificación -->
-<div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
 @section Scripts {
 <script>
@@ -364,7 +361,7 @@
         if (!isCurrentlyFeatured) {
             const currentFeatured = document.querySelectorAll('.article-row[data-featured="true"]').length;
             if (currentFeatured >= 3) {
-                showToast('Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos. Desmarca uno antes de designar otro.', 'rose');
+                window.showToast('Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos. Desmarca uno antes de designar otro.', 'error');
                 return;
             }
         }
@@ -393,15 +390,15 @@
             if (data.success) {
                 const isNowFeatured = !!data.featured;
                 updateRowFeaturedState(row, btn, isNowFeatured);
-                showToast(isNowFeatured ? '★ Artículo fijado en Hero Principal' : 'Artículo removido de Hero', isNowFeatured ? 'amber' : 'slate');
+                window.showToast(isNowFeatured ? '★ Artículo fijado en Hero Principal' : 'Artículo removido de Hero', isNowFeatured ? 'success' : 'info');
                 recalculateHeroCounters(data.totalFeatured, data.activeFeatured);
                 if (currentFilter === 'hero') applyFilters();
             } else {
-                showToast(data.message || 'No se pudo actualizar el estado de Hero', 'rose');
+                window.showToast(data.message || 'No se pudo actualizar el estado de Hero', 'error');
             }
         } catch (err) {
             console.error('Error toggling hero:', err);
-            showToast('No se pudo actualizar el estado de Hero', 'rose');
+            window.showToast('No se pudo actualizar el estado de Hero', 'error');
         } finally {
             btn.disabled = false;
             btn.classList.remove('opacity-50');
@@ -474,27 +471,5 @@
         }
     }
 
-    function showToast(message, type) {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-        toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transition-all transform duration-300 opacity-0 translate-y-2 ${
-            type === 'amber' ? 'bg-amber-50 border-amber-300 text-amber-950' :
-            type === 'rose' ? 'bg-rose-50 border-rose-300 text-rose-900' :
-            'bg-slate-900 border-slate-800 text-white'
-        }`;
-        toast.innerHTML = `<span>${type === 'amber' ? '★' : '✓'}</span><span>${message}</span>`;
-        container.appendChild(toast);
-
-        setTimeout(() => {
-            toast.classList.remove('opacity-0', 'translate-y-2');
-        }, 10);
-
-        setTimeout(() => {
-            toast.classList.add('opacity-0', 'translate-y-2');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
 </script>
 }

@@ -1,26 +1,37 @@
-@model AutomationConfigViewModel
+﻿@model AutomationConfigViewModel
 @using Aplication.DTOs.Automation
 @{
     ViewData["Title"] = "Configuración de Automatización";
     var presetsJson = System.Text.Json.JsonSerializer.Serialize(
         AiProviderPresets.All.ToDictionary(p => p.Key, p => new { baseUrl = p.BaseUrl, model = p.DefaultModel }));
+    var standardsJson = System.Text.Json.JsonSerializer.Serialize(
+        ArticleLengthOptions.Words.ToDictionary(w => w, w =>
+        {
+            var s = ArticleGenerationStandards.ForWords(w);
+            return new
+            {
+                minBlocks = s.MinBlocks,
+                maxBlocks = s.MaxBlocks,
+                maxTokens = s.MaxTokens,
+                wordTolerancePercent = s.WordTolerancePercent
+            };
+        }));
     var rootCategories = Model.Categories.Where(c => c.ParentId is null).OrderBy(c => c.Order).ToList();
 }
 
-<div class="space-y-6 max-w-4xl">
+<div class="space-y-6 max-w-5xl">
     <form method="post" asp-area="Admin" asp-controller="Automation" asp-action="Configuracion"
-          class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-8">
+          class="space-y-6">
         @Html.AntiForgeryToken()
 
-        <!-- ─── Claves API ─────────────────────────────────────────────────── -->
-        <section>
+        <!-- ─── 1. Claves API ──────────────────────────────────────────────── -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 p-6">
             <h3 class="font-bold text-slate-800 text-lg mb-4">Claves de API</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <!-- Serper -->
                 <div>
                     <label asp-for="SerperApiKey" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Clave de Serper</label>
                     <div id="serperView" class="flex items-center gap-2 @(Model.HasSerperKey ? "" : "hidden")">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                             Configurada
                         </span>
@@ -31,11 +42,10 @@
                            placeholder="Ingresa la clave de Serper"
                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm @(Model.HasSerperKey ? "hidden" : "")" />
                 </div>
-                <!-- IA -->
                 <div>
                     <label asp-for="AiApiKey" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Clave de IA</label>
                     <div id="aiView" class="flex items-center gap-2 @(Model.HasAiKey ? "" : "hidden")">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                             Configurada
                         </span>
@@ -49,8 +59,8 @@
             </div>
         </section>
 
-        <!-- ─── Parámetros de Serper ───────────────────────────────────────── -->
-        <section>
+        <!-- ─── 2. Parámetros de Serper ────────────────────────────────────── -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 p-6">
             <h3 class="font-bold text-slate-800 text-lg mb-4">Parámetros de Serper</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div>
@@ -89,8 +99,8 @@
             <p class="text-xs text-slate-400 mt-2">La antigüedad filtra la información reciente; evita artículos con datos desactualizados.</p>
         </section>
 
-        <!-- ─── Proveedor de IA ────────────────────────────────────────────── -->
-        <section>
+        <!-- ─── 3. Proveedor de IA ─────────────────────────────────────────── -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 p-6">
             <h3 class="font-bold text-slate-800 text-lg mb-4">Proveedor de IA</h3>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div>
@@ -111,10 +121,11 @@
                     <input asp-for="AiModel" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono" />
                 </div>
             </div>
+            <p class="text-xs text-slate-400 mt-2">Para generar artículos usa un modelo sin razonamiento (p. ej. <code>deepseek-chat</code>). Los modelos de razonamiento consumen el presupuesto en razonamiento.</p>
         </section>
 
-        <!-- ─── Publicación y programación ─────────────────────────────────── -->
-        <section>
+        <!-- ─── 4. Publicación y programación ──────────────────────────────── -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 p-6">
             <h3 class="font-bold text-slate-800 text-lg mb-4">Publicación y programación</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <label class="flex items-center gap-3 text-sm text-slate-700">
@@ -142,8 +153,8 @@
             </div>
         </section>
 
-        <!-- ─── General ────────────────────────────────────────────────────── -->
-        <section>
+        <!-- ─── 5. General ─────────────────────────────────────────────────── -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 p-6">
             <h3 class="font-bold text-slate-800 text-lg mb-4">General</h3>
             <label class="flex items-center gap-3 text-sm text-slate-700 mb-4">
                 <input type="checkbox" asp-for="Enabled" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
@@ -152,18 +163,40 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div>
-                    <label asp-for="FrequencyMinutes" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Frecuencia (minutos)</label>
-                    <input asp-for="FrequencyMinutes" type="number" min="1" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Frecuencia</label>
+                    <div class="flex items-center gap-2">
+                        <input asp-for="FrequencyHours" type="number" min="0" max="168" class="w-20 px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                        <span class="text-xs text-slate-500">horas</span>
+                        <input asp-for="FrequencyMinutePart" type="number" min="0" max="59" class="w-20 px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                        <span class="text-xs text-slate-500">min</span>
+                    </div>
                 </div>
                 <div>
                     <label asp-for="MaxArticlesPerRun" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Máx. artículos/corrida</label>
                     <input asp-for="MaxArticlesPerRun" type="number" min="1" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
                 </div>
                 <div>
-                    <label asp-for="MaxTokensPerArticle" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Máx. tokens/artículo</label>
-                    <input asp-for="MaxTokensPerArticle" type="number" min="256" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                    <label asp-for="TargetWords" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Longitud del artículo</label>
+                    <select asp-for="TargetWords" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                        @foreach (var w in ArticleLengthOptions.Words)
+                        {
+                            <option value="@w" selected="@(Model.TargetWords == w)">@w palabras</option>
+                        }
+                    </select>
                 </div>
             </div>
+
+            <div class="mt-5 max-w-sm">
+                <label asp-for="MaxTokensPerArticle" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Máx. tokens/artículo</label>
+                <input asp-for="MaxTokensPerArticle" type="number" min="0" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                <p class="text-xs text-slate-400 mt-1">Se calcula automáticamente según la longitud. Desactiva "Ajustar automáticamente" en Generación avanzada para personalizarlo.</p>
+            </div>
+
+            <label class="flex items-center gap-3 text-sm text-slate-700 mt-4">
+                <input type="checkbox" asp-for="RoundRobinTopics" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                Repartir entre temáticas (round-robin)
+            </label>
+            <p class="text-xs text-slate-400 mt-1">Toma una noticia de cada temática base antes de repetir, en lugar de usar solo la primera.</p>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
                 <div>
@@ -193,8 +226,98 @@
             </div>
         </section>
 
-        <!-- ─── Categorías habilitadas ─────────────────────────────────────── -->
-        <section>
+        <!-- ─── 5b. Generación avanzada ────────────────────────────────────── -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 p-6">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg mb-1">Generación avanzada</h3>
+                    <p class="text-xs text-slate-400">Controla la estructura, el tono y el reintento correctivo para obtener artículos más organizados.</p>
+                </div>
+                <label class="inline-flex items-center gap-3 text-sm font-semibold text-[#00509D] cursor-pointer select-none">
+                    <input type="checkbox" id="advancedToggle" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                    Mostrar configuración avanzada
+                </label>
+            </div>
+
+            <div id="advancedFields" class="hidden mt-5 pt-5 border-t border-slate-100">
+                <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 mb-5 cursor-pointer">
+                    <input type="checkbox" asp-for="AutoStandards" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                    <span>
+                        <span class="block text-sm font-semibold text-slate-800">Ajustar automáticamente según la longitud</span>
+                        <span class="block text-xs text-slate-500 mt-0.5">Calcula los bloques, los tokens y la tolerancia según las palabras elegidas. Desactívalo para personalizarlos.</span>
+                    </span>
+                </label>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div>
+                        <label asp-for="ArticleTemplate" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Plantilla</label>
+                        <select asp-for="ArticleTemplate" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                            <option value="news" selected="@(Model.ArticleTemplate == "news")">Noticia</option>
+                            <option value="informative" selected="@(Model.ArticleTemplate == "informative")">Informativa</option>
+                            <option value="analysis" selected="@(Model.ArticleTemplate == "analysis")">Análisis</option>
+                            <option value="guide" selected="@(Model.ArticleTemplate == "guide")">Guía práctica</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label asp-for="Tone" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tono</label>
+                        <select asp-for="Tone" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                            <option value="informativo" selected="@(Model.Tone == "informativo")">Informativo</option>
+                            <option value="analitico" selected="@(Model.Tone == "analitico")">Analítico</option>
+                            <option value="cronica" selected="@(Model.Tone == "cronica")">Crónica</option>
+                            <option value="divulgativo" selected="@(Model.Tone == "divulgativo")">Divulgativo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label asp-for="MinBlocks" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Bloques mínimos</label>
+                        <input asp-for="MinBlocks" type="number" min="3" max="20" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                    </div>
+                    <div>
+                        <label asp-for="MaxBlocks" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Bloques máximos</label>
+                        <input asp-for="MaxBlocks" type="number" min="3" max="30" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-5">
+                    <div>
+                        <label asp-for="Temperature" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Temperatura (0.0–1.5)</label>
+                        <input asp-for="Temperature" type="number" step="0.1" min="0" max="1.5" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                        <p class="text-xs text-slate-400 mt-1">Más baja = estructura más estable.</p>
+                    </div>
+                    <div>
+                        <label asp-for="MaxGenerationAttempts" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Intentos con corrección</label>
+                        <input asp-for="MaxGenerationAttempts" type="number" min="1" max="5" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                        <p class="text-xs text-slate-400 mt-1">Si no cumple la estructura, se reintenta indicando los errores.</p>
+                    </div>
+                    <div>
+                        <label asp-for="WordTolerancePercent" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tolerancia de palabras (%)</label>
+                        <input asp-for="WordTolerancePercent" type="number" min="0" max="60" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
+                        <p class="text-xs text-slate-400 mt-1">Margen aceptado sobre la longitud pedida.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+                    <label class="flex items-center gap-3 text-sm text-slate-700">
+                        <input type="checkbox" asp-for="IncludeList" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                        Incluir lista
+                    </label>
+                    <label class="flex items-center gap-3 text-sm text-slate-700">
+                        <input type="checkbox" asp-for="IncludeTable" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                        Incluir tabla
+                    </label>
+                    <label class="flex items-center gap-3 text-sm text-slate-700">
+                        <input type="checkbox" asp-for="IncludeQuote" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                        Incluir cita
+                    </label>
+                    <label class="flex items-center gap-3 text-sm text-slate-700">
+                        <input type="checkbox" asp-for="IncludeConclusion" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                        Incluir conclusión
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── 6. Categorías habilitadas ──────────────────────────────────── -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 p-6">
             <h3 class="font-bold text-slate-800 text-lg mb-4">Categorías habilitadas</h3>
             @if (!Model.Categories.Any())
             {
@@ -217,7 +340,7 @@
             }
         </section>
 
-        <div class="pt-2 flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <button type="submit"
                     class="px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
                 Guardar configuración
@@ -231,7 +354,7 @@
     </form>
 
     <!-- ─── Crear categoría / subcategoría (inline) ───────────────────────── -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <h3 class="font-bold text-slate-800 text-lg mb-4">Crear categoría o subcategoría</h3>
         <form method="post" asp-area="Admin" asp-controller="Automation" asp-action="CrearCategoria"
               class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
@@ -287,6 +410,57 @@
                 scheduleToggle.addEventListener('change', syncSchedule);
                 syncSchedule();
             }
+
+            // Mostrar/ocultar la configuración avanzada (recordando el estado)
+            var advancedToggle = document.getElementById('advancedToggle');
+            var advancedFields = document.getElementById('advancedFields');
+            if (advancedToggle && advancedFields) {
+                try { advancedToggle.checked = localStorage.getItem('automationAdvanced') === '1'; } catch (e) { }
+                var syncAdvanced = function () {
+                    advancedFields.classList.toggle('hidden', !advancedToggle.checked);
+                    try { localStorage.setItem('automationAdvanced', advancedToggle.checked ? '1' : '0'); } catch (e) { }
+                };
+                advancedToggle.addEventListener('change', syncAdvanced);
+                syncAdvanced();
+            }
+
+            // Estándares automáticos según la longitud elegida
+            var standards = @Html.Raw(standardsJson);
+            var wordsSelect = document.getElementById('TargetWords');
+            var autoToggle = document.getElementById('AutoStandards');
+            var minBlocksInput = document.getElementById('MinBlocks');
+            var maxBlocksInput = document.getElementById('MaxBlocks');
+            var maxTokensInput = document.getElementById('MaxTokensPerArticle');
+            var toleranceInput = document.getElementById('WordTolerancePercent');
+
+            function applyAutoStandard() {
+                if (!autoToggle || !autoToggle.checked || !wordsSelect) return;
+
+                var standard = standards[wordsSelect.value];
+                if (!standard) return;
+
+                if (minBlocksInput) minBlocksInput.value = standard.minBlocks;
+                if (maxBlocksInput) maxBlocksInput.value = standard.maxBlocks;
+                if (maxTokensInput) maxTokensInput.value = standard.maxTokens;
+                if (toleranceInput) toleranceInput.value = standard.wordTolerancePercent;
+            }
+
+            function syncAutoStandardFields() {
+                var auto = !!(autoToggle && autoToggle.checked);
+
+                [minBlocksInput, maxBlocksInput, maxTokensInput, toleranceInput].forEach(function (el) {
+                    if (!el) return;
+                    el.readOnly = auto;
+                    el.classList.toggle('bg-slate-100', auto);
+                    el.classList.toggle('text-slate-500', auto);
+                });
+
+                applyAutoStandard();
+            }
+
+            if (wordsSelect) wordsSelect.addEventListener('change', applyAutoStandard);
+            if (autoToggle) autoToggle.addEventListener('change', syncAutoStandardFields);
+            syncAutoStandardFields();
 
             // Claves: mostrar/ocultar el campo al pulsar "Cambiar"
             document.querySelectorAll('[data-key-change]').forEach(function (btn) {

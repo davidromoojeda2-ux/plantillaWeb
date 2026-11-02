@@ -1,4 +1,4 @@
-@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
+﻿@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
 @{
     var isEdit = ViewData["IsEdit"] as bool? == true;
 }
@@ -105,7 +105,7 @@
                 window.updateCoverPreview(data.url);
             }
         } catch (err) {
-            alert('Error al subir portada: ' + err);
+            window.appAlert('Error al subir portada: ' + err, { title: 'No se pudo subir la portada', type: 'danger' });
         }
     });
 
@@ -154,13 +154,13 @@
         const wasInitiallyFeatured = card.getAttribute('data-initial-featured') === 'true';
 
         if (input.checked && !wasInitiallyFeatured && currentCount >= 3) {
-            alert('Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos destacados. Debes desmarcar uno existente antes de designar este.');
+            window.appAlert('Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos destacados. Debes desmarcar uno existente antes de designar este.', { title: 'Límite de destacados', type: 'warning' });
             input.checked = false;
             return;
         }
 
         if (input.checked) {
-            card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-amber-50/70 border-amber-300 shadow-2xs";
+            card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-slate-50 border-[#00296B]/30 border-l-4 border-l-[#00296B]";
         } else {
             card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-slate-50/60 border-slate-200 hover:border-slate-300";
         }
