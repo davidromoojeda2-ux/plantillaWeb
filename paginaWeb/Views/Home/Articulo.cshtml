@@ -16,9 +16,6 @@ ImageMapper.GetBestUrl(coverImage);
     var pageUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/articulos/{Model.Slug}";
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
-}
 
 <!-- ─── Barra de Progreso de Lectura ──────────────────────────────────────── -->
 <div id="readingProgress" class="fixed top-0 left-0 h-1.5 bg-[#FDC500] z-50 w-0 transition-all duration-75"></div>
