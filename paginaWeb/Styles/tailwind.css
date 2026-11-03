@@ -24,8 +24,10 @@
   --color-line:    #E2E5EA;
 
   /* Tipografía */
-  --font-heading: "Merriweather", Georgia, serif;
-  --font-body:    "Inter", system-ui, sans-serif;
+  --font-heading: "Inter", system-ui, -apple-system, sans-serif;
+  --font-body:    "Inter", system-ui, -apple-system, sans-serif;
+  --font-serif:   "Merriweather", Georgia, serif;
+  --font-reading: "Merriweather", Georgia, serif;
 
   /* Espaciado y radio */
   --radius-sm: 0.25rem;
@@ -57,9 +59,15 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
-    line-height: 1.25;
-    font-weight: 700;
+    line-height: 1.18;
+    font-weight: 800;
+    letter-spacing: -0.025em;
     color: var(--color-brand-900);
+  }
+
+  h1 {
+    font-weight: 900;
+    letter-spacing: -0.03em;
   }
 
   a {
@@ -194,6 +202,8 @@
 @layer utilities {
   .font-heading { font-family: var(--font-heading); }
   .font-body    { font-family: var(--font-body); }
+  .font-reading { font-family: var(--font-reading); }
+  .font-serif   { font-family: var(--font-serif); }
 
   .text-brand-900 { color: var(--color-brand-900); }
   .text-brand-700 { color: var(--color-brand-700); }
