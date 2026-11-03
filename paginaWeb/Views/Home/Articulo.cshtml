@@ -35,7 +35,8 @@ ImageMapper.GetBestUrl(coverImage);
     <!-- ─── Cabecera Editorial ──────────────────────────────────────────────── -->
     <header class="max-w-4xl mx-auto space-y-6 text-center">
         <!-- Breadcrumbs y Navegabilidad Rápida -->
-        <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200/80 pb-3">
+        <div
+            class="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200/80 pb-3">
             <div class="flex items-center gap-2 flex-wrap">
                 <a asp-controller="Home" asp-action="Index" class="hover:underline">Inicio</a>
                 <span>/</span>
@@ -59,12 +60,12 @@ ImageMapper.GetBestUrl(coverImage);
                 <div class="flex items-center gap-1.5 ml-auto">
                     @if (previousArticle != null)
                     {
-                        <a id="nav-prev-quick"
-                           asp-controller="Home" asp-action="Articulo" asp-route-slug="@previousArticle.Slug"
-                           title="Artículo anterior: @previousArticle.Title"
+                        <a id="nav-prev-quick" asp-controller="Home" asp-action="Articulo"
+                           asp-route-slug="@previousArticle.Slug" title="Artículo anterior: @previousArticle.Title"
                            aria-label="Artículo anterior: @previousArticle.Title"
                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-[#00296B] hover:text-[#FDC500] text-slate-600 transition-all text-xs font-bold shadow-2xs group">
-                            <svg class="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" fill="none"
+                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                             </svg>
                             <span class="hidden sm:inline">Anterior</span>
@@ -72,13 +73,12 @@ ImageMapper.GetBestUrl(coverImage);
                     }
                     @if (nextArticle != null)
                     {
-                        <a id="nav-next-quick"
-                           asp-controller="Home" asp-action="Articulo" asp-route-slug="@nextArticle.Slug"
-                           title="Artículo siguiente: @nextArticle.Title"
-                           aria-label="Artículo siguiente: @nextArticle.Title"
+                        <a id="nav-next-quick" asp-controller="Home" asp-action="Articulo" asp-route-slug="@nextArticle.Slug"
+                           title="Artículo siguiente: @nextArticle.Title" aria-label="Artículo siguiente: @nextArticle.Title"
                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-[#00296B] hover:text-[#FDC500] text-slate-600 transition-all text-xs font-bold shadow-2xs group">
                             <span class="hidden sm:inline">Siguiente</span>
-                            <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none"
+                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                         </a>
@@ -155,16 +155,16 @@ ImageMapper.GetBestUrl(coverImage);
     <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start pt-6">
         <!-- Columna Izquierda Adhesiva (Índice "En esta página") -->
         <aside
-            class="hidden lg:block lg:col-span-4 xl:col-span-3 sticky top-28 z-10 bg-[#00296B] text-white p-6 shadow-md space-y-4 border border-[#001D4A] rounded-xl">
+            class="hidden lg:block lg:col-span-4 xl:col-span-3 sticky top-28 z-10 bg-[#FDC500] text-[#00296B] p-6 shadow-md space-y-4 rounded-xl">
             <h4
-                class="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2 border-b border-white/20 pb-3">
-                <svg class="w-5 h-5 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="font-bold text-[#00296b] text-sm uppercase tracking-wider flex items-center gap-2 border-b border-[#00296b]/20 pb-3">
+                <svg class="w-5 h-5 text-[#00296b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
                 </svg>
                 En esta página
             </h4>
-            <nav id="tableOfContents" class="space-y-2 text-sm text-white/90">
-                <span class="text-white/75 italic">Cargando secciones...</span>
+            <nav id="tableOfContents" class="space-y-2 text-sm text-[#00296B]/90">
+                <span class="text-[#00296B]/75 italic">Cargando secciones...</span>
             </nav>
         </aside>
 

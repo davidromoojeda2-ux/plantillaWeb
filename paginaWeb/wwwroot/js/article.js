@@ -27,7 +27,7 @@
 
         var headings = body.querySelectorAll('h2, h3');
         if (headings.length === 0) {
-            toc.innerHTML = '<span class="text-white/70 italic text-sm">Lectura corrida continua</span>';
+            toc.innerHTML = '<span class="text-[#00296B]/75 italic text-sm">Lectura corrida continua</span>';
             return;
         }
 
@@ -44,7 +44,7 @@
             link.href = '#' + id;
             link.innerText = h.innerText;
             link.className = 'block py-1.5 transition text-sm leading-snug rounded-none ' +
-                (h.tagName === 'H3' ? 'pl-3 text-white/80 hover:text-white' : 'font-medium text-white hover:text-amber-100');
+                (h.tagName === 'H3' ? 'pl-3 text-[#00296B]/80 hover:text-[#00296B]' : 'font-medium text-[#00296B] hover:text-[#001D4A]');
 
             toc.appendChild(link);
         });
@@ -55,11 +55,11 @@
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
                     allLinks.forEach(function (l) {
-                        l.classList.remove('bg-black/15', 'px-2', '!font-bold', 'border-l-2', 'border-white');
+                        l.classList.remove('bg-black/10', 'px-2', '!font-bold', 'border-l-2', 'border-[#00296B]');
                     });
                     var activeLink = toc.querySelector('a[href="#' + entry.target.id + '"]');
                     if (activeLink) {
-                        activeLink.classList.add('bg-black/15', 'px-2', '!font-bold', 'border-l-2', 'border-white');
+                        activeLink.classList.add('bg-black/10', 'px-2', '!font-bold', 'border-l-2', 'border-[#00296B]');
                     }
                 }
             });
