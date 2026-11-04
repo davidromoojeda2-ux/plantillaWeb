@@ -7,11 +7,11 @@ using Infrastructure.Security;
 namespace Infrastructure.Persistence;
 
 /// <summary>
-/// Convierte HTML histórico en bloques tipados y sanitizados. Se usa para los datos
-/// de prueba (seed) y para migrar el campo legado <c>Content</c> de las páginas
+/// Convierte HTML histórico en bloques tipados y sanitizados. Se usa para inicializar
+/// la página de privacidad y para migrar el campo legado <c>Content</c> de las páginas
 /// informativas. La conversión es de mejor esfuerzo: cubre los elementos soportados.
 /// </summary>
-public static class SeedContentBlocks
+public static class LegacyContentBlocks
 {
     public static List<ContentBlock> FromHtml(string html)
     {
@@ -37,13 +37,10 @@ public static class SeedContentBlocks
                     break;
                 case IText text when !string.IsNullOrWhiteSpace(text.Data):
                     var plain = text.Data.Trim();
-                    if (plain.Length > 0)
+                    blocks.Add(new ContentParagraphBlock
                     {
-                        blocks.Add(new ContentParagraphBlock
-                        {
-                            Text = RichText.Create(sanitizer.Sanitize(plain), plain)
-                        });
-                    }
+                        Text = RichText.Create(sanitizer.Sanitize(plain), plain)
+                    });
                     break;
             }
         }
@@ -82,11 +79,11 @@ public static class SeedContentBlocks
                 return;
 
             case "figure":
-                AddFigure(element, blocks, sanitizer);
+                AddFigure(element, blocks);
                 return;
 
             case "img":
-                AddImage(element, null, blocks, sanitizer);
+                AddImage(element, null, blocks);
                 return;
 
             case "pre":
@@ -191,21 +188,19 @@ public static class SeedContentBlocks
 
     private static void AddFigure(
         IElement figure,
-        List<ContentBlock> blocks,
-        GanssHtmlSanitizer sanitizer)
+        List<ContentBlock> blocks)
     {
         var image = figure.QuerySelector("img");
         if (image is null) return;
 
         var caption = figure.QuerySelector("figcaption")?.TextContent.Trim();
-        AddImage(image, caption, blocks, sanitizer);
+        AddImage(image, caption, blocks);
     }
 
     private static void AddImage(
         IElement image,
         string? caption,
-        List<ContentBlock> blocks,
-        GanssHtmlSanitizer sanitizer)
+        List<ContentBlock> blocks)
     {
         var source = image.GetAttribute("src");
         if (string.IsNullOrWhiteSpace(source)) return;

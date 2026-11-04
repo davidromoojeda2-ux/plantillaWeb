@@ -3,10 +3,10 @@ using Infrastructure.Persistence;
 
 namespace ContenidoBloques.Tests;
 
-public class SeedContentBlocksTests
+public class LegacyContentBlocksTests
 {
     [Fact]
-    public void FromHtml_ConvertsAllSeedBlockShapes()
+    public void FromHtml_ConvertsAllLegacyBlockShapes()
     {
         const string html = """
         <h2>Encabezado</h2>
@@ -31,7 +31,7 @@ public class SeedContentBlocksTests
         <hr>
         """;
 
-        var blocks = SeedContentBlocks.FromHtml(html);
+        var blocks = LegacyContentBlocks.FromHtml(html);
 
         Assert.Collection(
             blocks,

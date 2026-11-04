@@ -1,4 +1,3 @@
-using Infrastructure.Persistence;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -159,15 +158,12 @@ public static class MongoDbIndexer
                 Title = "Política de Privacidad y Cookies",
                 Slug = "politica-de-privacidad",
                 Subtitle = "Cómo recopilamos, usamos y protegemos tus datos personales al visitar nuestro portal.",
-                Blocks = SeedContentBlocks.FromHtml("<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>"),
+                Blocks = LegacyContentBlocks.FromHtml("<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>"),
                 Order = 1,
                 ShowInFooter = true
             };
             await context.Pages.InsertOneAsync(privacidad);
         }
-
-        // ─── Siembra de Artículos de Prueba (Mínimo 10 completos de temas variados) ───
-        await SeedArticlesData.SeedAsync(context);
 
         // ─── Auto-vincular artículos huérfanos sin categoría (CategoryId == null) ───
         await EnsureOrphanArticlesLinkedAsync(context);
@@ -206,7 +202,7 @@ public static class MongoDbIndexer
             if (page.Blocks.Count == 0)
             {
                 var html = document["Content"].IsString ? document["Content"].AsString : string.Empty;
-                var blocks = SeedContentBlocks.FromHtml(html);
+                var blocks = LegacyContentBlocks.FromHtml(html);
 
                 if (blocks.Count > 0)
                 {
