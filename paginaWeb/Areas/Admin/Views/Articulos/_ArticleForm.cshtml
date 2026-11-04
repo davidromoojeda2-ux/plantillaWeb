@@ -377,5 +377,24 @@
     </div>
 </form>
 
+@if (isEdit)
+{
+    <form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="Reescribir" asp-route-id="@Model.Id"
+          class="mt-4 flex flex-wrap items-center gap-3"
+          data-confirm="¿Reescribir este artículo con IA? Se creará un nuevo borrador con la versión reescrita; el original no se modifica."
+          data-confirm-type="primary"
+          data-loading="Reescribiendo…">
+        @Html.AntiForgeryToken()
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reescribir con IA
+        </button>
+        <span class="text-xs text-slate-400">Genera un borrador nuevo con IA a partir de este artículo (no modifica el original).</span>
+    </form>
+}
+
 <partial name="_QuickCategoryModal" />
 <partial name="_MediaLibraryModal" model="Model" />

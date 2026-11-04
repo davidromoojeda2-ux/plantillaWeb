@@ -1,4 +1,5 @@
 using Aplication.DTOs;
+using Aplication.DTOs.Automation;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
@@ -21,6 +22,7 @@ public interface IArticleService
     Task IncrementViewCountAsync(string id);
     Task<List<ArticleResponseDto>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
     Task<List<ArticleResponseDto>> GetMostReadAsync(int take = 5);
+    Task<List<InternalLinkCandidate>> GetInternalLinkCandidatesAsync(string query, int take = 5);
     Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
     Task<(ArticleResponseDto? Previous, ArticleResponseDto? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt);
     Task<int> PublishScheduledAsync(DateTime now);
@@ -188,6 +190,33 @@ public class ArticleService : IArticleService
     {
         var items = await _repo.GetMostReadAsync(take);
         return ArticleMapper.ToDtoList(items);
+    }
+
+    /// <summary>
+    /// Devuelve hasta <paramref name="take"/> artículos publicados relacionados con la consulta
+    /// para ofrecer enlaces internos reales. Si la búsqueda no devuelve resultados, usa los recientes.
+    /// </summary>
+    public async Task<List<InternalLinkCandidate>> GetInternalLinkCandidatesAsync(string query, int take = 5)
+    {
+        try
+        {
+            var items = await _repo.SearchAsync(query, 0, take);
+            var candidates = items
+                .Where(a => !string.IsNullOrWhiteSpace(a.Slug))
+                .Select(a => new InternalLinkCandidate { Title = a.Title, Slug = a.Slug })
+                .ToList();
+            if (candidates.Count > 0) return candidates;
+        }
+        catch
+        {
+            // La búsqueda de texto puede no estar disponible; se usa el fallback.
+        }
+
+        var recent = await _repo.GetPublishedAsync(0, take);
+        return recent
+            .Where(a => !string.IsNullOrWhiteSpace(a.Slug))
+            .Select(a => new InternalLinkCandidate { Title = a.Title, Slug = a.Slug })
+            .ToList();
     }
 
     public async Task<(ArticleResponseDto? Previous, ArticleResponseDto? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt)

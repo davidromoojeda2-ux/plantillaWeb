@@ -6,18 +6,23 @@ Define el pipeline de automatización que descubre temáticas actuales mediante 
 
 ## ADDED Requirements
 
-### Requirement: Descubrimiento de temáticas mediante Serper
+### Requirement: Descubrimiento de temáticas mediante Serper (opcional)
 
-El sistema SHALL descubrir temáticas candidatas consultando Serper a partir de los temas base, el país y el idioma configurados dentro de una ventana temporal, y MUST devolver para cada temática un título y una referencia a la fuente.
+El sistema SHALL permitir elegir si descubre temáticas con Serper. Cuando el descubrimiento está activado, SHALL consultar Serper a partir de los temas base, el país y el idioma configurados dentro de una ventana temporal y MUST devolver los resultados para usarlos como keywords. Cuando está desactivado, MUST usar las temáticas base directamente como keywords principales.
 
-#### Scenario: Descubrimiento exitoso de temáticas
+#### Scenario: Descubrimiento activado con Serper
 
-- **WHEN** se ejecuta una corrida con temas base y configuración de país/idioma válidos
-- **THEN** el sistema obtiene una lista de temáticas candidatas desde Serper
+- **WHEN** un administrador activa "Descubrir con Serper" y ejecuta una corrida
+- **THEN** el sistema busca con Serper y usa los resultados obtenidos como keywords para generar los artículos
+
+#### Scenario: Descubrimiento desactivado
+
+- **WHEN** un administrador desactiva "Descubrir con Serper"
+- **THEN** el sistema omite Serper y usa las temáticas base directamente como keywords principales
 
 #### Scenario: Serper no disponible
 
-- **WHEN** Serper no responde o devuelve un error durante una corrida
+- **WHEN** el descubrimiento con Serper está activado y Serper no responde o devuelve un error durante una corrida
 - **THEN** el sistema registra el fallo y no genera artículos en esa corrida
 
 ### Requirement: Deduplicación con decisión del usuario
@@ -53,6 +58,16 @@ El sistema SHALL generar, para cada temática aceptada, un artículo completo (t
 - **WHEN** la IA responde con una estructura de artículo válida
 - **THEN** el sistema obtiene un borrador de artículo con bloques y metadatos listos para validar
 
+#### Scenario: Idioma de salida
+
+- **WHEN** la configuración define un idioma de salida
+- **THEN** el artículo generado (título, resumen, bloques y etiquetas) se redacta íntegramente en ese idioma, sin mezclar otros
+
+#### Scenario: Contenido original y sin duplicados
+
+- **WHEN** la IA genera un artículo
+- **THEN** el prompt exige contenido 100% original (sin copiar ni parafrasear literalmente otras fuentes) y la deduplicación evita repetir temáticas ya procesadas
+
 #### Scenario: Generación inválida o incompleta
 
 - **WHEN** la IA responde con una estructura inválida o incompleta
@@ -70,7 +85,9 @@ El sistema SHALL generar, para cada temática aceptada, un artículo completo (t
 
 ### Requirement: Configuración avanzada de generación
 
-El sistema SHALL permitir configurar y persistir la plantilla, el tono, los bloques mínimo/máximo, las secciones requeridas, la temperatura, los intentos y la tolerancia de palabras. La configuración avanzada MUST mostrarse al activar un control de alternancia. Los estándares automáticos por longitud (tokens, bloques y tolerancia) MUST aplicarse salvo que el usuario los desactive.
+El sistema SHALL permitir configurar y persistir la plantilla, el tono, el mínimo de bloques (sin máximo), las secciones requeridas, la temperatura, los intentos y la tolerancia de palabras. La configuración avanzada MUST mostrarse al activar un control de alternancia. Los estándares automáticos por longitud (tokens, mínimo de bloques y tolerancia) MUST aplicarse salvo que el usuario los desactive.
+
+Las plantillas disponibles son "news" (Noticia), "informative" (Informativa), "analysis" (Análisis) y "guide" (Guía práctica). Los tonos disponibles son "informativo", "analitico", "cronica", "divulgativo" y "amigable" (cercano, amable y conversacional). Las secciones opcionales activables de forma independiente son: lista, tabla, cita, conclusión, preguntas frecuentes, llamada a la acción y enlaces de referencia (internos y externos).
 
 #### Scenario: Ajuste de estructura y tono
 
@@ -91,6 +108,16 @@ El sistema SHALL permitir configurar y persistir la plantilla, el tono, los bloq
 
 - **WHEN** un administrador define la longitud del artículo y su tolerancia
 - **THEN** el sistema acepta únicamente artículos dentro del margen y del rango de bloques configurados, salvo que el usuario confirme guardarlos fuera de estándar
+
+#### Scenario: Secciones opcionales de preguntas frecuentes, llamada a la acción y enlaces de referencia
+
+- **WHEN** un administrador activa la sección de preguntas frecuentes, la llamada a la acción o los enlaces de referencia
+- **THEN** el sistema exige cada sección activa en el prompt de generación y la valida en el artículo resultante, reintentando o dejándolo pendiente de confirmación si falta
+
+#### Scenario: Tono amigable conversacional
+
+- **WHEN** un administrador selecciona el tono "amigable"
+- **THEN** el sistema instruye a la IA con un estilo cercano, amable y conversacional
 
 ### Requirement: Sanitización y validación del contenido generado
 
@@ -146,7 +173,12 @@ Un administrador autenticado SHALL poder ejecutar una corrida manual, pausar o r
 #### Scenario: Ejecución manual de una corrida
 
 - **WHEN** un administrador solicita ejecutar una corrida manual
-- **THEN** el sistema lanza el pipeline de inmediato y registra la corrida
+- **THEN** el sistema lanza el pipeline de inmediato y registra la corrida, aunque la automatización esté deshabilitada
+
+#### Scenario: Detener una corrida en curso
+
+- **WHEN** un administrador pulsa "Detener" mientras hay una corrida en curso
+- **THEN** el sistema cancela la generación, marca la corrida como "Detenido" y el botón de ejecutar vuelve a estar disponible
 
 #### Scenario: Pausa de la automatización
 

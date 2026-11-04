@@ -53,7 +53,6 @@ public class GeneratedArticleValidatorTests
         TargetWords: 1000,
         MaxTokens: 5000,
         MinBlocks: 5,
-        MaxBlocks: 10,
         WordTolerancePercent: 20,
         MaxGenerationAttempts: 2,
         Template: "news",
@@ -62,7 +61,10 @@ public class GeneratedArticleValidatorTests
         IncludeList: true,
         IncludeTable: false,
         IncludeQuote: false,
-        IncludeConclusion: true);
+        IncludeConclusion: true,
+        IncludeFaq: false,
+        IncludeCta: false,
+        IncludeLinks: false);
 
     private static GeneratedArticle BuildArticle(int wordCount = 820)
     {

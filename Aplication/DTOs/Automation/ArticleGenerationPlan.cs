@@ -10,7 +10,6 @@ public sealed record ArticleGenerationPlan(
     int TargetWords,
     int MaxTokens,
     int MinBlocks,
-    int MaxBlocks,
     int WordTolerancePercent,
     int MaxGenerationAttempts,
     string Template,
@@ -19,7 +18,10 @@ public sealed record ArticleGenerationPlan(
     bool IncludeList,
     bool IncludeTable,
     bool IncludeQuote,
-    bool IncludeConclusion);
+    bool IncludeConclusion,
+    bool IncludeFaq,
+    bool IncludeCta,
+    bool IncludeLinks);
 
 /// <summary>Construye el plan efectivo a partir de la configuración de automatización.</summary>
 public static class ArticleGenerationPlanner
@@ -37,7 +39,6 @@ public static class ArticleGenerationPlanner
                     ? settings.MaxTokensPerArticle
                     : ArticleLengthOptions.EstimateMaxTokens(settings.TargetWords)),
             MinBlocks: standard?.MinBlocks ?? settings.MinBlocks,
-            MaxBlocks: standard?.MaxBlocks ?? settings.MaxBlocks,
             WordTolerancePercent: standard?.WordTolerancePercent ?? settings.WordTolerancePercent,
             MaxGenerationAttempts: Math.Max(1, settings.MaxGenerationAttempts),
             Template: settings.ArticleTemplate,
@@ -46,6 +47,9 @@ public static class ArticleGenerationPlanner
             IncludeList: settings.IncludeList,
             IncludeTable: settings.IncludeTable,
             IncludeQuote: settings.IncludeQuote,
-            IncludeConclusion: settings.IncludeConclusion);
+            IncludeConclusion: settings.IncludeConclusion,
+            IncludeFaq: settings.IncludeFaq,
+            IncludeCta: settings.IncludeCta,
+            IncludeLinks: settings.IncludeLinks);
     }
 }

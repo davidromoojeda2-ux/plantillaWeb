@@ -63,12 +63,18 @@ public sealed class ArticleAutomationService : IAutomationService
         // Evita corridas concurrentes (worker programado vs. disparo manual del panel).
         if (!await _coordinator.TryBeginRunAsync(ct)) return null;
 
+        // Token propio de la corrida: se cancela al pulsar "Detener" (o al apagar la app).
+        var runToken = _coordinator.RunToken;
+
         try
         {
             var settings = await GetSettingsAsync(ct);
-            if (!settings.Enabled)
+
+            // Las ejecuciones manuales se permiten aunque la automatización esté deshabilitada:
+            // el botón "Ejecutar ahora" es una acción explícita del usuario.
+            if (!settings.Enabled && trigger != AutomationTrigger.Manual)
             {
-                _logger.LogInformation("Automatización deshabilitada; se omite la corrida.");
+                _logger.LogInformation("Automatización deshabilitada; se omite la corrida programada.");
                 return null;
             }
 
@@ -83,28 +89,42 @@ public sealed class ArticleAutomationService : IAutomationService
 
             try
             {
-                var discovery = await _discovery.DiscoverAsync(new TopicDiscoveryRequest
+                IReadOnlyList<DiscoveredTopic> topics;
+                if (!settings.DiscoverWithSerper)
                 {
-                    Topics = settings.BaseTopics,
-                    Country = settings.Country,
-                    Language = settings.Language,
-                    Limit = Math.Max(1, settings.MaxArticlesPerRun * 2),
-                    ApiKey = settings.SerperApiKey,
-                    Num = Math.Max(1, settings.SerperNum),
-                    Recency = settings.SerperRecency,
-                    SearchType = settings.SerperType,
-                    Safe = settings.SerperSafe,
-                    Autocorrect = settings.SerperAutocorrect,
-                    RoundRobin = settings.RoundRobinTopics
-                }, ct);
-                run.DiscoveredTopicsCount = discovery.Topics.Count;
-                run.SerperCredits += discovery.Credits;
+                    // Sin Serper: cada temática base es directamente la keyword principal.
+                    topics = settings.BaseTopics
+                        .Where(t => !string.IsNullOrWhiteSpace(t))
+                        .Select(t => new DiscoveredTopic { Title = t.Trim() })
+                        .ToList();
+                }
+                else
+                {
+                    var discovery = await _discovery.DiscoverAsync(new TopicDiscoveryRequest
+                    {
+                        Topics = settings.BaseTopics,
+                        Country = settings.Country,
+                        Language = settings.Language,
+                        Limit = Math.Max(1, settings.MaxArticlesPerRun * 2),
+                        ApiKey = settings.SerperApiKey,
+                        Num = Math.Max(1, settings.SerperNum),
+                        Recency = settings.SerperRecency,
+                        SearchType = settings.SerperType,
+                        Safe = settings.SerperSafe,
+                        Autocorrect = settings.SerperAutocorrect,
+                        RoundRobin = settings.RoundRobinTopics
+                    }, runToken);
+                    run.SerperCredits += discovery.Credits;
+                    topics = discovery.Topics;
+                }
+
+                run.DiscoveredTopicsCount = topics.Count;
 
                 var generated = 0;
-                foreach (var topic in discovery.Topics)
+                foreach (var topic in topics)
                 {
                     if (generated >= settings.MaxArticlesPerRun) break;
-                    ct.ThrowIfCancellationRequested();
+                    runToken.ThrowIfCancellationRequested();
 
                     var hash = SlugGenerator.Hash(topic.Title);
                     run.TopicHashes.Add(hash);
@@ -125,7 +145,7 @@ public sealed class ArticleAutomationService : IAutomationService
 
                     try
                     {
-                        var (info, pendingDecision, totalTokens) = await GenerateAndCreateAsync(topic, settings, null, ct);
+                        var (info, pendingDecision, totalTokens) = await GenerateAndCreateAsync(topic, settings, null, runToken);
                         AccumulateUsage(run, totalTokens);
                         if (info is not null)
                         {
@@ -137,7 +157,7 @@ public sealed class ArticleAutomationService : IAutomationService
                             run.PendingDecisions.Add(pendingDecision);
                         }
                     }
-                    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                    catch (OperationCanceledException) when (runToken.IsCancellationRequested)
                     {
                         throw;
                     }
@@ -152,8 +172,13 @@ public sealed class ArticleAutomationService : IAutomationService
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 run.Status = AutomationRunStatus.Fallido;
-                run.Errors.Add("Corrida cancelada.");
+                run.Errors.Add("Corrida cancelada por el cierre de la aplicación.");
                 throw;
+            }
+            catch (OperationCanceledException) when (runToken.IsCancellationRequested)
+            {
+                run.Status = AutomationRunStatus.Detenido;
+                run.Errors.Add("Corrida detenida por el usuario.");
             }
             catch (Exception ex)
             {
@@ -320,7 +345,8 @@ public sealed class ArticleAutomationService : IAutomationService
         DiscoveredTopic topic, AutomationSettings settings, DateTime? scheduledAt, CancellationToken ct)
     {
         var plan = ArticleGenerationPlanner.FromSettings(settings);
-        var (generated, validationErrors, totalTokens) = await GenerateWithValidationAsync(topic, settings, plan, ct);
+        var internalLinks = await _articleService.GetInternalLinkCandidatesAsync(topic.Title) ?? [];
+        var (generated, validationErrors, totalTokens) = await GenerateWithValidationAsync(topic, settings, plan, internalLinks, ct);
 
         if (validationErrors.Count > 0)
         {
@@ -345,7 +371,8 @@ public sealed class ArticleAutomationService : IAutomationService
     /// que el usuario decida si desea guardarlo de todos modos.
     /// </summary>
     private async Task<(GeneratedArticle Generated, IReadOnlyList<string> Errors, int TotalTokens)> GenerateWithValidationAsync(
-        DiscoveredTopic topic, AutomationSettings settings, ArticleGenerationPlan plan, CancellationToken ct)
+        DiscoveredTopic topic, AutomationSettings settings, ArticleGenerationPlan plan,
+        IReadOnlyList<InternalLinkCandidate> internalLinks, CancellationToken ct)
     {
         var totalTokens = 0;
         string? correctionHint = null;
@@ -364,12 +391,16 @@ public sealed class ArticleAutomationService : IAutomationService
                 MaxTokens = plan.MaxTokens,
                 Template = plan.Template,
                 Tone = plan.Tone,
+                PrimaryKeyword = topic.Title,
+                InternalLinks = [.. internalLinks],
                 MinBlocks = plan.MinBlocks,
-                MaxBlocks = plan.MaxBlocks,
                 IncludeList = plan.IncludeList,
                 IncludeTable = plan.IncludeTable,
                 IncludeQuote = plan.IncludeQuote,
                 IncludeConclusion = plan.IncludeConclusion,
+                IncludeFaq = plan.IncludeFaq,
+                IncludeCta = plan.IncludeCta,
+                IncludeLinks = plan.IncludeLinks,
                 Temperature = plan.Temperature,
                 CorrectionHint = correctionHint,
                 ApiKey = settings.AiApiKey,

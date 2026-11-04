@@ -46,6 +46,10 @@
                                 {
                                     <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">Fallido</span>
                                 }
+                                else if (run.Status == AutomationRunStatus.Detenido)
+                                {
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">Detenido</span>
+                                }
                                 else
                                 {
                                     <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">En progreso</span>

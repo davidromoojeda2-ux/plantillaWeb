@@ -31,15 +31,18 @@ public class AutomationConfigViewModel
     public string ArticleTemplate { get; set; } = "news";
     public string Tone { get; set; } = "informativo";
     public int MinBlocks { get; set; } = 5;
-    public int MaxBlocks { get; set; } = 10;
     public bool IncludeList { get; set; } = true;
     public bool IncludeTable { get; set; }
     public bool IncludeQuote { get; set; }
     public bool IncludeConclusion { get; set; } = true;
+    public bool IncludeFaq { get; set; }
+    public bool IncludeCta { get; set; }
+    public bool IncludeLinks { get; set; }
     public double Temperature { get; set; } = 0.5;
     public int MaxGenerationAttempts { get; set; } = 2;
     public int WordTolerancePercent { get; set; } = 20;
     public string BaseTopicsText { get; set; } = string.Empty;
+    public bool DiscoverWithSerper { get; set; } = true;
     public List<string> CategoryIds { get; set; } = [];
 
     // Claves (se muestran en blanco; en POST, en blanco conserva la existente)
@@ -88,15 +91,18 @@ public class AutomationConfigViewModel
             ArticleTemplate = s.ArticleTemplate,
             Tone = s.Tone,
             MinBlocks = standard?.MinBlocks ?? s.MinBlocks,
-            MaxBlocks = standard?.MaxBlocks ?? s.MaxBlocks,
             IncludeList = s.IncludeList,
             IncludeTable = s.IncludeTable,
             IncludeQuote = s.IncludeQuote,
             IncludeConclusion = s.IncludeConclusion,
+            IncludeFaq = s.IncludeFaq,
+            IncludeCta = s.IncludeCta,
+            IncludeLinks = s.IncludeLinks,
             Temperature = s.Temperature,
             MaxGenerationAttempts = s.MaxGenerationAttempts,
             WordTolerancePercent = standard?.WordTolerancePercent ?? s.WordTolerancePercent,
             BaseTopicsText = string.Join(Environment.NewLine, s.BaseTopics),
+            DiscoverWithSerper = s.DiscoverWithSerper,
             CategoryIds = s.CategoryIds,
             HasSerperKey = !string.IsNullOrWhiteSpace(s.SerperApiKey),
             HasAiKey = !string.IsNullOrWhiteSpace(s.AiApiKey),
@@ -120,10 +126,9 @@ public class AutomationConfigViewModel
         var targetWords = Math.Clamp(TargetWords, 100, 5000);
         var standard = AutoStandards ? ArticleGenerationStandards.ForWords(targetWords) : null;
         var minBlocks = standard?.MinBlocks ?? Math.Clamp(MinBlocks, 3, 20);
-        var maxBlocks = standard?.MaxBlocks ?? Math.Clamp(MaxBlocks, minBlocks, 30);
         var maxTokens = standard?.MaxTokens
             ?? (MaxTokensPerArticle <= 0 ? 0 : Math.Clamp(MaxTokensPerArticle, 256, 100000));
-        var tolerance = standard?.WordTolerancePercent ?? Math.Clamp(WordTolerancePercent, 0, 60);
+        var tolerance = standard?.WordTolerancePercent ?? Math.Clamp(WordTolerancePercent, 0, 80);
 
         return new AutomationSettings
         {
@@ -142,17 +147,20 @@ public class AutomationConfigViewModel
             ArticleTemplate = string.IsNullOrWhiteSpace(ArticleTemplate) ? "news" : ArticleTemplate.Trim(),
             Tone = string.IsNullOrWhiteSpace(Tone) ? "informativo" : Tone.Trim(),
             MinBlocks = minBlocks,
-            MaxBlocks = maxBlocks,
             IncludeList = IncludeList,
             IncludeTable = IncludeTable,
             IncludeQuote = IncludeQuote,
             IncludeConclusion = IncludeConclusion,
+            IncludeFaq = IncludeFaq,
+            IncludeCta = IncludeCta,
+            IncludeLinks = IncludeLinks,
             Temperature = Math.Clamp(Temperature, 0.0, 1.5),
             MaxGenerationAttempts = Math.Clamp(MaxGenerationAttempts, 1, 5),
             WordTolerancePercent = tolerance,
             BaseTopics = (BaseTopicsText ?? string.Empty)
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList(),
+            DiscoverWithSerper = DiscoverWithSerper,
             CategoryIds = CategoryIds ?? [],
 
             SerperApiKey = string.IsNullOrWhiteSpace(SerperApiKey) ? existing.SerperApiKey : SerperApiKey.Trim(),

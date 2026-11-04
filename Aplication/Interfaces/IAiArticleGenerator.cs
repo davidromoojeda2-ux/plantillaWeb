@@ -14,18 +14,26 @@ public sealed class TopicGenerationRequest
     /// <summary>Cantidad de palabras deseada para el artículo (se usa en el prompt).</summary>
     public int TargetWords { get; set; } = 1000;
 
-    /// <summary>Plantilla de estructura: "news", "informative", "analysis" o "guide".</summary>
+    /// <summary>Plantilla de estructura: "news", "informative", "analysis", "guide", "faq", "ppa" o "job".</summary>
     public string Template { get; set; } = "news";
 
-    /// <summary>Tono editorial: "informativo", "analitico" o "cronica".</summary>
+    /// <summary>Palabra clave principal cuando el modo es "keyword" (null en descubrimiento).</summary>
+    public string? PrimaryKeyword { get; set; }
+
+    /// <summary>Enlaces internos sugeridos (artículos existentes) para el cuerpo.</summary>
+    public List<InternalLinkCandidate> InternalLinks { get; set; } = [];
+
+    /// <summary>Tono editorial: "informativo", "analitico", "cronica", "divulgativo" o "amigable".</summary>
     public string Tone { get; set; } = "informativo";
 
     public int MinBlocks { get; set; } = 5;
-    public int MaxBlocks { get; set; } = 10;
     public bool IncludeList { get; set; } = true;
     public bool IncludeTable { get; set; }
     public bool IncludeQuote { get; set; }
     public bool IncludeConclusion { get; set; } = true;
+    public bool IncludeFaq { get; set; }
+    public bool IncludeCta { get; set; }
+    public bool IncludeLinks { get; set; }
 
     /// <summary>Temperatura del modelo (0.0–1.0).</summary>
     public double Temperature { get; set; } = 0.5;

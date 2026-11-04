@@ -41,7 +41,9 @@ public sealed class ArticleAutomationWorker : BackgroundService
 
                 var settings = await ReadSettingsAsync(stoppingToken);
 
-                if (!settings.Enabled) continue;
+                // Las corridas manuales se permiten aunque la automatización esté deshabilitada:
+                // el botón "Ejecutar ahora" es una acción explícita del usuario.
+                if (!settings.Enabled && !manual) continue;
 
                 // Publicar artículos programados cuya fecha venció.
                 await PublishScheduledAsync(stoppingToken);

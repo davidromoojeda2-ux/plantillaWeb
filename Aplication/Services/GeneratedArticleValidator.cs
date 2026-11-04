@@ -48,11 +48,8 @@ public static class GeneratedArticleValidator
         }
 
         var minBlocks = Math.Max(3, plan.MinBlocks);
-        var maxBlocks = Math.Max(minBlocks, plan.MaxBlocks);
         if (blocks.Count < minBlocks)
             errors.Add($"El artículo tiene {blocks.Count} bloques y el mínimo configurado es {minBlocks}.");
-        else if (blocks.Count > maxBlocks)
-            errors.Add($"El artículo tiene {blocks.Count} bloques y el máximo configurado es {maxBlocks}.");
 
         ValidateWordCount(article, plan, errors);
         ValidateHierarchy(blocks, errors);
@@ -66,8 +63,12 @@ public static class GeneratedArticleValidator
         if (plan.TargetWords <= 0) return;
 
         var words = CountWords(article);
-        var tolerance = Math.Clamp(plan.WordTolerancePercent, 0, 60) / 100.0;
-        var min = (int)Math.Floor(plan.TargetWords * (1 - tolerance));
+        var tolerance = Math.Clamp(plan.WordTolerancePercent, 0, 80) / 100.0;
+
+        // Se flexibiliza el mínimo: además del margen porcentual se toleran hasta 100
+        // palabras (o un 15 % del objetivo) por debajo para no rechazar artículos válidos.
+        var slack = Math.Min(100, (int)(plan.TargetWords * 0.15));
+        var min = Math.Max(0, (int)Math.Floor(plan.TargetWords * (1 - tolerance)) - slack);
         var max = (int)Math.Ceiling(plan.TargetWords * (1 + tolerance));
 
         if (words < min)
@@ -86,9 +87,13 @@ public static class GeneratedArticleValidator
 
         for (var i = 1; i < blocks.Count; i++)
         {
-            if (blocks[i - 1] is ContentHeadingBlockDto && blocks[i] is ContentHeadingBlockDto)
+            // Un H2 seguido de un H3 es una jerarquía válida; solo es un problema
+            // cuando se encadenan dos encabezados del mismo nivel sin contenido.
+            if (blocks[i - 1] is ContentHeadingBlockDto previous &&
+                blocks[i] is ContentHeadingBlockDto current &&
+                previous.Level == current.Level)
             {
-                errors.Add("Hay dos encabezados consecutivos; cada encabezado debe ir seguido de contenido.");
+                errors.Add("Hay dos encabezados del mismo nivel consecutivos; cada sección debe ir seguida de contenido.");
                 break;
             }
         }
@@ -103,6 +108,9 @@ public static class GeneratedArticleValidator
         var hasList = blocks.Any(b => b is ContentBulletListBlockDto or ContentOrderedListBlockDto);
         var hasTable = blocks.Any(b => b is ContentTableBlockDto);
         var hasQuote = blocks.Any(b => b is ContentQuoteBlockDto);
+        var hasFaq = blocks.Any(b => b is ContentHeadingBlockDto h && IsFaqHeading(h.Text));
+        var hasCta = blocks.Any(b => b is ContentCalloutBlockDto);
+        var hasLinks = blocks.Any(ContainsAnchor);
 
         if (plan.IncludeList && !hasList)
             errors.Add("Falta al menos una lista con viñetas o numerada.");
@@ -112,6 +120,15 @@ public static class GeneratedArticleValidator
 
         if (plan.IncludeQuote && !hasQuote)
             errors.Add("Falta la cita requerida (\"quote\") con atribución.");
+
+        if (plan.IncludeFaq && !hasFaq)
+            errors.Add("Falta la sección de preguntas frecuentes (encabezado \"Preguntas frecuentes\").");
+
+        if (plan.IncludeCta && !hasCta)
+            errors.Add("Falta el callout de llamada a la acción (\"callout\").");
+
+        if (plan.IncludeLinks && !hasLinks)
+            errors.Add("Faltan enlaces de referencia; incluye etiquetas <a href=\"...\"> internas o externas.");
 
         if (plan.IncludeConclusion)
         {
@@ -143,6 +160,28 @@ public static class GeneratedArticleValidator
         var normalized = text.Trim().ToLowerInvariant();
         return normalized.Contains("conclu") || normalized.Contains("cierre") || normalized.Contains("para terminar");
     }
+
+    private static bool IsFaqHeading(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var normalized = text.Trim().ToLowerInvariant();
+        return normalized.Contains("pregunta") || normalized.Contains("faq") || normalized.Contains("frecuente");
+    }
+
+    private static bool ContainsAnchor(ContentBlockDto block) => block switch
+    {
+        ContentParagraphBlockDto p => HasAnchor(p.Text),
+        ContentBulletListBlockDto l => l.Items.Any(HasAnchor),
+        ContentOrderedListBlockDto l => l.Items.Any(HasAnchor),
+        ContentQuoteBlockDto q => HasAnchor(q.Text),
+        ContentCalloutBlockDto c => HasAnchor(c.Text),
+        _ => false
+    };
+
+    private static bool HasAnchor(string? text) =>
+        !string.IsNullOrWhiteSpace(text)
+        && text.Contains("href", StringComparison.OrdinalIgnoreCase)
+        && text.Contains("<a", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsEmptyBlock(ContentBlockDto block) => block switch
     {

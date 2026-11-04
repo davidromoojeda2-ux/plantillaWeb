@@ -8,7 +8,8 @@ public enum AutomationRunStatus
 {
     EnProgreso,
     Completado,
-    Fallido
+    Fallido,
+    Detenido
 }
 
 /// <summary>Origen de disparo de una corrida de automatización.</summary>

@@ -11,7 +11,6 @@
             return new
             {
                 minBlocks = s.MinBlocks,
-                maxBlocks = s.MaxBlocks,
                 maxTokens = s.MaxTokens,
                 wordTolerancePercent = s.WordTolerancePercent
             };
@@ -277,6 +276,15 @@
                                                                             <textarea asp-for="BaseTopicsText" rows="4"
                                                                                       class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-mono"></textarea>
                                                                         </div>
+                                                                                                                                        <div class="mt-5">
+                                                                        <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 cursor-pointer">
+                                                                            <input type="checkbox" asp-for="DiscoverWithSerper" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                                                                            <span>
+                                                                                <span class="block text-sm font-semibold text-slate-800">Descubrir tema con Serper (tendencias / más buscados)</span>
+                                                                                <span class="block text-xs text-slate-500 mt-0.5">Si está activo, el sistema busca con Serper y usa los resultados como keywords. Si lo desactivas, se generan artículos directamente con las temáticas base como keywords.</span>
+                                                                            </span>
+                                                                        </label>
+                                                                    </div>
                                                                     </section>
 
                                                                     <!-- ─── 5b. Generación avanzada ────────────────────────────────────── -->
@@ -319,6 +327,9 @@
                                                                                                     </option>
                                                                                                     <option value="analysis" selected="@(Model.ArticleTemplate == "analysis")">Análisis</option>
                                                                                                     <option value="guide" selected="@(Model.ArticleTemplate == "guide")">Guía práctica</option>
+                                                                                                    <option value="faq" selected="@(Model.ArticleTemplate == "faq")">FAQ (preguntas frecuentes)</option>
+                                                                                                    <option value="ppa" selected="@(Model.ArticleTemplate == "ppa")">PPA (People Also Ask)</option>
+                                                                                                    <option value="job" selected="@(Model.ArticleTemplate == "job")">Convocatoria laboral</option>
                                                                                                 </select>
                                                                                             </div>
                                                                                             <div>
@@ -329,6 +340,7 @@
                                                                                                     <option value="analitico" selected="@(Model.Tone == "analitico")">Analítico</option>
                                                                                                     <option value="cronica" selected="@(Model.Tone == "cronica")">Crónica</option>
                                                                                                     <option value="divulgativo" selected="@(Model.Tone == "divulgativo")">Divulgativo</option>
+                                                                                                    <option value="amigable" selected="@(Model.Tone == "amigable")">Amigable / Conversacional</option>
                                                                                                 </select>
                                                                                             </div>
                                                                                             <div>
@@ -338,13 +350,6 @@
                                                                                                     <input asp-for="MinBlocks" type="number" min="3" max="20"
                                                                                                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
                                                                                                 </div>
-                                                                                                <div>
-                                                                                                    <label asp-for="MaxBlocks"
-                                                                                                           class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Bloques
-                                                                                                        máximos</label>
-                                                                                                        <input asp-for="MaxBlocks" type="number" min="3" max="30"
-                                                                                                               class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
-                                                                                                    </div>
                                                                                                 </div>
 
                                                                                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mt-5">
@@ -369,7 +374,7 @@
                                                                                                                     <label asp-for="WordTolerancePercent"
                                                                                                                            class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tolerancia
                                                                                                                         de palabras (%)</label>
-                                                                                                                        <input asp-for="WordTolerancePercent" type="number" min="0" max="60"
+                                                                                                                        <input asp-for="WordTolerancePercent" type="number" min="0" max="80"
                                                                                                                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
                                                                                                                         <p class="text-xs text-slate-400 mt-1">Margen aceptado sobre la longitud pedida.</p>
                                                                                                                     </div>
@@ -395,6 +400,18 @@
                                                                                                                         <input type="checkbox" asp-for="IncludeConclusion"
                                                                                                                                class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
                                                                                                                         Incluir conclusión
+                                                                                                                    </label>
+                                                                                                                    <label class="flex items-center gap-3 text-sm text-slate-700">
+                                                                                                                        <input type="checkbox" asp-for="IncludeFaq" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                                                                                                                        Incluir preguntas frecuentes
+                                                                                                                    </label>
+                                                                                                                    <label class="flex items-center gap-3 text-sm text-slate-700">
+                                                                                                                        <input type="checkbox" asp-for="IncludeCta" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                                                                                                                        Incluir llamada a la acción
+                                                                                                                    </label>
+                                                                                                                    <label class="flex items-center gap-3 text-sm text-slate-700">
+                                                                                                                        <input type="checkbox" asp-for="IncludeLinks" class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                                                                                                                        Incluir enlaces de referencia
                                                                                                                     </label>
                                                                                                                 </div>
                                                                                                             </div>
@@ -511,7 +528,6 @@
                                                                                                                 var wordsSelect = document.getElementById('TargetWords');
                                                                                                                 var autoToggle = document.getElementById('AutoStandards');
                                                                                                                 var minBlocksInput = document.getElementById('MinBlocks');
-                                                                                                                var maxBlocksInput = document.getElementById('MaxBlocks');
                                                                                                                 var maxTokensInput = document.getElementById('MaxTokensPerArticle');
                                                                                                                 var toleranceInput = document.getElementById('WordTolerancePercent');
 
@@ -522,7 +538,6 @@
                                                                                                                     if (!standard) return;
 
                                                                                                                     if (minBlocksInput) minBlocksInput.value = standard.minBlocks;
-                                                                                                                    if (maxBlocksInput) maxBlocksInput.value = standard.maxBlocks;
                                                                                                                     if (maxTokensInput) maxTokensInput.value = standard.maxTokens;
                                                                                                                     if (toleranceInput) toleranceInput.value = standard.wordTolerancePercent;
                                                                                                                 }
@@ -530,7 +545,7 @@
                                                                                                                 function syncAutoStandardFields() {
                                                                                                                     var auto = !!(autoToggle && autoToggle.checked);
 
-                                                                                                                    [minBlocksInput, maxBlocksInput, maxTokensInput, toleranceInput].forEach(function (el) {
+                                                                                                                    [minBlocksInput, maxTokensInput, toleranceInput].forEach(function (el) {
                                                                                                                         if (!el) return;
                                                                                                                         el.readOnly = auto;
                                                                                                                         el.classList.toggle('bg-slate-100', auto);

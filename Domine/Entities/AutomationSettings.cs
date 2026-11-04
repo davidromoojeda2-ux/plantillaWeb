@@ -31,6 +31,12 @@ public class AutomationSettings
     /// <summary>Temáticas base consultadas en Serper.</summary>
     public List<string> BaseTopics { get; set; } = [];
 
+    /// <summary>
+    /// Si es true, el sistema descubre temas con Serper (tendencias/búsquedas) y usa los
+    /// resultados como keywords. Si es false, usa las temáticas base directamente como keywords.
+    /// </summary>
+    public bool DiscoverWithSerper { get; set; } = true;
+
     /// <summary>País (código gl) para las consultas de Serper.</summary>
     public string Country { get; set; } = "us";
 
@@ -56,19 +62,25 @@ public class AutomationSettings
     /// <summary>Plantilla de estructura: "news", "informative", "analysis" o "guide".</summary>
     public string ArticleTemplate { get; set; } = "news";
 
-    /// <summary>Tono editorial: "informativo", "analitico" o "cronica".</summary>
+    /// <summary>Tono editorial: "informativo", "analitico", "cronica", "divulgativo" o "amigable".</summary>
     public string Tone { get; set; } = "informativo";
 
-    /// <summary>Número mínimo de bloques del artículo.</summary>
+    /// <summary>Número mínimo de bloques del artículo (no se impone un máximo).</summary>
     public int MinBlocks { get; set; } = 5;
-
-    /// <summary>Número máximo de bloques del artículo.</summary>
-    public int MaxBlocks { get; set; } = 10;
 
     public bool IncludeList { get; set; } = true;
     public bool IncludeTable { get; set; } = false;
     public bool IncludeQuote { get; set; } = false;
     public bool IncludeConclusion { get; set; } = true;
+
+    /// <summary>Incluir una sección de preguntas frecuentes.</summary>
+    public bool IncludeFaq { get; set; } = false;
+
+    /// <summary>Cerrar con un callout de llamada a la acción.</summary>
+    public bool IncludeCta { get; set; } = false;
+
+    /// <summary>Incluir enlaces internos y externos de referencia.</summary>
+    public bool IncludeLinks { get; set; } = false;
 
     /// <summary>Temperatura del modelo (0.0–1.0); menor = más estable.</summary>
     public double Temperature { get; set; } = 0.5;

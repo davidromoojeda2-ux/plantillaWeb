@@ -51,6 +51,17 @@ public class AutomationController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost("stop")]
+    [ValidateAntiForgeryToken]
+    public IActionResult Stop()
+    {
+        var stopped = _coordinator.RequestStop();
+        TempData[stopped ? "Success" : "Error"] = stopped
+            ? "Deteniendo la corrida en curso…"
+            : "No hay ninguna corrida en curso.";
+        return RedirectToAction(nameof(Index));
+    }
+
     [HttpGet("estado")]
     public async Task<IActionResult> Estado()
     {

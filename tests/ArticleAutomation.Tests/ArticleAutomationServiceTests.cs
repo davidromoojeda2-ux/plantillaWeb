@@ -231,7 +231,6 @@ public class ArticleAutomationServiceTests
                 MaxGenerationAttempts = 1,
                 TargetWords = 1000,
                 MinBlocks = 5,
-                MaxBlocks = 10,
                 WordTolerancePercent = 20
             });
         state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
