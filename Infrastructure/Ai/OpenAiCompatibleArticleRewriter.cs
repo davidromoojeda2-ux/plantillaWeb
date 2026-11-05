@@ -70,6 +70,8 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             $"Estructura: {OpenAiCompatibleArticleGenerator.DescribeTemplate(request.Template)}.\n" +
             length +
             (rules.Count > 0 ? $"Secciones requeridas: {string.Join("; ", rules)}.\n" : string.Empty) +
+            OpenAiCompatibleArticleGenerator.DescribeForbiddenSections(
+                request.IncludeConclusion, request.IncludeFaq, request.IncludeCta, request.Template) +
             links +
             "Artículo original:\n" +
             $"Título: {request.Title}\nResumen: {request.Summary}\n\n{source}\n" +

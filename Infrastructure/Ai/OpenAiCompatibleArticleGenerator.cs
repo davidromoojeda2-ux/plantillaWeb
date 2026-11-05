@@ -140,6 +140,7 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
             $"Estructura: {DescribeTemplate(request.Template)}.\n" +
             $"Usa al menos {minBlocks} bloques en total (sin máximo).\n" +
             DescribeRequiredSections(request) +
+            DescribeForbiddenSections(request.IncludeConclusion, request.IncludeFaq, request.IncludeCta, request.Template) +
             DescribeInternalLinks(request) +
             "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n" +
             "{\n" +
@@ -176,25 +177,86 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
         return prompt;
     }
 
-    internal static string DescribeTemplate(string? template) => template?.Trim().ToLowerInvariant() switch
+    internal static string DescribeTemplate(string? template) => NormalizeTemplate(template) switch
     {
         "informative" =>
-            "artículo informativo. Explica el tema con claridad y de forma completa: qué es, cómo funciona, datos clave, contexto y por qué es relevante, priorizando la comprensión del lector sobre la inmediatez.",
+            "Artículo informativo con enfoque explicativo.\n" +
+            "- Introducción que responda qué es el tema y por qué importa.\n" +
+            "- Secciones con encabezados temáticos (nivel 2) sobre cómo funciona, datos clave, contexto y aplicaciones.\n" +
+            "- Ejemplos concretos y definiciones claras; prioriza la comprensión sobre la inmediatez.\n" +
+            "- No organices el texto como una noticia cronológica ni como una guía de pasos.",
         "comparative" =>
-            "artículo comparativo. Abre presentando las opciones o alternativas y el criterio de comparación; desarrolla de 3 a 5 secciones con criterios comunes (por ejemplo, características, rendimiento, precio o facilidad de uso), incluye una \"table\" comparativa con encabezados y al menos 2 filas, resume ventajas y desventajas en listas y cierra con una recomendación o veredicto claro según el perfil del lector.",
+            "Artículo comparativo entre opciones o alternativas.\n" +
+            "- Introducción con las opciones comparadas y los criterios elegidos.\n" +
+            "- Compara las opciones con criterios explícitos y homogéneos.\n" +
+            "- Secciones por criterio (características, rendimiento, precio, facilidad de uso, etc.).\n" +
+            "- Resume ventajas y desventajas para cada opción.\n" +
+            "- Incluye una recomendación razonada según el perfil del lector, integrada en el cuerpo.",
         "analysis" =>
-            "artículo de análisis. Abre con el contexto del tema, desarrolla 3 o 4 secciones con causas, datos e implicaciones, y cierra con una valoración o perspectiva.",
+            "Artículo de análisis e interpretación.\n" +
+            "- Introducción con el contexto y la pregunta central.\n" +
+            "- Secciones que desarrollen causas, evidencia o datos e implicaciones.\n" +
+            "- Contrapuntos, riesgos y escenarios posibles.\n" +
+            "- Interpretación propia sustentada en los datos; evita limitarte a resumir la noticia.",
         "guide" =>
-            "guía práctica. Abre con el problema u objetivo del lector, organiza el contenido en pasos o secciones accionables y cierra con recomendaciones concretas.",
+            "Guía práctica orientada a la acción.\n" +
+            "- Introducción con el problema u objetivo del lector.\n" +
+            "- Requisitos, herramientas o preparación previa.\n" +
+            "- Pasos o secciones accionables con instrucciones claras.\n" +
+            "- Errores comunes y recomendaciones prácticas dentro del cuerpo.\n" +
+            "- No la escribas como una noticia ni como un análisis teórico.",
         "faq" =>
-            "artículo de preguntas frecuentes. Estructura el contenido en 4 a 6 preguntas (\"heading\" de nivel 3) con respuestas claras y directas de 70 a 120 palabras; sin introducción extensa ni conclusión larga.",
+            "Artículo de preguntas frecuentes.\n" +
+            "- Introducción breve de un solo párrafo.\n" +
+            "- De 4 a 6 preguntas como \"heading\" de nivel 3.\n" +
+            "- Cada pregunta debe ir seguida de una respuesta directa de 70 a 120 palabras.\n" +
+            "- No agregues secciones ajenas al formato de pregunta y respuesta.",
         "ppa" =>
-            "respuesta tipo \"People Also Ask\". Abre con 1 o 2 párrafos que respondan directamente a la pregunta; después 3 bloques con \"heading\" de nivel 3, un párrafo explicativo y una lista de 3 pasos o claves.",
+            "Respuesta tipo \"People Also Ask\".\n" +
+            "- Abre con 1 o 2 párrafos que respondan directamente a la pregunta principal.\n" +
+            "- Después, 3 bloques de pregunta con \"heading\" de nivel 3.\n" +
+            "- Cada bloque lleva un párrafo explicativo y 3 pasos o claves.\n" +
+            "- No uses una estructura de noticia ni de guía extensa.",
         "job" =>
-            "convocatoria laboral. Presenta la empresa, luego 6 a 8 vacantes (\"heading\" de nivel 3) con requisitos, funciones y beneficios en listas; añade el perfil buscado, consejos de postulación, preguntas frecuentes y un cierre motivador.",
+            "Convocatoria laboral.\n" +
+            "- Presenta la empresa y el contexto de la búsqueda.\n" +
+            "- Incluye 6 a 8 vacantes como \"heading\" de nivel 3.\n" +
+            "- Para cada vacante, detalla requisitos, funciones y beneficios.\n" +
+            "- Añade el perfil buscado y consejos de postulación.\n" +
+            "- No agregues secciones genéricas de cierre ni de preguntas frecuentes.",
         _ =>
-            "noticia. Abre con el hecho principal (qué, quién, cuándo, dónde y por qué), desarrolla los detalles en orden de importancia y cierra con contexto o próximos pasos."
+            "Noticia periodística.\n" +
+            "- Primer párrafo con el hecho principal (qué, quién, cuándo, dónde y por qué).\n" +
+            "- Párrafos siguientes en orden de importancia decreciente: datos, declaraciones y reacciones.\n" +
+            "- Antecedentes y contexto dentro del cuerpo, según aporten.\n" +
+            "- No uses secciones de opinión ni una estructura de guía."
     };
+
+    internal static string NormalizeTemplate(string? template)
+    {
+        var normalized = template?.Trim().ToLowerInvariant();
+        return string.IsNullOrEmpty(normalized) ? "news" : normalized;
+    }
+
+    /// <summary>
+    /// Refuerza que las secciones opcionales solo se incluyan cuando el usuario las marcó.
+    /// La plantilla FAQ/PPA ya define su propio formato de preguntas y respuestas.
+    /// </summary>
+    internal static string DescribeForbiddenSections(
+        bool includeConclusion, bool includeFaq, bool includeCta, string? template)
+    {
+        var normalizedTemplate = NormalizeTemplate(template);
+        var forbidden = new List<string>();
+
+        if (!includeConclusion) forbidden.Add("una sección de \"Conclusión\"");
+        if (!includeFaq && normalizedTemplate is not ("faq" or "ppa"))
+            forbidden.Add("una sección de \"Preguntas frecuentes\"");
+        if (!includeCta) forbidden.Add("una llamada a la acción");
+
+        return forbidden.Count == 0
+            ? string.Empty
+            : $"No agregues {string.Join(" ni ", forbidden)} si no se solicitan.\n";
+    }
 
     internal static string DescribeLanguage(string? code)
     {
