@@ -205,6 +205,14 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
             "- Pasos o secciones accionables con instrucciones claras.\n" +
             "- Errores comunes y recomendaciones prácticas dentro del cuerpo.\n" +
             "- No la escribas como una noticia ni como un análisis teórico.",
+        "tutorial" =>
+            "Tutorial paso a paso para aprender a hacer algo.\n" +
+            "- Introduce el objetivo de aprendizaje y el resultado final que obtendrá el lector.\n" +
+            "- Enumera requisitos previos, herramientas, materiales y tiempo estimado.\n" +
+            "- Organiza el proceso en pasos secuenciales, con una acción concreta por paso.\n" +
+            "- Incluye comandos, código, configuración o ejemplos cuando el tema lo requiera.\n" +
+            "- Después de los pasos clave, indica cómo comprobar que el resultado es correcto.\n" +
+            "- Termina con un resumen de lo aprendido y los siguientes pasos posibles, sin una sección de \"Conclusión\" separada.",
         "faq" =>
             "Artículo de preguntas frecuentes.\n" +
             "- Introducción breve de un solo párrafo.\n" +

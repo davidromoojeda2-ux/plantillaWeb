@@ -71,7 +71,7 @@ public class OpenAiCompatibleArticleGeneratorTests
     {
         var templates = new[]
         {
-            "news", "informative", "comparative", "analysis", "guide", "faq", "ppa", "job"
+            "news", "informative", "comparative", "analysis", "guide", "tutorial", "faq", "ppa", "job"
         };
 
         foreach (var template in templates)
@@ -129,6 +129,7 @@ public class OpenAiCompatibleArticleGeneratorTests
             ["comparative"] = "Artículo comparativo entre opciones",
             ["analysis"] = "Artículo de análisis e interpretación",
             ["guide"] = "Guía práctica orientada a la acción",
+            ["tutorial"] = "Tutorial paso a paso para aprender a hacer algo",
             ["faq"] = "Artículo de preguntas frecuentes",
             ["ppa"] = "Respuesta tipo \"People Also Ask\"",
             ["job"] = "Convocatoria laboral"
@@ -144,6 +145,20 @@ public class OpenAiCompatibleArticleGeneratorTests
         }
 
         Assert.Equal(markers.Count, prompts.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Tutorial_Is_Distinct_From_Practical_Guide()
+    {
+        var guide = await CapturePromptAsync("guide");
+        var tutorial = await CapturePromptAsync("tutorial");
+
+        Assert.NotEqual(guide, tutorial);
+        Assert.Contains("Guía práctica orientada a la acción", guide);
+        Assert.Contains("Tutorial paso a paso para aprender a hacer algo", tutorial);
+        Assert.Contains("resultado final que obtendrá el lector", tutorial);
+        Assert.Contains("comprobar que el resultado es correcto", tutorial);
+        Assert.DoesNotContain("Tutorial paso a paso", guide);
     }
 
     [Fact]

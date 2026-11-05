@@ -87,7 +87,7 @@ El sistema SHALL generar, para cada temática aceptada, un artículo completo (t
 
 El sistema SHALL permitir configurar y persistir la plantilla, el tono, el mínimo de bloques (sin máximo), las secciones requeridas, la temperatura, los intentos y la tolerancia de palabras. La configuración avanzada MUST mostrarse al activar un control de alternancia. Los estándares automáticos por longitud (tokens, mínimo de bloques y tolerancia) MUST aplicarse salvo que el usuario los desactive.
 
-Las plantillas disponibles son "news" (Noticia), "informative" (Informativa), "analysis" (Análisis) y "guide" (Guía práctica). Los tonos disponibles son "informativo", "analitico", "cronica", "divulgativo" y "amigable" (cercano, amable y conversacional). Las secciones opcionales activables de forma independiente son: lista, tabla, cita, conclusión, preguntas frecuentes, llamada a la acción y enlaces de referencia (internos y externos).
+Las plantillas disponibles son "news" (Noticia), "informative" (Informativa), "comparative" (Comparativo), "analysis" (Análisis), "guide" (Guía práctica), "tutorial" (Tutorial paso a paso), "faq" (Preguntas frecuentes), "ppa" (People Also Ask) y "job" (Convocatoria laboral). Los tonos disponibles son "informativo", "analitico", "cronica", "divulgativo" y "amigable" (cercano, amable y conversacional). Las secciones opcionales activables de forma independiente son: lista, tabla, cita, conclusión, preguntas frecuentes, llamada a la acción y enlaces de referencia (internos y externos).
 
 #### Scenario: Ajuste de estructura y tono
 

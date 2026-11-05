@@ -14,7 +14,7 @@ public sealed class TopicGenerationRequest
     /// <summary>Cantidad de palabras deseada para el artículo (se usa en el prompt).</summary>
     public int TargetWords { get; set; } = 1000;
 
-    /// <summary>Plantilla de estructura: "news", "informative", "analysis", "guide", "faq", "ppa" o "job".</summary>
+    /// <summary>Plantilla de estructura: "news", "informative", "comparative", "analysis", "guide", "tutorial", "faq", "ppa" o "job".</summary>
     public string Template { get; set; } = "news";
 
     /// <summary>Palabra clave principal cuando el modo es "keyword" (null en descubrimiento).</summary>

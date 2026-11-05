@@ -65,7 +65,7 @@ public class AutomationSettings
     /// <summary>Si es true, los estándares (bloques, tokens y tolerancia) se derivan de TargetWords.</summary>
     public bool AutoStandards { get; set; } = true;
 
-    /// <summary>Plantilla de estructura: "news", "informative", "analysis" o "guide".</summary>
+    /// <summary>Plantilla de estructura: "news", "informative", "comparative", "analysis", "guide", "tutorial", "faq", "ppa" o "job".</summary>
     public string ArticleTemplate { get; set; } = "news";
 
     /// <summary>Tono editorial: "informativo", "analitico", "cronica", "divulgativo" o "amigable".</summary>
