@@ -133,7 +133,7 @@ public sealed record CategorySectionViewModel(
 public sealed record HomePageViewModel(
     HeroViewModel Hero,
     SectionHeaderViewModel EntriesHeader,
-    IReadOnlyList<PostCardViewModel> FeaturedEntries,
+    IReadOnlyList<PostCardViewModel> LatestEntries,
     IReadOnlyList<PostCardViewModel> MostReadEntries,
     CategorySectionViewModel CategorySection);
 
@@ -175,8 +175,11 @@ public static class HomePageViewModelFactory
                 a.Author,
                 a.ReadingTimeMinutes > 0 ? a.ReadingTimeMinutes : EstimateReadingMinutes(a.Summary))).ToList());
 
-        // 2. Últimas entradas en dos columnas (3 principales/destacadas a la izquierda, mínimo 5 más leídos a la derecha)
-        var featuredEntriesSource = (featured.Count >= 3 ? featured : recent).Take(ColumnEntryCount).ToList();
+        // 2. Últimas entradas en dos columnas (3 publicaciones recientes con tarjetas grandes a la izquierda y 5 más leídas a la derecha)
+        var latestEntriesSource = recent.Concat(featured)
+            .DistinctBy(a => a.Id)
+            .Take(ColumnEntryCount)
+            .ToList();
 
         var mostReadList = (mostRead != null && mostRead.Count > 0)
             ? mostRead.ToList()
@@ -190,10 +193,10 @@ public static class HomePageViewModelFactory
             mostReadEntriesSource.AddRange(additional);
         }
 
-        var featuredEntries = featuredEntriesSource.Select(a => new PostCardViewModel(
+        var latestEntries = latestEntriesSource.Select(a => new PostCardViewModel(
             a.Title,
             a.Summary,
-            CategoryName(a, catDict, "Destacado"),
+            CategoryName(a, catDict, "Reciente"),
             a.PublishedAt,
             articleHref(a.Slug),
             ResolveImage(a, images),
@@ -212,7 +215,7 @@ public static class HomePageViewModelFactory
         var entriesHeader = new SectionHeaderViewModel(
             HeadingId: "ultimas-entradas-title",
             Title: "Últimas entradas",
-            Subtitle: "Noticias principales y los artículos más leídos de nuestra redacción",
+            Subtitle: "Las publicaciones más recientes y los artículos más leídos de nuestra redacción",
             LinkText: "Ver todas",
             LinkHref: searchHref);
 
@@ -301,7 +304,7 @@ public static class HomePageViewModelFactory
         return new HomePageViewModel(
             Hero: hero,
             EntriesHeader: entriesHeader,
-            FeaturedEntries: featuredEntries,
+            LatestEntries: latestEntries,
             MostReadEntries: mostReadEntries,
             CategorySection: categorySection);
     }

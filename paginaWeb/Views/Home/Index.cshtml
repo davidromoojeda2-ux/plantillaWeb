@@ -30,7 +30,7 @@
         </svg>
     </section>
 
-    <!-- ─── 2. Últimas entradas (Dos columnas: Destacadas y Recientes) ───────── -->
+    <!-- ─── 2. Últimas entradas (Dos columnas: Recientes y Más leídas) ───────── -->
     <section class="section container" id="ultimas-entradas" aria-labelledby="ultimas-entradas-title">
         <div class="section-header" data-reveal>
             <div class="section-header__text">
@@ -55,17 +55,17 @@
         </div>
 
         <div class="entries-grid" data-reveal>
-            <!-- ── Columna Izquierda: Principales / Destacadas (Azul Marino Base) ── -->
+            <!-- ── Columna Izquierda: Publicaciones más recientes ── -->
             <div class="entries-panel entries-panel--featured">
                 <div class="entries-panel__header">
                     <span class="entries-panel__tag">
                         <span class="entries-panel__dot" aria-hidden="true"></span>
-                        <span>Noticias Principales</span>
+                        <span>Últimas publicaciones</span>
                     </span>
                 </div>
 
                 <div class="entries-list">
-                    @foreach (var entry in Model.FeaturedEntries)
+                    @foreach (var entry in Model.LatestEntries)
                     {
                         <a class="card-h" href="@entry.Href" aria-label="Leer @entry.Title">
                             <div class="card-h__media">
