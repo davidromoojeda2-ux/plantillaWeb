@@ -83,6 +83,33 @@
         }
     </div>
 
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Temas omitidos por país</h3>
+        @if (!Model.SkippedTopics.Any())
+        {
+            <p class="text-slate-400 text-sm">Sin temas omitidos.</p>
+        }
+        else
+        {
+            <div class="divide-y divide-slate-100">
+                @foreach (var s in Model.SkippedTopics)
+                {
+                    <div class="py-3">
+                        <p class="text-sm text-slate-800">@s.TopicTitle</p>
+                        @if (!string.IsNullOrWhiteSpace(s.BaseTopic))
+                        {
+                            <p class="text-xs text-slate-400 mt-0.5">Temática base: @s.BaseTopic</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(s.Reason))
+                        {
+                            <p class="text-xs text-rose-700 mt-0.5">@s.Reason</p>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
     @if (Model.Errors.Count > 0)
     {
         <div class="bg-white border border-red-600 rounded-2xl p-6">

@@ -41,7 +41,7 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
             categories.Object, state.Object, new AutomationCoordinator(),
             NullLogger<ArticleAutomationService>.Instance);
 
@@ -108,7 +108,7 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
             categories.Object, state.Object, new AutomationCoordinator(),
             NullLogger<ArticleAutomationService>.Instance);
 
@@ -174,7 +174,7 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
             categories.Object, state.Object, new AutomationCoordinator(),
             NullLogger<ArticleAutomationService>.Instance);
 
@@ -240,7 +240,7 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
             categories.Object, state.Object, new AutomationCoordinator(),
             NullLogger<ArticleAutomationService>.Instance);
 
@@ -277,7 +277,7 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
             categories.Object, state.Object, new AutomationCoordinator(),
             NullLogger<ArticleAutomationService>.Instance);
 
@@ -330,7 +330,7 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
             categories.Object, state.Object, new AutomationCoordinator(),
             NullLogger<ArticleAutomationService>.Instance);
 
@@ -387,7 +387,7 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
             categories.Object, state.Object, new AutomationCoordinator(),
             NullLogger<ArticleAutomationService>.Instance);
 
@@ -437,7 +437,7 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
             categories.Object, state.Object, new AutomationCoordinator(),
             NullLogger<ArticleAutomationService>.Instance);
 
@@ -485,8 +485,8 @@ public class ArticleAutomationServiceTests
         state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
 
         var service = new ArticleAutomationService(
-            new Mock<ITopicDiscoveryService>().Object, ai.Object, articles.Object,
-            new Mock<IArticleRepository>().Object, categories.Object, state.Object,
+            new Mock<ITopicDiscoveryService>().Object, ai.Object, AllowAllCountries().Object,
+            articles.Object, new Mock<IArticleRepository>().Object, categories.Object, state.Object,
             new AutomationCoordinator(), NullLogger<ArticleAutomationService>.Instance);
 
         await service.ResolveDecisionAsync("run1", "dec1", continueCreating: true);
@@ -524,8 +524,9 @@ public class ArticleAutomationServiceTests
 
         var service = new ArticleAutomationService(
             new Mock<ITopicDiscoveryService>().Object, new Mock<IAiArticleGenerator>().Object,
-            articles.Object, new Mock<IArticleRepository>().Object, new Mock<ICategoryService>().Object,
-            state.Object, new AutomationCoordinator(), NullLogger<ArticleAutomationService>.Instance);
+            AllowAllCountries().Object, articles.Object, new Mock<IArticleRepository>().Object,
+            new Mock<ICategoryService>().Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
 
         await service.ResolveDecisionAsync("run2", "dec2", continueCreating: false);
 
@@ -533,6 +534,258 @@ public class ArticleAutomationServiceTests
         Assert.Equal(AutomationDecisionStatus.Omitido, decision.Status);
         Assert.Null(decision.DraftJson);
         articles.Verify(a => a.CreateAsync(It.IsAny<ArticleDto>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_Omits_Whole_Topic_When_Country_Validation_Rejects_It()
+    {
+        var discovery = new Mock<ITopicDiscoveryService>();
+        discovery.Setup(d => d.DiscoverAsync(It.IsAny<TopicDiscoveryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DiscoveryResult
+            {
+                Topics =
+                [
+                    new DiscoveredTopic { Title = "Noticia local de México", BaseTopic = "local" },
+                    new DiscoveredTopic { Title = "Otra noticia local de México", BaseTopic = "local" },
+                    new DiscoveredTopic { Title = "Noticia internacional", BaseTopic = "internacional" }
+                ]
+            });
+
+        var ai = new Mock<IAiArticleGenerator>();
+        ai.Setup(a => a.GenerateAsync(It.IsAny<TopicGenerationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TopicGenerationRequest request, CancellationToken _) => BuildValidArticle(request.TopicTitle));
+
+        var validator = new Mock<ITopicCountryValidator>();
+        validator.Setup(v => v.ValidateAsync(It.IsAny<TopicCountryCheckRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TopicCountryCheckRequest request, CancellationToken _) =>
+                request.TopicTitle == "Noticia local de México"
+                    ? new TopicCountryCheckResult(false, "El tema pertenece a otro país.", 42)
+                    : new TopicCountryCheckResult(true));
+
+        var articles = new Mock<IArticleService>();
+        articles.Setup(a => a.CreateAsync(It.IsAny<ArticleDto>()))
+            .ReturnsAsync((ArticleDto dto) => new ArticleResponseDto
+            {
+                Id = dto.Title,
+                Title = dto.Title,
+                Status = "Borrador"
+            });
+
+        var articleRepo = new Mock<IArticleRepository>();
+        articleRepo.Setup(r => r.SlugExistsAsync(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync(false);
+
+        var categories = new Mock<ICategoryService>();
+        categories.Setup(c => c.GetAllAsync()).ReturnsAsync(new List<CategoryResponseDto>());
+
+        var state = new Mock<IAutomationStateRepository>();
+        state.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new AutomationSettings
+            {
+                Enabled = true,
+                BaseTopics = ["local", "internacional"],
+                DiscoverWithSerper = true,
+                RoundRobinTopics = true,
+                MaxArticlesPerRun = 1,
+                Country = "mx",
+                AutoStandards = false
+            });
+        state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        state.Setup(s => s.InsertRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+        state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+
+        var service = new ArticleAutomationService(
+            discovery.Object, ai.Object, validator.Object, articles.Object, articleRepo.Object,
+            categories.Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
+
+        var run = await service.RunOnceAsync(AutomationTrigger.Manual, CancellationToken.None);
+
+        Assert.NotNull(run);
+        Assert.Equal(["Noticia internacional"], run!.GeneratedArticles.Select(a => a.Title).ToArray());
+        var skipped = Assert.Single(run.SkippedTopics);
+        Assert.Equal("Noticia local de México", skipped.TopicTitle);
+        Assert.Equal("local", skipped.BaseTopic);
+        Assert.Contains("otro país", skipped.Reason);
+        Assert.Equal(42, run.TotalTokens);
+        ai.Verify(a => a.GenerateAsync(
+            It.Is<TopicGenerationRequest>(r => r.TopicTitle == "Otra noticia local de México"),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_Omits_Topic_When_Country_Validation_Fails()
+    {
+        var discovery = new Mock<ITopicDiscoveryService>();
+        discovery.Setup(d => d.DiscoverAsync(It.IsAny<TopicDiscoveryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DiscoveryResult { Topics = [new DiscoveredTopic { Title = "Noticia sin validar" }] });
+
+        var validator = new Mock<ITopicCountryValidator>();
+        validator.Setup(v => v.ValidateAsync(It.IsAny<TopicCountryCheckRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("sin conexión"));
+
+        var ai = new Mock<IAiArticleGenerator>();
+        var articles = new Mock<IArticleService>();
+
+        var articleRepo = new Mock<IArticleRepository>();
+        articleRepo.Setup(r => r.SlugExistsAsync(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync(false);
+
+        var categories = new Mock<ICategoryService>();
+        categories.Setup(c => c.GetAllAsync()).ReturnsAsync(new List<CategoryResponseDto>());
+
+        var state = new Mock<IAutomationStateRepository>();
+        state.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new AutomationSettings { Enabled = true, BaseTopics = ["tecnologia"], AutoStandards = false });
+        state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        state.Setup(s => s.InsertRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+        state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+
+        var service = new ArticleAutomationService(
+            discovery.Object, ai.Object, validator.Object, articles.Object, articleRepo.Object,
+            categories.Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
+
+        var run = await service.RunOnceAsync(AutomationTrigger.Manual, CancellationToken.None);
+
+        Assert.NotNull(run);
+        Assert.Empty(run!.GeneratedArticles);
+        Assert.Empty(run.PendingDecisions);
+        var skipped = Assert.Single(run.SkippedTopics);
+        Assert.Equal("Noticia sin validar", skipped.TopicTitle);
+        Assert.Contains("sin conexión", skipped.Reason);
+        ai.Verify(a => a.GenerateAsync(It.IsAny<TopicGenerationRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        articles.Verify(a => a.CreateAsync(It.IsAny<ArticleDto>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_Does_Not_Validate_Country_When_Serper_Is_Disabled()
+    {
+        var discovery = new Mock<ITopicDiscoveryService>();
+        var validator = new Mock<ITopicCountryValidator>();
+
+        var ai = new Mock<IAiArticleGenerator>();
+        ai.Setup(a => a.GenerateAsync(It.IsAny<TopicGenerationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TopicGenerationRequest request, CancellationToken _) => BuildValidArticle(request.TopicTitle));
+
+        var articles = new Mock<IArticleService>();
+        articles.Setup(a => a.CreateAsync(It.IsAny<ArticleDto>()))
+            .ReturnsAsync((ArticleDto dto) => new ArticleResponseDto
+            {
+                Id = dto.Title,
+                Title = dto.Title,
+                Status = "Borrador"
+            });
+
+        var articleRepo = new Mock<IArticleRepository>();
+        articleRepo.Setup(r => r.SlugExistsAsync(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync(false);
+
+        var categories = new Mock<ICategoryService>();
+        categories.Setup(c => c.GetAllAsync()).ReturnsAsync(new List<CategoryResponseDto>());
+
+        var state = new Mock<IAutomationStateRepository>();
+        state.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new AutomationSettings
+            {
+                Enabled = true,
+                BaseTopics = ["tecnologia"],
+                DiscoverWithSerper = false,
+                AutoStandards = false
+            });
+        state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        state.Setup(s => s.InsertRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+        state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+
+        var service = new ArticleAutomationService(
+            discovery.Object, ai.Object, validator.Object, articles.Object, articleRepo.Object,
+            categories.Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
+
+        var run = await service.RunOnceAsync(AutomationTrigger.Manual, CancellationToken.None);
+
+        Assert.NotNull(run);
+        Assert.Single(run!.GeneratedArticles);
+        Assert.Empty(run.SkippedTopics);
+        validator.Verify(v => v.ValidateAsync(
+            It.IsAny<TopicCountryCheckRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        discovery.Verify(d => d.DiscoverAsync(
+            It.IsAny<TopicDiscoveryRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_Without_RoundRobin_Skips_Only_Rejected_Topic()
+    {
+        var discovery = new Mock<ITopicDiscoveryService>();
+        discovery.Setup(d => d.DiscoverAsync(It.IsAny<TopicDiscoveryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DiscoveryResult
+            {
+                Topics =
+                [
+                    new DiscoveredTopic { Title = "Tema de otro país", BaseTopic = "a" },
+                    new DiscoveredTopic { Title = "Tema del país", BaseTopic = "b" }
+                ]
+            });
+
+        var ai = new Mock<IAiArticleGenerator>();
+        ai.Setup(a => a.GenerateAsync(It.IsAny<TopicGenerationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TopicGenerationRequest request, CancellationToken _) => BuildValidArticle(request.TopicTitle));
+
+        var validator = new Mock<ITopicCountryValidator>();
+        validator.Setup(v => v.ValidateAsync(It.IsAny<TopicCountryCheckRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TopicCountryCheckRequest request, CancellationToken _) =>
+                request.TopicTitle == "Tema de otro país"
+                    ? new TopicCountryCheckResult(false, "Otro país.")
+                    : new TopicCountryCheckResult(true));
+
+        var articles = new Mock<IArticleService>();
+        articles.Setup(a => a.CreateAsync(It.IsAny<ArticleDto>()))
+            .ReturnsAsync((ArticleDto dto) => new ArticleResponseDto
+            {
+                Id = dto.Title,
+                Title = dto.Title,
+                Status = "Borrador"
+            });
+
+        var articleRepo = new Mock<IArticleRepository>();
+        articleRepo.Setup(r => r.SlugExistsAsync(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync(false);
+
+        var categories = new Mock<ICategoryService>();
+        categories.Setup(c => c.GetAllAsync()).ReturnsAsync(new List<CategoryResponseDto>());
+
+        var state = new Mock<IAutomationStateRepository>();
+        state.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new AutomationSettings
+            {
+                Enabled = true,
+                BaseTopics = ["a", "b"],
+                DiscoverWithSerper = true,
+                RoundRobinTopics = false,
+                MaxArticlesPerRun = 5,
+                AutoStandards = false
+            });
+        state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        state.Setup(s => s.InsertRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+        state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+
+        var service = new ArticleAutomationService(
+            discovery.Object, ai.Object, validator.Object, articles.Object, articleRepo.Object,
+            categories.Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
+
+        var run = await service.RunOnceAsync(AutomationTrigger.Manual, CancellationToken.None);
+
+        Assert.NotNull(run);
+        Assert.Equal(["Tema del país"], run!.GeneratedArticles.Select(a => a.Title).ToArray());
+        var skipped = Assert.Single(run.SkippedTopics);
+        Assert.Equal("Tema de otro país", skipped.TopicTitle);
+    }
+
+    /// <summary>Validador de país de prueba que acepta cualquier tema.</summary>
+    private static Mock<ITopicCountryValidator> AllowAllCountries()
+    {
+        var validator = new Mock<ITopicCountryValidator>();
+        validator.Setup(v => v.ValidateAsync(
+                It.IsAny<TopicCountryCheckRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TopicCountryCheckResult(true));
+        return validator;
     }
 
     /// <summary>Artículo de prueba que no cumple la estructura mínima.</summary>

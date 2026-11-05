@@ -60,6 +60,7 @@ builder.Services.AddScoped<ImageService>();
 // ─── Automatización: Serper + IA ─────────────────────────────────────────────
 builder.Services.AddHttpClient<ITopicDiscoveryService, SerperTopicDiscoveryService>();
 builder.Services.AddHttpClient<IAiArticleGenerator, OpenAiCompatibleArticleGenerator>();
+builder.Services.AddHttpClient<ITopicCountryValidator, OpenAiCompatibleTopicCountryValidator>();
 builder.Services.AddHttpClient<IAiArticleRewriter, OpenAiCompatibleArticleRewriter>();
 builder.Services.AddHttpClient<IProviderBalanceService, ProviderBalanceService>();
 

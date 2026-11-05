@@ -65,6 +65,9 @@ public class AutomationRun
     /// <summary>Temáticas repetidas pendientes de decisión del usuario.</summary>
     public List<AutomationDecision> PendingDecisions { get; set; } = [];
 
+    /// <summary>Temas descartados por no corresponder al país configurado.</summary>
+    public List<AutomationSkippedTopic> SkippedTopics { get; set; } = [];
+
     /// <summary>Hashes de títulos de temáticas procesadas (para deduplicación).</summary>
     public List<string> TopicHashes { get; set; } = [];
 
@@ -83,6 +86,20 @@ public class GeneratedArticleInfo
 
     /// <summary>"Publicado", "Programado" o "Borrador".</summary>
     public string Status { get; set; } = string.Empty;
+}
+
+/// <summary>Tema descartado porque la IA determinó que no corresponde al país configurado.</summary>
+[BsonIgnoreExtraElements]
+public class AutomationSkippedTopic
+{
+    public string TopicTitle { get; set; } = string.Empty;
+    public string? Source { get; set; }
+
+    /// <summary>Temática base a la que pertenecía el candidato.</summary>
+    public string? BaseTopic { get; set; }
+
+    /// <summary>Motivo del descarte indicado por la IA (o el error técnico que lo impidió validar).</summary>
+    public string? Reason { get; set; }
 }
 
 /// <summary>Decisión editorial sobre una temática detectada como repetida.</summary>

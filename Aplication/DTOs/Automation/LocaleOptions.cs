@@ -19,4 +19,15 @@ public static class LocaleOptions
         ("es", "Español"), ("en", "Inglés"), ("pt", "Portugués"),
         ("fr", "Francés"), ("de", "Alemán"), ("it", "Italiano")
     ];
+
+    /// <summary>Devuelve el nombre legible del país a partir de su código (gl).</summary>
+    public static string DescribeCountry(string? code)
+    {
+        var normalized = (code ?? string.Empty).Trim();
+        var match = Countries.FirstOrDefault(c =>
+            string.Equals(c.Code, normalized, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(match.Name)) return match.Name;
+        return string.IsNullOrWhiteSpace(normalized) ? "Estados Unidos" : normalized;
+    }
 }

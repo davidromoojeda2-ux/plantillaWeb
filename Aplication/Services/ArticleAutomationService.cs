@@ -31,6 +31,7 @@ public sealed class ArticleAutomationService : IAutomationService
 
     private readonly ITopicDiscoveryService _discovery;
     private readonly IAiArticleGenerator _ai;
+    private readonly ITopicCountryValidator _countryValidator;
     private readonly IArticleService _articleService;
     private readonly IArticleRepository _articleRepository;
     private readonly ICategoryService _categoryService;
@@ -41,6 +42,7 @@ public sealed class ArticleAutomationService : IAutomationService
     public ArticleAutomationService(
         ITopicDiscoveryService discovery,
         IAiArticleGenerator ai,
+        ITopicCountryValidator countryValidator,
         IArticleService articleService,
         IArticleRepository articleRepository,
         ICategoryService categoryService,
@@ -50,6 +52,7 @@ public sealed class ArticleAutomationService : IAutomationService
     {
         _discovery = discovery;
         _ai = ai;
+        _countryValidator = countryValidator;
         _articleService = articleService;
         _articleRepository = articleRepository;
         _categoryService = categoryService;
@@ -145,6 +148,9 @@ public sealed class ArticleAutomationService : IAutomationService
 
                 // Fase 1: una oportunidad real por temática. Si el primer candidato ya existe,
                 // se busca el siguiente de la misma temática antes de pasar a la siguiente.
+                // Una temática descartada por país no vuelve a intentarse en esta corrida.
+                var skippedBaseTopics = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
                 if (settings.RoundRobinTopics)
                 {
                     foreach (var group in groups)
@@ -153,8 +159,20 @@ public sealed class ArticleAutomationService : IAutomationService
 
                         while (group.HasNext)
                         {
-                            var outcome = await ProcessTopicAsync(run, group.Next()!, settings, runToken);
+                            var topic = group.Next()!;
+                            if (skippedBaseTopics.Contains(BaseTopicKey(topic)))
+                            {
+                                group.Skipped = true;
+                                break;
+                            }
+
+                            var outcome = await ProcessTopicAsync(run, topic, settings, runToken);
                             if (outcome == TopicOutcome.Generated) generated++;
+                            if (outcome == TopicOutcome.NotRelevant)
+                            {
+                                skippedBaseTopics.Add(BaseTopicKey(topic));
+                                group.Skipped = true;
+                            }
                             if (outcome != TopicOutcome.Duplicate) break;
                         }
                     }
@@ -168,11 +186,24 @@ public sealed class ArticleAutomationService : IAutomationService
                     foreach (var group in groups)
                     {
                         if (generated >= targetCount) break;
-                        if (!group.HasNext) continue;
+                        if (group.Skipped || !group.HasNext) continue;
 
                         progressed = true;
-                        var outcome = await ProcessTopicAsync(run, group.Next()!, settings, runToken);
+                        var topic = group.Next()!;
+
+                        if (skippedBaseTopics.Contains(BaseTopicKey(topic)))
+                        {
+                            if (settings.RoundRobinTopics) group.Skipped = true;
+                            continue;
+                        }
+
+                        var outcome = await ProcessTopicAsync(run, topic, settings, runToken);
                         if (outcome == TopicOutcome.Generated) generated++;
+                        if (outcome == TopicOutcome.NotRelevant)
+                        {
+                            skippedBaseTopics.Add(BaseTopicKey(topic));
+                            if (settings.RoundRobinTopics) group.Skipped = true;
+                        }
                     }
 
                     if (!progressed) break;
@@ -462,6 +493,14 @@ public sealed class ArticleAutomationService : IAutomationService
             return TopicOutcome.Duplicate;
         }
 
+        // El filtro de país de Serper (gl) es solo una pista de localización: antes de
+        // redactar se confirma con IA que el tema corresponde al país configurado.
+        if (settings.DiscoverWithSerper)
+        {
+            var check = await ValidateCountryAsync(run, topic, settings, ct);
+            if (!check) return TopicOutcome.NotRelevant;
+        }
+
         try
         {
             var (info, pendingDecision, totalTokens) = await GenerateAndCreateAsync(topic, settings, null, ct);
@@ -493,6 +532,73 @@ public sealed class ArticleAutomationService : IAutomationService
     }
 
     /// <summary>
+    /// Confirma con la IA que el tema corresponde al país configurado. Devuelve <c>false</c>
+    /// cuando no es relevante o cuando la validación no se pudo completar (fail-closed):
+    /// en ambos casos la temática se omite en esta corrida y se registra el motivo.
+    /// </summary>
+    private async Task<bool> ValidateCountryAsync(
+        AutomationRun run, DiscoveredTopic topic, AutomationSettings settings, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _countryValidator.ValidateAsync(new TopicCountryCheckRequest
+            {
+                TopicTitle = topic.Title,
+                Snippet = topic.Snippet,
+                Source = topic.Source,
+                CountryCode = settings.Country,
+                Language = settings.Language,
+                ApiKey = settings.AiApiKey,
+                BaseUrl = settings.AiBaseUrl,
+                Model = settings.AiModel
+            }, ct);
+
+            AccumulateUsage(run, result.TotalTokens);
+
+            if (result.IsRelevant) return true;
+
+            run.SkippedTopics.Add(new AutomationSkippedTopic
+            {
+                TopicTitle = topic.Title,
+                Source = topic.Source,
+                BaseTopic = topic.BaseTopic,
+                Reason = string.IsNullOrWhiteSpace(result.Reason)
+                    ? $"El tema no corresponde al país configurado."
+                    : result.Reason.Trim()
+            });
+
+            _logger.LogInformation(
+                "Tema '{Topic}' omitido: no corresponde al país configurado ({Country}).",
+                topic.Title, settings.Country);
+            return false;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Fail-closed: si no se puede validar, no se redacta el artículo.
+            run.SkippedTopics.Add(new AutomationSkippedTopic
+            {
+                TopicTitle = topic.Title,
+                Source = topic.Source,
+                BaseTopic = topic.BaseTopic,
+                Reason = $"No se pudo validar el país: {ex.Message}"
+            });
+
+            _logger.LogWarning(ex,
+                "No se pudo validar el país del tema '{Topic}'; se omite la temática.", topic.Title);
+            return false;
+        }
+    }
+
+    private static string BaseTopicKey(DiscoveredTopic topic) =>
+        string.IsNullOrWhiteSpace(topic.BaseTopic)
+            ? topic.Title.Trim()
+            : topic.BaseTopic.Trim();
+
+    /// <summary>
     /// Agrupa los candidatos por temática base. Con round-robin se respeta el orden de
     /// configuración y cada temática recibe su propio turno; sin round-robin se conserva
     /// una única secuencia en el orden descubierto.
@@ -507,9 +613,7 @@ public sealed class ArticleAutomationService : IAutomationService
 
         foreach (var topic in topics)
         {
-            var key = string.IsNullOrWhiteSpace(topic.BaseTopic)
-                ? topic.Title.Trim()
-                : topic.BaseTopic.Trim();
+            var key = BaseTopicKey(topic);
 
             if (!byKey.TryGetValue(key, out var list))
             {
@@ -544,6 +648,7 @@ public sealed class ArticleAutomationService : IAutomationService
         Generated,
         Pending,
         Duplicate,
+        NotRelevant,
         Failed
     }
 
@@ -553,6 +658,10 @@ public sealed class ArticleAutomationService : IAutomationService
         public List<DiscoveredTopic> Candidates { get; init; } = [];
         public int Cursor { get; set; }
         public bool HasNext => Cursor < Candidates.Count;
+
+        /// <summary>La temática se omite en la corrida (por país) y no admite más candidatos.</summary>
+        public bool Skipped { get; set; }
+
         public DiscoveredTopic? Next() => HasNext ? Candidates[Cursor++] : null;
     }
 
