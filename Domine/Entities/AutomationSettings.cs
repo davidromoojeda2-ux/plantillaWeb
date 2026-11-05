@@ -43,10 +43,16 @@ public class AutomationSettings
     /// <summary>Idioma (código hl) para las consultas y la generación.</summary>
     public string Language { get; set; } = "es";
 
-    /// <summary>Máximo de artículos a generar por corrida.</summary>
+    /// <summary>
+    /// Máximo total de artículos por corrida. Con round-robin activo se eleva al menos
+    /// al número de temáticas base para generar una pieza por temática.
+    /// </summary>
     public int MaxArticlesPerRun { get; set; } = 5;
 
-    /// <summary>Reparte los candidatos entre las temáticas base (round-robin) en lugar de concatenar.</summary>
+    /// <summary>
+    /// Reparte los candidatos entre las temáticas base (round-robin) en lugar de concatenar
+    /// y garantiza al menos un artículo por temática cuando hay candidatos disponibles.
+    /// </summary>
     public bool RoundRobinTopics { get; set; } = true;
 
     /// <summary>Cantidad de palabras deseada para cada artículo generado.</summary>

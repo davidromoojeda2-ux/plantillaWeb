@@ -55,6 +55,203 @@ public class ArticleAutomationServiceTests
     }
 
     [Fact]
+    public async Task RunOnceAsync_RoundRobin_Generates_One_Article_Per_Base_Topic()
+    {
+        var discovery = new Mock<ITopicDiscoveryService>();
+        TopicDiscoveryRequest? captured = null;
+        discovery.Setup(d => d.DiscoverAsync(It.IsAny<TopicDiscoveryRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<TopicDiscoveryRequest, CancellationToken>((request, _) => captured = request)
+            .ReturnsAsync(new DiscoveryResult
+            {
+                Topics =
+                [
+                    new DiscoveredTopic { Title = "Kit solar portátil", BaseTopic = "Kit solar" },
+                    new DiscoveredTopic { Title = "Inversor híbrido 5 kW", BaseTopic = "Inversor híbrido" },
+                    new DiscoveredTopic { Title = "Placa solar 450 W", BaseTopic = "Energía de placa 450 W" }
+                ]
+            });
+
+        var ai = new Mock<IAiArticleGenerator>();
+        ai.Setup(a => a.GenerateAsync(It.IsAny<TopicGenerationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TopicGenerationRequest request, CancellationToken _) => BuildValidArticle(request.TopicTitle));
+
+        var created = 0;
+        var articles = new Mock<IArticleService>();
+        articles.Setup(a => a.CreateAsync(It.IsAny<ArticleDto>()))
+            .ReturnsAsync((ArticleDto dto) => new ArticleResponseDto
+            {
+                Id = $"id{++created}",
+                Title = dto.Title,
+                Status = "Borrador"
+            });
+
+        var articleRepo = new Mock<IArticleRepository>();
+        articleRepo.Setup(r => r.SlugExistsAsync(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync(false);
+
+        var categories = new Mock<ICategoryService>();
+        categories.Setup(c => c.GetAllAsync()).ReturnsAsync(new List<CategoryResponseDto>());
+
+        var state = new Mock<IAutomationStateRepository>();
+        state.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new AutomationSettings
+            {
+                Enabled = true,
+                BaseTopics = ["Kit solar", "Inversor híbrido", "Energía de placa 450 W"],
+                DiscoverWithSerper = true,
+                RoundRobinTopics = true,
+                MaxArticlesPerRun = 1,
+                AutoStandards = false
+            });
+        state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        state.Setup(s => s.InsertRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+        state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+
+        var service = new ArticleAutomationService(
+            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            categories.Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
+
+        var run = await service.RunOnceAsync(AutomationTrigger.Manual, CancellationToken.None);
+
+        Assert.NotNull(run);
+        Assert.Equal(
+            ["Kit solar portátil", "Inversor híbrido 5 kW", "Placa solar 450 W"],
+            run!.GeneratedArticles.Select(a => a.Title).ToArray());
+        Assert.NotNull(captured);
+        Assert.True(captured!.Limit >= 6);
+        articles.Verify(a => a.CreateAsync(It.IsAny<ArticleDto>()), Times.Exactly(3));
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_Without_RoundRobin_Respects_MaxArticlesPerRun()
+    {
+        var discovery = new Mock<ITopicDiscoveryService>();
+        discovery.Setup(d => d.DiscoverAsync(It.IsAny<TopicDiscoveryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DiscoveryResult
+            {
+                Topics =
+                [
+                    new DiscoveredTopic { Title = "Tema A", BaseTopic = "a" },
+                    new DiscoveredTopic { Title = "Tema B", BaseTopic = "b" },
+                    new DiscoveredTopic { Title = "Tema C", BaseTopic = "c" }
+                ]
+            });
+
+        var ai = new Mock<IAiArticleGenerator>();
+        ai.Setup(a => a.GenerateAsync(It.IsAny<TopicGenerationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TopicGenerationRequest request, CancellationToken _) => BuildValidArticle(request.TopicTitle));
+
+        var articles = new Mock<IArticleService>();
+        articles.Setup(a => a.CreateAsync(It.IsAny<ArticleDto>()))
+            .ReturnsAsync((ArticleDto dto) => new ArticleResponseDto
+            {
+                Id = dto.Title,
+                Title = dto.Title,
+                Status = "Borrador"
+            });
+
+        var articleRepo = new Mock<IArticleRepository>();
+        articleRepo.Setup(r => r.SlugExistsAsync(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync(false);
+
+        var categories = new Mock<ICategoryService>();
+        categories.Setup(c => c.GetAllAsync()).ReturnsAsync(new List<CategoryResponseDto>());
+
+        var state = new Mock<IAutomationStateRepository>();
+        state.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new AutomationSettings
+            {
+                Enabled = true,
+                BaseTopics = ["a", "b", "c"],
+                DiscoverWithSerper = true,
+                RoundRobinTopics = false,
+                MaxArticlesPerRun = 1,
+                AutoStandards = false
+            });
+        state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        state.Setup(s => s.InsertRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+        state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+
+        var service = new ArticleAutomationService(
+            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            categories.Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
+
+        var run = await service.RunOnceAsync(AutomationTrigger.Manual, CancellationToken.None);
+
+        Assert.NotNull(run);
+        Assert.Single(run!.GeneratedArticles);
+        Assert.Equal("Tema A", run.GeneratedArticles[0].Title);
+    }
+
+    [Fact]
+    public async Task RunOnceAsync_RoundRobin_Skips_Duplicate_And_Covers_Remaining_Topics()
+    {
+        const string duplicateTitle = "Kit solar repetido";
+        var duplicateHash = SlugGenerator.Hash(duplicateTitle);
+
+        var discovery = new Mock<ITopicDiscoveryService>();
+        discovery.Setup(d => d.DiscoverAsync(It.IsAny<TopicDiscoveryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DiscoveryResult
+            {
+                Topics =
+                [
+                    new DiscoveredTopic { Title = duplicateTitle, BaseTopic = "Kit solar" },
+                    new DiscoveredTopic { Title = "Inversor híbrido nuevo", BaseTopic = "Inversor híbrido" },
+                    new DiscoveredTopic { Title = "Placa solar 500 W", BaseTopic = "Placa solar" },
+                    new DiscoveredTopic { Title = "Kit solar de respaldo", BaseTopic = "Kit solar" }
+                ]
+            });
+
+        var ai = new Mock<IAiArticleGenerator>();
+        ai.Setup(a => a.GenerateAsync(It.IsAny<TopicGenerationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((TopicGenerationRequest request, CancellationToken _) => BuildValidArticle(request.TopicTitle));
+
+        var articles = new Mock<IArticleService>();
+        articles.Setup(a => a.CreateAsync(It.IsAny<ArticleDto>()))
+            .ReturnsAsync((ArticleDto dto) => new ArticleResponseDto
+            {
+                Id = dto.Title,
+                Title = dto.Title,
+                Status = "Borrador"
+            });
+
+        var articleRepo = new Mock<IArticleRepository>();
+        articleRepo.Setup(r => r.SlugExistsAsync(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync(false);
+
+        var categories = new Mock<ICategoryService>();
+        categories.Setup(c => c.GetAllAsync()).ReturnsAsync(new List<CategoryResponseDto>());
+
+        var state = new Mock<IAutomationStateRepository>();
+        state.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new AutomationSettings
+            {
+                Enabled = true,
+                BaseTopics = ["Kit solar", "Inversor híbrido", "Placa solar"],
+                DiscoverWithSerper = true,
+                RoundRobinTopics = true,
+                MaxArticlesPerRun = 1,
+                AutoStandards = false
+            });
+        state.Setup(s => s.HashExistsAsync(It.IsAny<string>()))
+            .ReturnsAsync((string hash) => hash == duplicateHash);
+        state.Setup(s => s.InsertRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+        state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+
+        var service = new ArticleAutomationService(
+            discovery.Object, ai.Object, articles.Object, articleRepo.Object,
+            categories.Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
+
+        var run = await service.RunOnceAsync(AutomationTrigger.Manual, CancellationToken.None);
+
+        Assert.NotNull(run);
+        Assert.Equal(
+            ["Kit solar de respaldo", "Inversor híbrido nuevo", "Placa solar 500 W"],
+            run!.GeneratedArticles.Select(a => a.Title).ToArray());
+        Assert.Contains(run.PendingDecisions, d => d.TopicTitle == duplicateTitle);
+    }
+
+    [Fact]
     public async Task RunOnceAsync_Duplicate_Topic_Is_Flagged_For_Decision()
     {
         var discovery = new Mock<ITopicDiscoveryService>();

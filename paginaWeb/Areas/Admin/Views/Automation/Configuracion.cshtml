@@ -238,13 +238,14 @@
                                                                     automáticamente" en Generación avanzada para personalizarlo.</p>
                                                                 </div>
 
+                                                                <p class="text-xs text-slate-400 mt-2">El máximo es el total de la corrida. Con «Repartir entre temáticas» activo se genera al menos un artículo por cada temática base, aunque este valor sea menor.</p>
+
                                                                 <label class="flex items-center gap-3 text-sm text-slate-700 mt-4">
                                                                     <input type="checkbox" asp-for="RoundRobinTopics"
                                                                            class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
                                                                     Repartir entre temáticas (round-robin)
                                                                 </label>
-                                                                <p class="text-xs text-slate-400 mt-1">Toma una noticia de cada temática base antes de repetir, en lugar de
-                                                                    usar solo la primera.</p>
+                                                                <p class="text-xs text-slate-400 mt-1">Toma una noticia de cada temática base antes de repetir. Si el máximo por corrida es menor que el número de temáticas, se completa igualmente una por temática.</p>
 
                                                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
                                                                         <div>

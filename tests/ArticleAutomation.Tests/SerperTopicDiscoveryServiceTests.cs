@@ -31,6 +31,7 @@ public class SerperTopicDiscoveryServiceTests
         var topic = Assert.Single(result.Topics);
         Assert.Equal("Tema Uno", topic.Title);
         Assert.Equal("Fuente", topic.Source);
+        Assert.Equal("deportes", topic.BaseTopic);
     }
 
     [Fact]
@@ -72,6 +73,7 @@ public class SerperTopicDiscoveryServiceTests
             CancellationToken.None);
 
         Assert.Equal(["A1", "B1", "A2", "B2"], result.Topics.Select(t => t.Title).ToArray());
+        Assert.Equal(["a", "b", "a", "b"], result.Topics.Select(t => t.BaseTopic).ToArray());
         Assert.Equal(2, result.Credits);
     }
 

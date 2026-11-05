@@ -89,23 +89,34 @@ public sealed class ArticleAutomationService : IAutomationService
 
             try
             {
+                var baseTopics = settings.BaseTopics
+                    .Where(t => !string.IsNullOrWhiteSpace(t))
+                    .Select(t => t.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                // Con round-robin se garantiza al menos un artículo por temática base,
+                // aunque el máximo configurado sea menor que el número de temáticas.
+                var targetCount = settings.RoundRobinTopics
+                    ? Math.Max(settings.MaxArticlesPerRun, baseTopics.Count)
+                    : settings.MaxArticlesPerRun;
+
                 IReadOnlyList<DiscoveredTopic> topics;
                 if (!settings.DiscoverWithSerper)
                 {
                     // Sin Serper: cada temática base es directamente la keyword principal.
-                    topics = settings.BaseTopics
-                        .Where(t => !string.IsNullOrWhiteSpace(t))
-                        .Select(t => new DiscoveredTopic { Title = t.Trim() })
+                    topics = baseTopics
+                        .Select(t => new DiscoveredTopic { Title = t, BaseTopic = t })
                         .ToList();
                 }
                 else
                 {
                     var discovery = await _discovery.DiscoverAsync(new TopicDiscoveryRequest
                     {
-                        Topics = settings.BaseTopics,
+                        Topics = baseTopics,
                         Country = settings.Country,
                         Language = settings.Language,
-                        Limit = Math.Max(1, settings.MaxArticlesPerRun * 2),
+                        Limit = Math.Max(1, targetCount * 2),
                         ApiKey = settings.SerperApiKey,
                         Num = Math.Max(1, settings.SerperNum),
                         Recency = settings.SerperRecency,
@@ -121,50 +132,50 @@ public sealed class ArticleAutomationService : IAutomationService
                 run.DiscoveredTopicsCount = topics.Count;
 
                 var generated = 0;
-                foreach (var topic in topics)
+                var groups = BuildTopicGroups(topics, baseTopics, settings.RoundRobinTopics);
+
+                if (settings.RoundRobinTopics)
                 {
-                    if (generated >= settings.MaxArticlesPerRun) break;
-                    runToken.ThrowIfCancellationRequested();
-
-                    var hash = SlugGenerator.Hash(topic.Title);
-                    run.TopicHashes.Add(hash);
-
-                    var slug = SlugGenerator.Slugify(topic.Title);
-                    var isDuplicate = await _state.HashExistsAsync(hash)
-                                      || await _articleRepository.SlugExistsAsync(slug);
-
-                    if (isDuplicate)
+                    foreach (var baseTopic in baseTopics)
                     {
-                        run.PendingDecisions.Add(new AutomationDecision
-                        {
-                            TopicTitle = topic.Title,
-                            Source = topic.Source
-                        });
-                        continue;
+                        if (!groups.Any(g => string.Equals(g.Key, baseTopic, StringComparison.OrdinalIgnoreCase)))
+                            _logger.LogWarning("Serper no devolvió candidatos para la temática base '{Topic}'.", baseTopic);
                     }
+                }
 
-                    try
+                // Fase 1: una oportunidad real por temática. Si el primer candidato ya existe,
+                // se busca el siguiente de la misma temática antes de pasar a la siguiente.
+                if (settings.RoundRobinTopics)
+                {
+                    foreach (var group in groups)
                     {
-                        var (info, pendingDecision, totalTokens) = await GenerateAndCreateAsync(topic, settings, null, runToken);
-                        AccumulateUsage(run, totalTokens);
-                        if (info is not null)
+                        if (generated >= targetCount) break;
+
+                        while (group.HasNext)
                         {
-                            run.GeneratedArticles.Add(info);
-                            generated++;
-                        }
-                        else if (pendingDecision is not null)
-                        {
-                            run.PendingDecisions.Add(pendingDecision);
+                            var outcome = await ProcessTopicAsync(run, group.Next()!, settings, runToken);
+                            if (outcome == TopicOutcome.Generated) generated++;
+                            if (outcome != TopicOutcome.Duplicate) break;
                         }
                     }
-                    catch (OperationCanceledException) when (runToken.IsCancellationRequested)
+                }
+
+                // Fase 2: completa el cupo restante repartiendo los candidatos entre temáticas.
+                while (generated < targetCount)
+                {
+                    var progressed = false;
+
+                    foreach (var group in groups)
                     {
-                        throw;
+                        if (generated >= targetCount) break;
+                        if (!group.HasNext) continue;
+
+                        progressed = true;
+                        var outcome = await ProcessTopicAsync(run, group.Next()!, settings, runToken);
+                        if (outcome == TopicOutcome.Generated) generated++;
                     }
-                    catch (Exception ex)
-                    {
-                        run.Errors.Add($"Error generando '{topic.Title}': {ex.Message}");
-                    }
+
+                    if (!progressed) break;
                 }
 
                 run.Status = AutomationRunStatus.Completado;
@@ -423,6 +434,126 @@ public sealed class ArticleAutomationService : IAutomationService
                 "El artículo generado para '{Topic}' no cumple la estructura (intento {Attempt}/{Attempts}): {Errors}",
                 topic.Title, attempt, plan.MaxGenerationAttempts, string.Join(" | ", validation.Errors));
         }
+    }
+
+    /// <summary>
+    /// Procesa un candidato: omite duplicados y genera/registra el artículo.
+    /// Devuelve el resultado para que la corrida decida si debe probar otro candidato.
+    /// </summary>
+    private async Task<TopicOutcome> ProcessTopicAsync(
+        AutomationRun run, DiscoveredTopic topic, AutomationSettings settings, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var hash = SlugGenerator.Hash(topic.Title);
+        run.TopicHashes.Add(hash);
+
+        var slug = SlugGenerator.Slugify(topic.Title);
+        var isDuplicate = await _state.HashExistsAsync(hash)
+                          || await _articleRepository.SlugExistsAsync(slug);
+
+        if (isDuplicate)
+        {
+            run.PendingDecisions.Add(new AutomationDecision
+            {
+                TopicTitle = topic.Title,
+                Source = topic.Source
+            });
+            return TopicOutcome.Duplicate;
+        }
+
+        try
+        {
+            var (info, pendingDecision, totalTokens) = await GenerateAndCreateAsync(topic, settings, null, ct);
+            AccumulateUsage(run, totalTokens);
+
+            if (info is not null)
+            {
+                run.GeneratedArticles.Add(info);
+                return TopicOutcome.Generated;
+            }
+
+            if (pendingDecision is not null)
+            {
+                run.PendingDecisions.Add(pendingDecision);
+                return TopicOutcome.Pending;
+            }
+
+            return TopicOutcome.Failed;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            run.Errors.Add($"Error generando '{topic.Title}': {ex.Message}");
+            return TopicOutcome.Failed;
+        }
+    }
+
+    /// <summary>
+    /// Agrupa los candidatos por temática base. Con round-robin se respeta el orden de
+    /// configuración y cada temática recibe su propio turno; sin round-robin se conserva
+    /// una única secuencia en el orden descubierto.
+    /// </summary>
+    private static List<TopicGroup> BuildTopicGroups(
+        IReadOnlyList<DiscoveredTopic> topics, IReadOnlyList<string> baseTopics, bool roundRobin)
+    {
+        if (!roundRobin)
+            return [new TopicGroup { Candidates = [.. topics] }];
+
+        var byKey = new Dictionary<string, List<DiscoveredTopic>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var topic in topics)
+        {
+            var key = string.IsNullOrWhiteSpace(topic.BaseTopic)
+                ? topic.Title.Trim()
+                : topic.BaseTopic.Trim();
+
+            if (!byKey.TryGetValue(key, out var list))
+            {
+                list = [];
+                byKey[key] = list;
+            }
+
+            list.Add(topic);
+        }
+
+        var groups = new List<TopicGroup>();
+
+        // Primero las temáticas configuradas (aunque Serper no haya devuelto resultados).
+        foreach (var baseTopic in baseTopics)
+        {
+            if (byKey.Remove(baseTopic, out var candidates) && candidates.Count > 0)
+                groups.Add(new TopicGroup { Key = baseTopic, Candidates = candidates });
+        }
+
+        // Después cualquier grupo extra que no corresponda a una temática configurada.
+        foreach (var (key, candidates) in byKey)
+        {
+            if (candidates.Count > 0)
+                groups.Add(new TopicGroup { Key = key, Candidates = candidates });
+        }
+
+        return groups;
+    }
+
+    private enum TopicOutcome
+    {
+        Generated,
+        Pending,
+        Duplicate,
+        Failed
+    }
+
+    private sealed class TopicGroup
+    {
+        public string Key { get; init; } = string.Empty;
+        public List<DiscoveredTopic> Candidates { get; init; } = [];
+        public int Cursor { get; set; }
+        public bool HasNext => Cursor < Candidates.Count;
+        public DiscoveredTopic? Next() => HasNext ? Candidates[Cursor++] : null;
     }
 
     private async Task<GeneratedArticleInfo?> CreateArticleAsync(

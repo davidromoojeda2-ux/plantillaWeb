@@ -79,7 +79,8 @@ public sealed class SerperTopicDiscoveryService : ITopicDiscoveryService
                 {
                     Title = n.Title ?? string.Empty,
                     Source = n.Source,
-                    Snippet = n.Snippet
+                    Snippet = n.Snippet,
+                    BaseTopic = query.Trim()
                 })
                 .ToList();
             perQuery.Add(items);
