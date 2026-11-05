@@ -1030,52 +1030,8 @@
     }
   }
 
-  /* ─── Detalles públicos de los bloques ─────────────────────────────────── */
-  .article-code-wrapper {
-    position: relative;
-    margin: 2.25rem 0;
-  }
-
-  .article-code-wrapper pre {
-    margin: 0;
-  }
-
-  .article-code-copy {
-    position: absolute;
-    top: 0.7rem;
-    right: 0.7rem;
-    z-index: 2;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.35rem 0.6rem;
-    border: 1px solid #334155;
-    border-radius: 0.4rem;
-    background: rgb(30 41 59 / 0.88);
-    color: #cbd5e1;
-    font-size: 0.7rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
-  }
-
-  .article-code-copy:hover {
-    background: #334155;
-    color: #ffffff;
-  }
-
-  .article-prose .callout-title {
-    display: block;
-    margin-bottom: 0.25rem;
-    font-weight: 800;
-  }
-
-  .article-image-credit {
-    display: block;
-    margin-top: 0.15rem;
-    color: #64748b;
-    font-style: normal;
-  }
+  /* Los estilos públicos de los bloques (código, callouts, créditos de imagen)
+     viven en components/article-prose.css para tener una única fuente. */
 }
 
 
