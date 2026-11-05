@@ -97,12 +97,7 @@ public sealed class OpenAiCompatibleTopicCountryValidator : ITopicCountryValidat
     private static bool ParseText(string? value)
     {
         var normalized = value?.Trim().ToLowerInvariant();
-        return normalized switch
-        {
-            "true" or "si" or "sí" or "yes" or "1" => true,
-            "false" or "no" or "0" => false,
-            _ => false
-        };
+        return normalized is "true" or "si" or "sí" or "yes" or "1";
     }
 }
 

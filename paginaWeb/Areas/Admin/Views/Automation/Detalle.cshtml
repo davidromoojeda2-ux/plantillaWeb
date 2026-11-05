@@ -100,6 +100,10 @@
                         {
                             <p class="text-xs text-slate-400 mt-0.5">Temática base: @s.BaseTopic</p>
                         }
+                        @if (!string.IsNullOrWhiteSpace(s.Source))
+                        {
+                            <p class="text-xs text-slate-400 mt-0.5">Fuente: @s.Source</p>
+                        }
                         @if (!string.IsNullOrWhiteSpace(s.Reason))
                         {
                             <p class="text-xs text-rose-700 mt-0.5">@s.Reason</p>

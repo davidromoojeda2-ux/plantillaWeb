@@ -1,5 +1,3 @@
-using Aplication.DTOs.Automation;
-
 namespace Aplication.Interfaces;
 
 /// <summary>Solicitud para comprobar si un tema descubierto corresponde al país configurado.</summary>
