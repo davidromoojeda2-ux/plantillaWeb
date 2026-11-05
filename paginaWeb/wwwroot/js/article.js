@@ -22,45 +22,66 @@
     // 2. √çndice Interactivo ("En esta p√°gina")
     function initTableOfContents() {
         var body = document.getElementById('articleBody');
-        var toc = document.getElementById('tableOfContents');
-        if (!body || !toc) return;
+        // Õndice de escritorio (sidebar) + Ìndice plegable para mÛviles/tablets.
+        var tocs = Array.prototype.filter.call(
+            [document.getElementById('tableOfContents'), document.getElementById('tableOfContentsMobile')],
+            Boolean);
+        if (!body || tocs.length === 0) return;
 
         var headings = body.querySelectorAll('h2, h3');
         if (headings.length === 0) {
-            toc.innerHTML = '<span class="text-[#00296B]/75 italic text-sm">Lectura corrida continua</span>';
+            tocs.forEach(function (toc) {
+                toc.innerHTML = '<span class="block px-3 text-blue-100 italic text-sm">Lectura corrida continua</span>';
+            });
+            var mobileWrapper = document.getElementById('mobileTocWrapper');
+            if (mobileWrapper) mobileWrapper.classList.add('hidden');
             return;
         }
 
-        toc.innerHTML = '';
+        // Clases pensadas para fondo azul marino (#00296B): alto contraste.
+        var activeClasses = ['bg-white/10', 'text-[#FDC500]!', 'border-[#FDC500]!'];
+        var baseClass = 'block border-l-2 border-transparent rounded-r-md py-2 pr-3 leading-snug transition-colors hover:bg-white/5 hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-[#FDC500] ';
+
         headings.forEach(function (h, idx) {
             // El renderizador de bloques genera ids deterministas; se conservan
             // para que los enlaces profundos y la tabla de contenido coincidan.
             if (!h.id) {
                 h.id = 'seccion-' + idx;
             }
-            var id = h.id;
-
-            var link = document.createElement('a');
-            link.href = '#' + id;
-            link.innerText = h.innerText;
-            link.className = 'block py-1.5 transition text-sm leading-snug rounded-none ' +
-                (h.tagName === 'H3' ? 'pl-3 text-[#00296B]/80 hover:text-[#00296B]' : 'font-medium text-[#00296B] hover:text-[#001D4A]');
-
-            toc.appendChild(link);
         });
 
-        // Resaltar secci√≥n activa al hacer scroll
-        var allLinks = toc.querySelectorAll('a');
+        tocs.forEach(function (toc) {
+            toc.innerHTML = '';
+            headings.forEach(function (h) {
+                var link = document.createElement('a');
+                link.href = '#' + h.id;
+                link.innerText = h.innerText;
+                link.className = baseClass +
+                    (h.tagName === 'H3' ? 'pl-6 text-sm text-blue-100' : 'pl-3 text-[15px] font-semibold text-white');
+                link.addEventListener('click', function () {
+                    var details = toc.closest('details');
+                    if (details) details.open = false;
+                });
+                toc.appendChild(link);
+            });
+        });
+
+        // Resaltar secciÛn activa al hacer scroll
+        var allLinks = document.querySelectorAll('#tableOfContents a, #tableOfContentsMobile a');
         var observer = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
                     allLinks.forEach(function (l) {
-                        l.classList.remove('bg-black/10', 'px-2', '!font-bold', 'border-l-2', 'border-[#00296B]');
+                        activeClasses.forEach(function (c) { l.classList.remove(c); });
+                        l.removeAttribute('aria-current');
                     });
-                    var activeLink = toc.querySelector('a[href="#' + entry.target.id + '"]');
-                    if (activeLink) {
-                        activeLink.classList.add('bg-black/10', 'px-2', '!font-bold', 'border-l-2', 'border-[#00296B]');
-                    }
+                    tocs.forEach(function (toc) {
+                        var activeLink = toc.querySelector('a[href="#' + CSS.escape(entry.target.id) + '"]');
+                        if (activeLink) {
+                            activeClasses.forEach(function (c) { activeLink.classList.add(c); });
+                            activeLink.setAttribute('aria-current', 'true');
+                        }
+                    });
                 }
             });
         }, { rootMargin: '-20% 0px -70% 0px' });
