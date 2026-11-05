@@ -778,6 +778,69 @@ public class ArticleAutomationServiceTests
         Assert.Equal("Tema de otro país", skipped.TopicTitle);
     }
 
+    [Fact]
+    public async Task RunOnceAsync_Removes_Unsolicited_Conclusion_And_Faq_Before_Creating_Article()
+    {
+        var discovery = new Mock<ITopicDiscoveryService>();
+        discovery.Setup(d => d.DiscoverAsync(It.IsAny<TopicDiscoveryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new DiscoveryResult { Topics = [new DiscoveredTopic { Title = "tecnologia" }] });
+
+        var ai = new Mock<IAiArticleGenerator>();
+        ai.Setup(a => a.GenerateAsync(It.IsAny<TopicGenerationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                var article = BuildValidArticle("Tema de prueba");
+                article.Blocks.Add(new ContentHeadingBlockDto { Level = 2, Text = "Preguntas frecuentes" });
+                article.Blocks.Add(new ContentHeadingBlockDto { Level = 3, Text = "¿Pregunta?" });
+                article.Blocks.Add(new ContentParagraphBlockDto { Text = "Respuesta." });
+                return article;
+            });
+
+        ArticleDto? captured = null;
+        var articles = new Mock<IArticleService>();
+        articles.Setup(a => a.CreateAsync(It.IsAny<ArticleDto>()))
+            .Callback<ArticleDto>(dto => captured = dto)
+            .ReturnsAsync(new ArticleResponseDto { Id = "id1", Title = "Tema de prueba", Status = "Borrador" });
+
+        var articleRepo = new Mock<IArticleRepository>();
+        articleRepo.Setup(r => r.SlugExistsAsync(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync(false);
+
+        var categories = new Mock<ICategoryService>();
+        categories.Setup(c => c.GetAllAsync()).ReturnsAsync(new List<CategoryResponseDto>());
+
+        var state = new Mock<IAutomationStateRepository>();
+        state.Setup(s => s.GetSettingsAsync())
+            .ReturnsAsync(new AutomationSettings
+            {
+                Enabled = true,
+                BaseTopics = ["tecnologia"],
+                DiscoverWithSerper = false,
+                IncludeConclusion = false,
+                IncludeFaq = false,
+                MinBlocks = 3,
+                MaxGenerationAttempts = 1,
+                AutoStandards = false
+            });
+        state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+        state.Setup(s => s.InsertRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+        state.Setup(s => s.UpdateRunAsync(It.IsAny<AutomationRun>())).Returns(Task.CompletedTask);
+
+        var service = new ArticleAutomationService(
+            discovery.Object, ai.Object, AllowAllCountries().Object, articles.Object, articleRepo.Object,
+            categories.Object, state.Object, new AutomationCoordinator(),
+            NullLogger<ArticleAutomationService>.Instance);
+
+        var run = await service.RunOnceAsync(AutomationTrigger.Manual, CancellationToken.None);
+
+        Assert.NotNull(run);
+        Assert.Single(run!.GeneratedArticles);
+        Assert.NotNull(captured);
+        Assert.DoesNotContain(captured!.Blocks, b =>
+            b is ContentHeadingBlockDto h &&
+            (h.Text.Contains("Conclusión") || h.Text.Contains("Preguntas frecuentes")));
+        Assert.Contains(captured.Blocks, b => b is ContentBulletListBlockDto);
+    }
+
     /// <summary>Validador de país de prueba que acepta cualquier tema.</summary>
     private static Mock<ITopicCountryValidator> AllowAllCountries()
     {

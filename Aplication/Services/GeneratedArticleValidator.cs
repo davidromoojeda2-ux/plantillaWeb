@@ -108,7 +108,7 @@ public static class GeneratedArticleValidator
         var hasList = blocks.Any(b => b is ContentBulletListBlockDto or ContentOrderedListBlockDto);
         var hasTable = blocks.Any(b => b is ContentTableBlockDto);
         var hasQuote = blocks.Any(b => b is ContentQuoteBlockDto);
-        var hasFaq = blocks.Any(b => b is ContentHeadingBlockDto h && IsFaqHeading(h.Text));
+        var hasFaq = blocks.Any(b => b is ContentHeadingBlockDto h && ArticleSectionClassifier.IsFaq(h.Text));
         var hasCta = blocks.Any(b => b is ContentCalloutBlockDto);
         var hasLinks = blocks.Any(ContainsAnchor);
 
@@ -134,7 +134,7 @@ public static class GeneratedArticleValidator
         {
             var conclusionIndex = blocks
                 .Select((b, i) => (b, i))
-                .Where(x => x.b is ContentHeadingBlockDto h && IsConclusionHeading(h.Text))
+                .Where(x => x.b is ContentHeadingBlockDto h && ArticleSectionClassifier.IsConclusion(h.Text))
                 .Select(x => x.i)
                 .DefaultIfEmpty(-1)
                 .Last();
@@ -152,20 +152,6 @@ public static class GeneratedArticleValidator
                 errors.Add("Cierra el artículo con un párrafo de conclusión (puedes precederlo de un encabezado \"Conclusión\").");
             }
         }
-    }
-
-    private static bool IsConclusionHeading(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        var normalized = text.Trim().ToLowerInvariant();
-        return normalized.Contains("conclu") || normalized.Contains("cierre") || normalized.Contains("para terminar");
-    }
-
-    private static bool IsFaqHeading(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        var normalized = text.Trim().ToLowerInvariant();
-        return normalized.Contains("pregunta") || normalized.Contains("faq") || normalized.Contains("frecuente");
     }
 
     private static bool ContainsAnchor(ContentBlockDto block) => block switch

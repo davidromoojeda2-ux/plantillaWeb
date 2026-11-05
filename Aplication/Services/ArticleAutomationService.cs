@@ -427,6 +427,10 @@ public sealed class ArticleAutomationService : IAutomationService
                 Model = settings.AiModel
             }, ct);
 
+            // La IA puede ignorar la instrucción de no añadir secciones opcionales:
+            // se eliminan antes de validar para que nunca se publiquen sin seleccionarlas.
+            GeneratedArticleSectionFilter.Apply(generated, plan);
+
             if (generated.TotalTokens is not null)
                 totalTokens += generated.TotalTokens.Value;
 

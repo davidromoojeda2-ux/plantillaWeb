@@ -274,6 +274,8 @@ public class ArticulosController : Controller
                 Model = settings.AiModel
             });
 
+            GeneratedArticleSectionFilter.Apply(rewritten, plan);
+
             var slugBase = SlugGenerator.Slugify(rewritten.Title);
             var slug = string.IsNullOrWhiteSpace(slugBase)
                 ? $"reescritura-{DateTime.UtcNow:yyyyMMddHHmmss}"
