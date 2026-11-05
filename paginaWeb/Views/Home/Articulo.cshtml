@@ -196,7 +196,7 @@ ImageMapper.GetBestUrl(coverImage);
     <!-- ─── Layout a Dos Columnas de Ancho Completo (Índice Adhesivo + Contenido) ─ -->
     <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-10 items-start">
         <!-- Columna Izquierda Adhesiva (Índice "En esta página") -->
-        <aside class="hidden lg:block lg:col-span-4 xl:col-span-3 sticky top-28 z-10 overflow-hidden bg-[#00296B] text-white rounded-2xl shadow-xl shadow-[#00296B]/20">
+        <aside class="hidden lg:block lg:col-span-3 sticky top-28 z-10 overflow-hidden bg-[#00296B] text-white rounded-2xl shadow-xl shadow-[#00296B]/20">
             <div class="h-1 bg-gradient-to-r from-[#FDC500] to-[#FFD500]" aria-hidden="true"></div>
             <div class="p-6 space-y-4">
                 <h4 class="font-extrabold text-[#FDC500] text-xs uppercase tracking-[0.16em] flex items-center gap-2.5 pb-4 border-b border-white/15">
@@ -238,10 +238,10 @@ ImageMapper.GetBestUrl(coverImage);
         </details>
 
         <!-- Columna Derecha (Cuerpo del Artículo + Autor) -->
-        <main class="min-w-0 lg:col-span-8 xl:col-span-9 bg-white px-4 py-7 min-[400px]:px-5 sm:p-10 md:p-12 lg:px-14 xl:px-16 rounded-2xl border border-slate-200 shadow-sm">
-            <div class="max-w-3xl mx-auto">
+        <main class="min-w-0 lg:col-span-9 bg-white px-4 py-7 min-[400px]:px-5 sm:p-10 md:p-12 lg:px-10 xl:px-12 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="max-w-4xl mx-auto">
                 <div id="articleBody"
-                     class="article-prose max-w-none font-sans leading-relaxed text-slate-800 space-y-6 [&_a]:decoration-[#FDC500] [&_a]:decoration-2 [&_a]:underline-offset-4">
+                     class="article-prose max-w-none font-sans leading-relaxed text-slate-800 [&_a]:decoration-[#FDC500] [&_a]:decoration-2 [&_a]:underline-offset-4">
                     <partial name="Partials/ContentBlocks/_ContentBlocks" model="Model.Blocks" />
                 </div>
 

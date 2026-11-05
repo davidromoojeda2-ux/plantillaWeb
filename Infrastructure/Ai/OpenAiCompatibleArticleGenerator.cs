@@ -180,6 +180,8 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
     {
         "informative" =>
             "artículo informativo. Explica el tema con claridad y de forma completa: qué es, cómo funciona, datos clave, contexto y por qué es relevante, priorizando la comprensión del lector sobre la inmediatez.",
+        "comparative" =>
+            "artículo comparativo. Abre presentando las opciones o alternativas y el criterio de comparación; desarrolla de 3 a 5 secciones con criterios comunes (por ejemplo, características, rendimiento, precio o facilidad de uso), incluye una \"table\" comparativa con encabezados y al menos 2 filas, resume ventajas y desventajas en listas y cierra con una recomendación o veredicto claro según el perfil del lector.",
         "analysis" =>
             "artículo de análisis. Abre con el contexto del tema, desarrolla 3 o 4 secciones con causas, datos e implicaciones, y cierra con una valoración o perspectiva.",
         "guide" =>
