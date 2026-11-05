@@ -100,6 +100,7 @@ public class ArticleAutomationServiceTests
                 DiscoverWithSerper = true,
                 RoundRobinTopics = true,
                 MaxArticlesPerRun = 1,
+                Country = "mx",
                 AutoStandards = false
             });
         state.Setup(s => s.HashExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
@@ -118,7 +119,8 @@ public class ArticleAutomationServiceTests
             ["Kit solar portátil", "Inversor híbrido 5 kW", "Placa solar 450 W"],
             run!.GeneratedArticles.Select(a => a.Title).ToArray());
         Assert.NotNull(captured);
-        Assert.True(captured!.Limit >= 6);
+        Assert.Equal("mx", captured!.Country);
+        Assert.True(captured.Limit >= 6);
         articles.Verify(a => a.CreateAsync(It.IsAny<ArticleDto>()), Times.Exactly(3));
     }
 
