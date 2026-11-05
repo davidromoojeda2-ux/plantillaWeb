@@ -206,9 +206,10 @@ ImageMapper.GetBestUrl(coverImage);
                         </svg>
                     </span>
                     En esta página
+                    <span id="tocCounter" class="ml-auto text-[11px] font-bold tracking-normal normal-case text-blue-100 tabular-nums"></span>
                 </h4>
                 <nav id="tableOfContents" aria-label="Índice del artículo"
-                     class="space-y-1 max-h-[calc(100vh-14rem)] overflow-y-auto -mr-2 pr-2 [scrollbar-width:thin] [scrollbar-color:rgb(253_197_0/0.5)_transparent]">
+                     class="relative space-y-0.5 max-h-[min(22rem,calc(100vh-16rem))] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_bottom,transparent,black_1.25rem,black_calc(100%-1.25rem),transparent)] py-3">
                     <span class="block px-3 text-blue-100 italic text-sm">Cargando secciones...</span>
                 </nav>
             </div>
@@ -240,8 +241,7 @@ ImageMapper.GetBestUrl(coverImage);
         <!-- Columna Derecha (Cuerpo del Artículo + Autor) -->
         <main class="min-w-0 lg:col-span-9 bg-white px-4 py-7 min-[400px]:px-5 sm:p-10 md:p-12 lg:px-10 xl:px-12 rounded-2xl border border-slate-200 shadow-sm">
             <div class="max-w-4xl mx-auto">
-                <div id="articleBody"
-                     class="article-prose max-w-none font-sans leading-relaxed text-slate-800 [&_a]:decoration-[#FDC500] [&_a]:decoration-2 [&_a]:underline-offset-4">
+                <div id="articleBody" class="article-prose max-w-none">
                     <partial name="Partials/ContentBlocks/_ContentBlocks" model="Model.Blocks" />
                 </div>
 
