@@ -146,8 +146,41 @@ public class OpenAiCompatibleArticleGeneratorTests
         Assert.Equal(markers.Count, prompts.Distinct(StringComparer.Ordinal).Count());
     }
 
+    [Fact]
+    public async Task GenerateAsync_Produces_A_Distinct_Prompt_Per_Tone()
+    {
+        var markers = new Dictionary<string, string>
+        {
+            ["informativo"] = "Tono informativo, objetivo y neutro",
+            ["analitico"] = "Tono analítico y riguroso",
+            ["cronica"] = "Tono narrativo de crónica",
+            ["divulgativo"] = "Tono divulgativo y didáctico",
+            ["amigable"] = "Tono cercano y conversacional"
+        };
+
+        var prompts = new List<string>();
+
+        foreach (var (tone, marker) in markers)
+        {
+            var prompt = await CapturePromptAsync("news", tone);
+            Assert.Contains(marker, prompt);
+            prompts.Add(prompt);
+        }
+
+        Assert.Equal(markers.Count, prompts.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Uses_Informativo_As_Default_Tone()
+    {
+        var prompt = await CapturePromptAsync("news", tone: "tono-desconocido");
+
+        Assert.Contains("Tono informativo, objetivo y neutro", prompt);
+    }
+
     private static async Task<string> CapturePromptAsync(
-        string template, bool includeConclusion = false, bool includeFaq = false, bool includeCta = false)
+        string template, string tone = "informativo",
+        bool includeConclusion = false, bool includeFaq = false, bool includeCta = false)
     {
         string? requestBody = null;
 
@@ -183,6 +216,7 @@ public class OpenAiCompatibleArticleGeneratorTests
             TopicTitle = "Tema de prueba",
             ApiKey = "k",
             Template = template,
+            Tone = tone,
             IncludeConclusion = includeConclusion,
             IncludeFaq = includeFaq,
             IncludeCta = includeCta

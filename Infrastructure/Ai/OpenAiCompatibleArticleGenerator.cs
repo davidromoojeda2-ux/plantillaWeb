@@ -136,7 +136,7 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
             $"\"{request.TopicTitle}\"\n" +
             context + source + length + keyword +
             $"Idioma de salida obligatorio: {language}. Escribe todo el contenido visible (título, resumen, meta descripción, bloques y etiquetas) íntegramente en {language}, sin mezclar idiomas.\n" +
-            $"Tono editorial: {DescribeTone(request.Tone)}.\n" +
+            $"Tono editorial: {DescribeTone(request.Tone)}\n" +
             $"Estructura: {DescribeTemplate(request.Template)}.\n" +
             $"Usa al menos {minBlocks} bloques en total (sin máximo).\n" +
             DescribeRequiredSections(request) +
@@ -269,11 +269,36 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
 
     internal static string DescribeTone(string? tone) => tone?.Trim().ToLowerInvariant() switch
     {
-        "analitico" or "analítico" => "analítico, riguroso y con interpretación de los hechos",
-        "cronica" or "crónica" => "narrativo y descriptivo, con ritmo de crónica",
-        "divulgativo" => "divulgativo, claro y cercano, explicando los conceptos técnicos",
-        "amigable" or "conversacional" => "cercano, amable y conversacional, con un lenguaje natural y próximo, como si hablaras directamente al lector",
-        _ => "informativo, claro, objetivo y en tercera persona"
+        "analitico" or "analítico" =>
+            "Tono analítico y riguroso.\n" +
+            "- Examina causas, evidencia e implicaciones; explica el porqué de los hechos.\n" +
+            "- Usa conectores lógicos (sin embargo, por tanto, en consecuencia) y matiza las afirmaciones.\n" +
+            "- Diferencia hechos de interpretaciones y señala supuestos o limitaciones.\n" +
+            "- Evita frases grandilocuentes y conclusiones sin respaldo.",
+        "cronica" or "crónica" =>
+            "Tono narrativo de crónica.\n" +
+            "- Cuenta los hechos con ritmo, escenas y detalles concretos.\n" +
+            "- Combina párrafos descriptivos con testimonios y momentos clave.\n" +
+            "- Usa un lenguaje literario y fluido, sin caer en ficción ni inventar escenas.\n" +
+            "- Mantén la veracidad: todo detalle narrativo debe provenir de la información disponible.",
+        "divulgativo" =>
+            "Tono divulgativo y didáctico.\n" +
+            "- Explica los conceptos técnicos con analogías y ejemplos cotidianos.\n" +
+            "- Usa frases cortas y definiciones sencillas antes de profundizar.\n" +
+            "- Anticipa las dudas del lector y respóndelas con claridad.\n" +
+            "- Evita la jerga innecesaria; si usas un término técnico, explícalo.",
+        "amigable" or "conversacional" =>
+            "Tono cercano y conversacional.\n" +
+            "- Habla directamente al lector con \"tú\" y preguntas retóricas ocasionales.\n" +
+            "- Usa un lenguaje natural, cálido y optimista, con ejemplos cercanos.\n" +
+            "- Alterna frases cortas con explicaciones sencillas.\n" +
+            "- Evita la informalidad excesiva, los chistes forzados y las promesas exageradas.",
+        _ =>
+            "Tono informativo, objetivo y neutro.\n" +
+            "- Escribe en tercera persona y en presente o pasado según el hecho.\n" +
+            "- Usa frases claras y directas, sin opiniones ni adjetivos valorativos.\n" +
+            "- Prioriza datos verificables, atribuye declaraciones y evita el lenguaje promocional.\n" +
+            "- No interpeles al lector ni uses humor."
     };
 
     private static string DescribeInternalLinks(TopicGenerationRequest request)

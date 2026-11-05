@@ -35,8 +35,17 @@ public class OpenAiCompatibleArticleRewriterTests
         Assert.Contains("un \"callout\" de llamada a la acción", prompt);
     }
 
+    [Fact]
+    public async Task RewriteAsync_Uses_Selected_Tone()
+    {
+        var prompt = await CapturePromptAsync("news", "cronica");
+
+        Assert.Contains("Tono narrativo de crónica", prompt);
+    }
+
     private static async Task<string> CapturePromptAsync(
-        string template, bool includeConclusion, bool includeFaq, bool includeCta)
+        string template, string tone = "informativo",
+        bool includeConclusion = false, bool includeFaq = false, bool includeCta = false)
     {
         string? requestBody = null;
 
@@ -74,6 +83,7 @@ public class OpenAiCompatibleArticleRewriterTests
             Blocks = [new ContentParagraphBlockDto { Text = "Contenido original." }],
             ApiKey = "k",
             Template = template,
+            Tone = tone,
             IncludeConclusion = includeConclusion,
             IncludeFaq = includeFaq,
             IncludeCta = includeCta

@@ -66,7 +66,7 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             $"Reescribe el siguiente artículo en {language} para convertirlo en una versión 100% original, más completa, actualizada y útil, manteniendo el tema pero sin copiar frases ni párrafos.\n" +
             topic +
             $"Idioma de salida obligatorio: {language}. Todo el contenido visible (título, resumen, meta descripción, bloques y etiquetas) debe ir íntegramente en {language}.\n" +
-            $"Tono editorial: {OpenAiCompatibleArticleGenerator.DescribeTone(request.Tone)}.\n" +
+            $"Tono editorial: {OpenAiCompatibleArticleGenerator.DescribeTone(request.Tone)}\n" +
             $"Estructura: {OpenAiCompatibleArticleGenerator.DescribeTemplate(request.Template)}.\n" +
             length +
             (rules.Count > 0 ? $"Secciones requeridas: {string.Join("; ", rules)}.\n" : string.Empty) +
