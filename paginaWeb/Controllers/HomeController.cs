@@ -38,7 +38,7 @@ public class HomeController : Controller
     {
         var featured = await _articleService.GetFeaturedAsync(3);
         var mostRead = await _articleService.GetMostReadAsync(5);
-        var (recent, _) = await _articleService.GetPublishedAsync(1, 50);
+        var (recent, totalPublished) = await _articleService.GetPublishedAsync(1, 50);
         var categories = await _categoryService.GetAllAsync();
         var images = await _imageService.GetVariantsDictAsync(
             recent.Concat(featured).Concat(mostRead).Select(a => a.CoverImageId).Where(id => !string.IsNullOrEmpty(id))!);
@@ -50,7 +50,8 @@ public class HomeController : Controller
             images,
             slug => Url.Action(nameof(Articulo), "Home", new { slug }) ?? "#",
             Url.Action("Index", "Publicaciones"),
-            mostRead: mostRead);
+            mostRead: mostRead,
+            totalArticleCount: totalPublished);
 
         return View(model);
     }

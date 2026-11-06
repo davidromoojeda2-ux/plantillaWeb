@@ -1694,13 +1694,284 @@
     }
 }
 
+/* ─── 16.5. Sección Persuasiva con Estadísticas del Catálogo ─────────────── */
+.persuasive-section {
+    padding: 4.5rem 0 4rem;
+    margin-top: 2rem;
+    position: relative;
+}
+
+.persuasive-section__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    align-items: center;
+    background: #FFFFFF;
+    border: 1px solid #E2E5EA;
+    border-radius: 24px;
+    padding: 2.25rem 1.75rem;
+    box-shadow: 0 2px 6px rgba(15, 27, 45, 0.04), 0 18px 40px -12px rgba(0, 41, 107, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.persuasive-section__inner::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #00296B 0%, #00509D 60%, #FDC500 100%);
+}
+
+@media (min-width: 640px) {
+    .persuasive-section__inner {
+        padding: 3rem 2.75rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .persuasive-section__inner {
+        grid-template-columns: 7fr 5fr;
+        gap: 3.5rem;
+        padding: 3.75rem 3.5rem;
+    }
+}
+
+.persuasive-section__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+}
+
+.persuasive-section__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(0, 41, 107, 0.06);
+    border: 1px solid rgba(0, 41, 107, 0.12);
+    color: #00296B;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.persuasive-section__kicker-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #FDC500;
+    box-shadow: 0 0 0 3px rgba(253, 197, 0, 0.35);
+}
+
+.persuasive-section__title {
+    font-family: var(--font-ui);
+    font-size: clamp(2rem, 3.6vw, 3.25rem);
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    color: #00296B;
+    margin: 0;
+    text-wrap: balance;
+}
+
+.persuasive-section__highlight {
+    display: inline;
+    color: #003F88;
+    background: linear-gradient(transparent 62%, rgba(253, 197, 0, 0.55) 62%);
+    padding: 0 0.15em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}
+
+.persuasive-section__subtitle {
+    font-size: clamp(1.05rem, 1.3vw, 1.2rem);
+    line-height: 1.65;
+    color: #475569;
+    margin: 0;
+    max-width: 58ch;
+    text-wrap: pretty;
+}
+
+.persuasive-section__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.persuasive-section__btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 999px;
+    background: #00296B;
+    color: #FFFFFF;
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(0, 41, 107, 0.22);
+    transition: background 0.2s ease, color 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.persuasive-section__btn-primary:hover {
+    background: #FDC500;
+    color: #00296B;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(253, 197, 0, 0.35);
+}
+
+.persuasive-section__btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.35rem;
+    border-radius: 999px;
+    background: #F5F6F8;
+    border: 1px solid #E2E5EA;
+    color: #00296B;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.18s ease;
+}
+
+.persuasive-section__btn-secondary:hover {
+    background: #ECEEF2;
+    border-color: #00296B;
+    transform: translateY(-1px);
+}
+
+/* Grid de estadísticas (1 tarjeta destacada arriba + 2 tarjetas en par abajo) */
+.persuasive-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 480px) {
+    .persuasive-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.125rem;
+    }
+}
+
+.persuasive-stat-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem 1.5rem;
+    border-radius: 18px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.persuasive-stat-card:hover {
+    transform: translateY(-3px);
+    border-color: #00509D;
+    box-shadow: 0 10px 24px -8px rgba(0, 41, 107, 0.12);
+}
+
+.persuasive-stat-card--featured {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #00296B 0%, #003F88 100%);
+    border-color: #00296B;
+    color: #FFFFFF;
+    padding: 1.75rem 1.75rem;
+    box-shadow: 0 12px 28px -8px rgba(0, 41, 107, 0.35);
+}
+
+.persuasive-stat-card--featured:hover {
+    border-color: #FDC500;
+    box-shadow: 0 16px 32px -8px rgba(0, 41, 107, 0.45);
+}
+
+.persuasive-stat-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.persuasive-stat-card__number {
+    font-family: var(--font-ui);
+    font-size: clamp(2.25rem, 3.2vw, 3rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: #00296B;
+    font-variant-numeric: tabular-nums;
+}
+
+.persuasive-stat-card--featured .persuasive-stat-card__number {
+    font-size: clamp(2.75rem, 4vw, 3.75rem);
+    color: #FDC500;
+}
+
+.persuasive-stat-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(0, 41, 107, 0.08);
+    color: #00296B;
+    flex-shrink: 0;
+}
+
+.persuasive-stat-card--featured .persuasive-stat-card__icon {
+    background: rgba(253, 197, 0, 0.18);
+    color: #FDC500;
+    border: 1px solid rgba(253, 197, 0, 0.35);
+}
+
+.persuasive-stat-card__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.persuasive-stat-card__label {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0F172A;
+    line-height: 1.25;
+}
+
+.persuasive-stat-card--featured .persuasive-stat-card__label {
+    font-size: 1.125rem;
+    color: #FFFFFF;
+}
+
+.persuasive-stat-card__desc {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: #64748B;
+    margin: 0;
+}
+
+.persuasive-stat-card--featured .persuasive-stat-card__desc {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.875rem;
+}
+
 /* ─── 17. Sección 'Encuentra el tema de tu interés' (Colores Base del Tema) ── */
 .bento-section {
     background: #00296B;
     border-top: 5px solid #FDC500;
     border-bottom: 2px solid #001D4A;
     padding: 4.5rem 0;
-    margin-top: 3.5rem;
+    margin-top: 0;
     position: relative;
 }
 
