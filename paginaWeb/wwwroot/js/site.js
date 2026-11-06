@@ -169,15 +169,51 @@
         });
     }
 
+    // 5. Plegar/desplegar el botón flotante de WhatsApp
+    function initWhatsAppFloatToggle() {
+        var widget = document.getElementById('whatsAppFloat');
+        var toggle = document.getElementById('btnToggleWhatsAppFloat');
+        var fab = document.getElementById('btnWhatsAppFloat');
+        if (!widget || !toggle || !fab) return;
+
+        var storageKey = 'whatsapp_float_hidden';
+        var chevron = toggle.querySelector('svg');
+
+        function setCollapsed(collapsed, persist) {
+            fab.style.display = collapsed ? 'none' : '';
+            toggle.setAttribute('aria-expanded', String(!collapsed));
+            toggle.setAttribute('aria-label', collapsed ? 'Mostrar botón de WhatsApp' : 'Ocultar botón de WhatsApp');
+            toggle.setAttribute('title', collapsed ? 'Mostrar WhatsApp' : 'Ocultar WhatsApp');
+            if (chevron) chevron.classList.toggle('rotate-180', collapsed);
+
+            if (persist) {
+                try {
+                    if (collapsed) localStorage.setItem(storageKey, 'true');
+                    else localStorage.removeItem(storageKey);
+                } catch (error) { /* almacenamiento no disponible */ }
+            }
+        }
+
+        var hidden = false;
+        try { hidden = localStorage.getItem(storageKey) === 'true'; } catch (error) { }
+        setCollapsed(hidden, false);
+
+        toggle.addEventListener('click', function () {
+            setCollapsed(fab.style.display !== 'none', true);
+        });
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
             initCookieBanner();
             initNavbar();
             initWhatsAppGroupsModal();
+            initWhatsAppFloatToggle();
         });
     } else {
         initCookieBanner();
         initNavbar();
         initWhatsAppGroupsModal();
+        initWhatsAppFloatToggle();
     }
 })();
