@@ -112,7 +112,7 @@
     .hero:has(.hero-dynamic),
     .hero:has(.card-grid--hero) {
         --hero-curve-h: clamp(75px, 8vw, 120px);
-        padding-bottom: clamp(12px, 2vw, 24px);
+        padding-bottom: clamp(18px, 3vw, 28px);
     }
 
     .hero__glow {
@@ -215,10 +215,16 @@
         border-radius: 20px;
         background: linear-gradient(145deg, rgba(0, 35, 90, 0.94) 0%, rgba(0, 48, 120, 0.88) 100%);
         border: 1px solid rgba(255, 255, 255, 0.16);
-        box-shadow: 0 20px 48px -12px rgba(0, 20, 60, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 14px rgba(0, 20, 60, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+        .hero-dynamic {
+            box-shadow: 0 20px 48px -12px rgba(0, 20, 60, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
     }
 
     /* 7.3 Stage y Diapositivas */
@@ -1303,6 +1309,7 @@
         grid-template-columns: minmax(0, 1fr);
         gap: 1.5rem;
         align-items: stretch;
+        padding-bottom: 80px;
     }
 
     @media (min-width: 1024px) {
@@ -1323,7 +1330,6 @@
         gap: 1.25rem;
         position: relative;
         background: #FFFFFF;
-        border: 1px solid #E2E5EA;
     }
 
     @media (min-width: 640px) {
@@ -1335,16 +1341,14 @@
     .entries-panel--featured {
         border-top: 4px solid #00296B;
         background: #FDC500;
-        box-shadow: 0 2px 10px rgba(0, 41, 107, 0.05);
-        border-radius: 35px 0px 35px 0px;
+        border-radius: 35px 0px 0px 0px;
     }
 
     .entries-panel--popular,
     .entries-panel--recent {
         border-top: 4px solid #00509D;
         background: #FFFFFF;
-        box-shadow: 0 2px 10px rgba(0, 41, 107, 0.05);
-        border-radius: 0px 35px 0px 35px;
+        border-radius: 0px 35px 0px 0px;
     }
 
     .entries-panel__header {
@@ -1699,6 +1703,7 @@
     /* ─── Sección Texto Persuasivo con Estadísticas Minimalistas ─────── */
     .persuasive-section {
         background: #FFFFFF;
+        border-top: 5px solid #00296B;
         padding: 4.5rem 0;
         margin-top: 0;
         position: relative;
@@ -1725,25 +1730,29 @@
     .persuasive-section__copy {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
+        text-align: center;
         gap: 1.25rem;
+        width: 100%;
     }
 
     .persuasive-section__title {
         font-family: var(--font-ui);
-        font-size: clamp(2.25rem, 3.8vw, 3.5rem);
+        font-size: clamp(2rem, 3.6vw, 3.5rem);
         font-weight: 900;
-        line-height: 1.1;
+        line-height: 1.12;
         letter-spacing: -0.03em;
         color: #00296B;
-        margin: 0;
+        margin: 0 auto;
+        text-align: center;
         text-wrap: balance;
     }
 
     .persuasive-section__highlight {
         display: block;
-        color: #00509D;
+        color: #fdc500;
         margin-top: 0.35rem;
+        text-align: center;
     }
 
     /* Grid de estadísticas minimalistas centradas (1 destacada arriba + 2 en par abajo) */
@@ -1769,29 +1778,14 @@
         text-align: center;
         gap: 0.5rem;
         padding: 1.5rem 1.25rem;
-        border-radius: 16px;
+        border-radius: 12px;
         background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .persuasive-stat-card:hover {
-        transform: translateY(-2px);
-        border-color: #00509D;
-        box-shadow: 0 8px 20px -6px rgba(0, 41, 107, 0.08);
     }
 
     .persuasive-stat-card--featured {
         grid-column: 1 / -1;
         background: #FFFFFF;
-        border: 2px solid #00296B;
         padding: 1.75rem 1.5rem;
-        box-shadow: 0 4px 16px -4px rgba(0, 41, 107, 0.08);
-    }
-
-    .persuasive-stat-card--featured:hover {
-        border-color: #003F88;
-        box-shadow: 0 8px 24px -4px rgba(0, 41, 107, 0.12);
     }
 
     .persuasive-stat-card__number {
@@ -1844,7 +1838,7 @@
         font-size: 0.875rem;
     }
 
-    /* ─── 17. Sección 'Encuentra el tema de tu interés' (Colores Base del Tema) ── */
+    /* ─── 17. Sección 'Categoria de tu interés' (Colores Base del Tema) ── */
     .bento-section {
         background: #00296B;
         border-top: 5px solid #FDC500;
