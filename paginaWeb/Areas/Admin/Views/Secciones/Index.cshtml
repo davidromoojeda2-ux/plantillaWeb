@@ -16,6 +16,7 @@
             <h3 class="font-bold text-slate-800 text-base">Secciones Institucionales</h3>
             <p class="text-xs text-slate-400 mt-0.5">Políticas de calidad, privacidad, términos de uso y acerca de nosotros.</p>
         </div>
+        <span class="text-xs text-slate-400">Total: @ViewBag.TotalCount</span>
     </div>
 
     @if (!Model.Any())
@@ -73,5 +74,10 @@
                 </div>
             }
         </div>
+    }
+
+    @if (ViewBag.Pagination is paginaWeb.Models.PaginationViewModel pagination)
+    {
+        <partial name="_AdminPagination" model="pagination" />
     }
 </div>

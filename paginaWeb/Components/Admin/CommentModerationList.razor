@@ -1,8 +1,14 @@
 @inherits RealtimeComponentBase
 @inject ICommentService CommentService
 
+@{
+    var totalPages = Math.Max(1, (int)Math.Ceiling(_items.Count / (double)PageSize));
+    var currentPage = Math.Clamp(_page, 1, totalPages);
+    var pagedItems = _items.Skip((currentPage - 1) * PageSize).Take(PageSize).ToList();
+}
+
 <div class="space-y-6">
-    <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
+    <div class="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
         <button type="button" class="@TabClass("pendiente")" @onclick='() => ChangeStatusAsync("pendiente")'>Pendientes</button>
         <button type="button" class="@TabClass("aprobado")" @onclick='() => ChangeStatusAsync("aprobado")'>Aprobados</button>
         <button type="button" class="@TabClass("rechazado")" @onclick='() => ChangeStatusAsync("rechazado")'>Rechazados</button>
@@ -20,7 +26,7 @@
         else
         {
             <div class="divide-y divide-slate-100">
-                @foreach (var c in _items)
+                @foreach (var c in pagedItems)
                 {
                     <div @key="c.Id" class="p-6 hover:bg-slate-50/50 transition flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div class="space-y-2 flex-1">
@@ -62,16 +68,27 @@
                     </div>
                 }
             </div>
+
+            <AdminPagination CurrentPage="currentPage"
+                             TotalPages="totalPages"
+                             TotalCount="_items.Count"
+                             PageSize="PageSize"
+                             ItemLabel="comentarios"
+                             AriaLabel="Paginación de comentarios"
+                             OnPageChanged="GoToPageAsync" />
         }
     </div>
 </div>
 
 @code {
+    private const int PageSize = 10;
+
     [Parameter] public List<CommentResponseDto> InitialItems { get; set; } = [];
     [Parameter] public string InitialStatus { get; set; } = "pendiente";
 
     private List<CommentResponseDto> _items = [];
     private string _status = "pendiente";
+    private int _page = 1;
     private bool _busy;
 
     protected override void OnInitialized()
@@ -85,13 +102,20 @@
 
     protected override async Task OnChangeAsync(CmsChangeEvent change)
     {
-        _items = await CommentService.GetByStatusAsync(_status);
+        await ReloadAsync();
     }
 
     private async Task ChangeStatusAsync(string status)
     {
         _status = status;
-        _items = await CommentService.GetByStatusAsync(status);
+        _page = 1;
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _items = await CommentService.GetByStatusAsync(_status);
+        ClampPage();
         StateHasChanged();
     }
 
@@ -102,7 +126,7 @@
         try
         {
             await CommentService.ApproveAsync(comment.Id);
-            await ChangeStatusAsync(_status);
+            await ReloadAsync();
         }
         finally
         {
@@ -117,7 +141,7 @@
         try
         {
             await CommentService.RejectAsync(comment.Id);
-            await ChangeStatusAsync(_status);
+            await ReloadAsync();
         }
         finally
         {
@@ -134,7 +158,7 @@
         try
         {
             await CommentService.DeleteAsync(comment.Id);
-            await ChangeStatusAsync(_status);
+            await ReloadAsync();
         }
         finally
         {
@@ -142,8 +166,21 @@
         }
     }
 
+    private void ClampPage()
+    {
+        var totalPages = Math.Max(1, (int)Math.Ceiling(_items.Count / (double)PageSize));
+        _page = Math.Clamp(_page, 1, totalPages);
+    }
+
+    private Task GoToPageAsync(int page)
+    {
+        _page = page;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
     private string TabClass(string status) =>
         _status == status
-            ? "px-4 py-2 rounded-xl text-xs font-semibold transition bg-[#00296B] text-white shadow-xs"
-            : "px-4 py-2 rounded-xl text-xs font-semibold transition bg-white text-slate-600 hover:bg-slate-100";
+            ? "px-4 py-2 rounded-xl text-xs font-semibold transition bg-[#00296B] text-white shadow-xs whitespace-nowrap"
+            : "px-4 py-2 rounded-xl text-xs font-semibold transition bg-white text-slate-600 hover:bg-slate-100 whitespace-nowrap";
 }

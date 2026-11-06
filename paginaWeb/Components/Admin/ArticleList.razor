@@ -5,11 +5,14 @@
 @inject IMenuService MenuService
 
 @{
-    var filtered = FilteredItems();
+    var filtered = FilteredItems().ToList();
     var featuredCount = _items.Count(a => a.Featured);
-    var activeHeroCount = _items.Count(a => a.Featured && IsPublished(a));
     var publishedCount = _items.Count(IsPublished);
     var draftCount = _items.Count - publishedCount;
+    var totalPages = Math.Max(1, (int)Math.Ceiling(filtered.Count / (double)PageSize));
+    var currentPage = Math.Clamp(_page, 1, totalPages);
+    var pagedItems = filtered.Skip((currentPage - 1) * PageSize).Take(PageSize).ToList();
+    var hasActiveFilters = _filter != "all" || !string.IsNullOrWhiteSpace(_categoryId) || !string.IsNullOrWhiteSpace(_search);
 }
 
 <div class="space-y-6">
@@ -20,51 +23,56 @@
         </div>
     }
 
-    <div class="bg-white rounded-2xl border border-amber-400 p-4 sm:p-5 shadow-xs">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-start gap-3.5">
-                <div class="w-11 h-11 rounded-xl bg-[#FDC500] text-[#00296B] flex items-center justify-center font-bold text-xl shadow-xs flex-shrink-0"><Icon Name="star" Filled="true" Class="w-6 h-6" /></div>
-                <div>
-                    <div class="flex items-center flex-wrap gap-2">
-                        <h3 class="font-bold text-amber-950 text-sm sm:text-base">Artículos Destacados en Portada (Hero)</h3>
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold @(featuredCount >= 3 ? "bg-amber-400 text-amber-950 border border-amber-500 shadow-xs" : "bg-amber-200/80 text-amber-950 border border-amber-300")">
-                            <Icon Name="star" Filled="true" Class="w-3.5 h-3.5" /> @featuredCount / 3 @(featuredCount >= 3 ? "(Cupos completos)" : $"designados ({3 - featuredCount} disponibles)") · @activeHeroCount en vivo
-                        </span>
-                    </div>
-                    <p class="text-xs text-amber-900/80 mt-1 max-w-2xl leading-relaxed">
-                        El carrusel principal de la portada tiene una <strong>restricción estricta de máximo 3 artículos</strong> con imagen asignada. Para designar una nueva noticia cuando el cupo está completo (3/3), primero debes desmarcar una existente.
-                    </p>
-                </div>
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+            <button type="button" class="@TabClass("all")" @onclick='() => SetFilter("all")'>Todas (@_items.Count)</button>
+            <button type="button" class="@TabClass("hero")" @onclick='() => SetFilter("hero")'>
+                <Icon Name="star" Filled="true" Class="w-3.5 h-3.5" /> Hero Principal (@featuredCount)
+            </button>
+            <button type="button" class="@TabClass("publicado")" @onclick='() => SetFilter("publicado")'>Publicadas (@publishedCount)</button>
+            <button type="button" class="@TabClass("borrador")" @onclick='() => SetFilter("borrador")'>Borradores (@draftCount)</button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
+            <select value="@_categoryId" @onchange="OnCategoryChanged"
+                    aria-label="Filtrar publicaciones por categoría"
+                    class="w-full sm:w-52 text-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00509D] transition">
+                <option value="">Todas las categorías</option>
+                @foreach (var category in CategoryOptions())
+                {
+                    <option value="@category.Id">@category.Label</option>
+                }
+            </select>
+
+            <div class="relative w-full sm:w-72 flex-shrink-0">
+                <input type="text" value="@_search" @oninput="OnSearchChanged"
+                       placeholder="Buscar por título, categoría o slug..."
+                       aria-label="Buscar publicaciones"
+                       class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] bg-slate-50 focus:bg-white transition" />
+                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
             </div>
-            <a href="/" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-900 font-semibold text-xs border border-amber-300 shadow-xs transition">
-                Ver Portada en Vivo
-            </a>
-        </div>
-    </div>
 
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-            <button type="button" class="@TabClass("all")" @onclick='() => _filter = "all"'>Todas (@_items.Count)</button>
-            <button type="button" class="@TabClass("hero")" @onclick='() => _filter = "hero"'><Icon Name="star" Filled="true" Class="w-3.5 h-3.5" /> Hero Principal (@featuredCount)</button>
-            <button type="button" class="@TabClass("publicado")" @onclick='() => _filter = "publicado"'>Publicadas (@publishedCount)</button>
-            <button type="button" class="@TabClass("borrador")" @onclick='() => _filter = "borrador"'>Borradores (@draftCount)</button>
-        </div>
-
-        <div class="relative w-full md:w-72 flex-shrink-0">
-            <input type="text" placeholder="Buscar por título, categoría o slug..."
-                   class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] bg-slate-50 focus:bg-white transition"
-                   @bind="_search" @bind:event="oninput" />
-            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            @if (hasActiveFilters)
+            {
+                <button type="button" @onclick="ClearFilters"
+                        class="shrink-0 px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+                    Limpiar
+                </button>
+            }
         </div>
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2">
                 <h3 class="font-bold text-slate-800 text-base">Publicaciones del Portal</h3>
-                <span class="text-xs text-slate-400">Total: @_items.Count</span>
+                <span class="text-xs text-slate-400">
+                    Total: @filtered.Count@(filtered.Count != _items.Count ? $" de {_items.Count}" : "")
+                </span>
             </div>
             <RealtimeStatusBadge Text="Actualización automática" />
         </div>
@@ -73,6 +81,13 @@
         {
             <div class="p-12 text-center text-slate-400">
                 <p class="font-medium text-slate-600">No hay artículos con el filtro seleccionado.</p>
+                @if (hasActiveFilters)
+                {
+                    <button type="button" @onclick="ClearFilters"
+                            class="mt-3 text-xs font-semibold text-[#00509D] hover:underline">
+                        Limpiar filtros
+                    </button>
+                }
             </div>
         }
         else
@@ -91,13 +106,14 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @foreach (var art in filtered)
+                        @foreach (var art in pagedItems)
                         {
                             var coverUrl = ResolveCoverUrl(art);
-                            var categoryName = art.CategoryId is not null && _categories.TryGetValue(art.CategoryId, out var category) ? category : "-";
+                            var categoryName = CategoryLabel(art.CategoryId, art.SubcategoryId);
                             var isPublished = IsPublished(art);
 
-                            <tr @key="art.Id" class="transition-all @(art.Featured ? "bg-amber-50/40 hover:bg-amber-50/70 border-l-4 border-l-amber-400" : "hover:bg-slate-50/60 border-l-4 border-l-transparent")">
+                            <tr @key="art.Id"
+                                class="transition-all @(art.Featured ? "bg-amber-50/40 hover:bg-amber-50/70 border-l-4 border-l-amber-400" : "hover:bg-slate-50/60 border-l-4 border-l-transparent")">
                                 <td class="px-5 py-4">
                                     <div class="flex items-start gap-3.5">
                                         <div class="relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-2xs">
@@ -111,15 +127,21 @@
                                             }
                                             @if (art.Featured)
                                             {
-                                                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#FDC500] text-[#00296B] flex items-center justify-center text-[10px] font-black shadow-xs ring-2 ring-white"><Icon Name="star" Filled="true" Class="w-2.5 h-2.5" /></span>
+                                                <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#FDC500] text-[#00296B] flex items-center justify-center text-[10px] font-black shadow-xs ring-2 ring-white">
+                                                    <Icon Name="star" Filled="true" Class="w-2.5 h-2.5" />
+                                                </span>
                                             }
                                         </div>
                                         <div class="min-w-0 flex-1">
                                             <div class="flex items-center flex-wrap gap-2">
-                                                <a href="@($"/admin/articulos/editar/{art.Id}")" class="font-semibold text-slate-800 hover:text-[#00509D] line-clamp-1 text-sm transition-colors" title="@art.Title">@art.Title</a>
+                                                <a href="@($"/admin/articulos/editar/{art.Id}")"
+                                                   class="font-semibold text-slate-800 hover:text-[#00509D] line-clamp-1 text-sm transition-colors"
+                                                   title="@art.Title">@art.Title</a>
                                                 @if (art.Featured)
                                                 {
-                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FDC500] text-[#00296B] shadow-2xs"><Icon Name="star" Filled="true" Class="w-3 h-3" /> HERO PRINCIPAL</span>
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#FDC500] text-[#00296B] shadow-2xs">
+                                                        <Icon Name="star" Filled="true" Class="w-3 h-3" /> HERO PRINCIPAL
+                                                    </span>
                                                 }
                                             </div>
                                             <span class="text-xs text-slate-400 font-mono">/@art.Slug</span>
@@ -160,9 +182,21 @@
 
                                 <td class="px-5 py-4 text-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <a href="@($"/articulos/{art.Slug}")" target="_blank" class="p-2 text-slate-400 hover:text-[#00509D] hover:bg-blue-50 rounded-xl transition" title="Ver en portal público"><Icon Name="external" Class="w-4 h-4" /></a>
-                                        <a href="@($"/admin/articulos/editar/{art.Id}")" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition" title="Editar artículo"><Icon Name="edit" Class="w-4 h-4" /></a>
-                                        <button type="button" @onclick="() => DeleteAsync(art)" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition" title="Eliminar artículo"><Icon Name="trash" Class="w-4 h-4" /></button>
+                                        <a href="@($"/articulos/{art.Slug}")" target="_blank"
+                                           class="p-2 text-slate-400 hover:text-[#00509D] hover:bg-blue-50 rounded-xl transition"
+                                           title="Ver en portal público">
+                                            <Icon Name="external" Class="w-4 h-4" />
+                                        </a>
+                                        <a href="@($"/admin/articulos/editar/{art.Id}")"
+                                           class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition"
+                                           title="Editar artículo">
+                                            <Icon Name="edit" Class="w-4 h-4" />
+                                        </a>
+                                        <button type="button" @onclick="() => DeleteAsync(art)"
+                                                class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
+                                                title="Eliminar artículo">
+                                            <Icon Name="trash" Class="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -170,16 +204,29 @@
                     </tbody>
                 </table>
             </div>
+
+            <AdminPagination CurrentPage="currentPage"
+                             TotalPages="totalPages"
+                             TotalCount="filtered.Count"
+                             PageSize="PageSize"
+                             ItemLabel="artículos"
+                             AriaLabel="Paginación de artículos"
+                             OnPageChanged="GoToPageAsync" />
         }
     </div>
 </div>
 
 @code {
+    private const int PageSize = 10;
+
     private List<ArticleResponseDto> _items = [];
+    private List<CategoryResponseDto> _categoryList = [];
     private Dictionary<string, string> _categories = [];
     private Dictionary<string, string> _coverImages = [];
     private string _filter = "all";
     private string _search = string.Empty;
+    private string _categoryId = string.Empty;
+    private int _page = 1;
     private string? _message;
     private bool _busy;
 
@@ -195,20 +242,52 @@
     {
         if (change.Module == CmsModule.Articles)
         {
-            _items = await ArticleService.GetAllAdminAsync(1, 50);
+            await LoadArticlesAsync();
             await LoadCoversAsync();
-            return;
         }
 
         if (change.Module == CmsModule.Categories)
-            _categories = (await CategoryService.GetAllAsync()).ToDictionary(c => c.Id, c => c.Name);
+            await LoadCategoriesAsync();
+
+        ClampPage();
     }
 
     private async Task RefreshAsync()
     {
-        _items = await ArticleService.GetAllAdminAsync(1, 50);
-        _categories = (await CategoryService.GetAllAsync()).ToDictionary(c => c.Id, c => c.Name);
+        await LoadArticlesAsync();
+        await LoadCategoriesAsync();
         await LoadCoversAsync();
+        ClampPage();
+    }
+
+    private async Task LoadArticlesAsync()
+    {
+        const int batchSize = 200;
+        var items = new List<ArticleResponseDto>();
+        var page = 1;
+
+        while (true)
+        {
+            var batch = await ArticleService.GetAllAdminAsync(page, batchSize);
+            items.AddRange(batch);
+
+            if (batch.Count < batchSize)
+                break;
+
+            page++;
+        }
+
+        _items = items;
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        _categoryList = (await CategoryService.GetAllAsync())
+            .OrderBy(c => c.Order)
+            .ThenBy(c => c.Name)
+            .ToList();
+
+        _categories = _categoryList.ToDictionary(c => c.Id, c => c.Name);
     }
 
     private async Task ToggleFeaturedAsync(ArticleResponseDto article)
@@ -309,15 +388,103 @@
             _ => query
         };
 
+        if (!string.IsNullOrWhiteSpace(_categoryId))
+        {
+            var childIds = _categoryList
+                .Where(c => c.ParentId == _categoryId)
+                .Select(c => c.Id)
+                .ToHashSet();
+
+            query = query.Where(a =>
+                a.CategoryId == _categoryId
+                || a.SubcategoryId == _categoryId
+                || (a.SubcategoryId is not null && childIds.Contains(a.SubcategoryId)));
+        }
+
         var search = _search.Trim();
-        if (search.Length == 0) return query;
+        if (search.Length == 0)
+            return query;
 
         return query.Where(a =>
             a.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
             || a.Slug.Contains(search, StringComparison.OrdinalIgnoreCase)
-            || (a.CategoryId is not null
-                && _categories.TryGetValue(a.CategoryId, out var category)
-                && category.Contains(search, StringComparison.OrdinalIgnoreCase)));
+            || a.Summary.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || CategoryLabel(a.CategoryId, a.SubcategoryId).Contains(search, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private IEnumerable<(string Id, string Label)> CategoryOptions()
+    {
+        var parents = _categoryList
+            .Where(c => c.ParentId is null)
+            .OrderBy(c => c.Order)
+            .ThenBy(c => c.Name);
+
+        foreach (var parent in parents)
+        {
+            yield return (parent.Id, parent.Name);
+
+            var children = _categoryList
+                .Where(c => c.ParentId == parent.Id)
+                .OrderBy(c => c.Order)
+                .ThenBy(c => c.Name);
+
+            foreach (var child in children)
+                yield return (child.Id, $"— {child.Name}");
+        }
+    }
+
+    private string CategoryLabel(string? categoryId, string? subcategoryId)
+    {
+        var names = new List<string>();
+
+        if (!string.IsNullOrEmpty(categoryId) && _categories.TryGetValue(categoryId, out var categoryName))
+            names.Add(categoryName);
+
+        if (!string.IsNullOrEmpty(subcategoryId)
+            && _categories.TryGetValue(subcategoryId, out var subcategoryName)
+            && !names.Contains(subcategoryName))
+            names.Add(subcategoryName);
+
+        return names.Count > 0 ? string.Join(" / ", names) : "-";
+    }
+
+    private void ClampPage()
+    {
+        var total = FilteredItems().Count();
+        var totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
+        _page = Math.Clamp(_page, 1, totalPages);
+    }
+
+    private void SetFilter(string filter)
+    {
+        _filter = filter;
+        _page = 1;
+    }
+
+    private void OnCategoryChanged(ChangeEventArgs args)
+    {
+        _categoryId = args.Value?.ToString() ?? string.Empty;
+        _page = 1;
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        _search = args.Value?.ToString() ?? string.Empty;
+        _page = 1;
+    }
+
+    private void ClearFilters()
+    {
+        _filter = "all";
+        _categoryId = string.Empty;
+        _search = string.Empty;
+        _page = 1;
+    }
+
+    private Task GoToPageAsync(int page)
+    {
+        _page = page;
+        return Task.CompletedTask;
     }
 
     private static bool IsPublished(ArticleResponseDto article) =>
@@ -325,6 +492,6 @@
 
     private string TabClass(string filter) =>
         _filter == filter
-            ? "px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#00296B] text-white shadow-xs transition"
-            : "px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition";
+            ? "inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#00296B] text-white shadow-xs transition whitespace-nowrap"
+            : "inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition whitespace-nowrap";
 }
