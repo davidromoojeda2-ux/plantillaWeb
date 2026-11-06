@@ -1,4 +1,5 @@
 @model ArticleResponseDto
+@inject Aplication.Services.ISiteSettingsService SiteSettingsService
 @{
     ViewData["Title"] = Model.Title;
     ViewData["MetaDescription"] = Model.Summary;
@@ -15,6 +16,7 @@ ImageMapper.GetBestUrl(coverImage);
     var adjacentImages = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.AdjacentImages ?? new();
     var pageUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/articulos/{Model.Slug}";
     var badgeCategory = subcategory ?? category;
+    var shareNetworks = (await SiteSettingsService.GetAsync()).EnabledShareNetworks;
 }
 
 
@@ -190,7 +192,7 @@ ImageMapper.GetBestUrl(coverImage);
 
     <!-- ─── Barra Interactiva para Compartir (Componente Modular) ──────────── -->
     <div class="w-full">
-        <partial name="Partials/_SocialShareBar" model="(Url: pageUrl, Title: Model.Title)" />
+        <partial name="Partials/_SocialShareBar" model="(Url: pageUrl, Title: Model.Title, Networks: (IReadOnlyList<string>)shareNetworks)" />
     </div>
 
     <!-- ─── Layout a Dos Columnas de Ancho Completo (Índice Adhesivo + Contenido) ─ -->

@@ -1,6 +1,12 @@
 @inject Aplication.Services.IPageService PageService
+@inject Aplication.Services.ISiteSettingsService SiteSettingsService
 @{
     var footerPages = await PageService.GetFooterPagesAsync();
+    var siteSettings = await SiteSettingsService.GetAsync();
+    var socialProfiles = siteSettings.SocialProfiles
+        .Where(p => p.Active && !string.IsNullOrWhiteSpace(p.Url))
+        .OrderBy(p => p.Order)
+        .ToList();
 }
 <!DOCTYPE html>
 <html lang="es" class="h-full scroll-smooth">
@@ -31,7 +37,7 @@
     </main>
 
     <!-- ─── Pie de Página Dinámico de 5 Columnas Unificado ───────────────────── -->
-    <partial name="Partials/_Footer" model="footerPages" />
+    <partial name="Partials/_Footer" model="(Pages: footerPages, SocialProfiles: socialProfiles)" />
 
     <!-- ─── Banner de Cookies ────────────────────────────────────────────────── -->
     <div id="cookieBanner" class="hidden fixed bottom-4 right-4 max-w-md bg-slate-900 text-white rounded-2xl p-5 shadow-2xl border border-white/10 z-50 transition-all duration-300">

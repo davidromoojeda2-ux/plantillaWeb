@@ -26,6 +26,7 @@ public class ArticulosController : Controller
     private readonly IMenuService _menuService;
     private readonly IAiArticleRewriter _rewriter;
     private readonly IAutomationService _automation;
+    private readonly ISiteSettingsService _siteSettingsService;
 
     public ArticulosController(
         IArticleService articleService,
@@ -33,7 +34,8 @@ public class ArticulosController : Controller
         ImageService imageService,
         IMenuService menuService,
         IAiArticleRewriter rewriter,
-        IAutomationService automation)
+        IAutomationService automation,
+        ISiteSettingsService siteSettingsService)
     {
         _articleService = articleService;
         _categoryService = categoryService;
@@ -41,6 +43,7 @@ public class ArticulosController : Controller
         _menuService = menuService;
         _rewriter = rewriter;
         _automation = automation;
+        _siteSettingsService = siteSettingsService;
     }
 
     [HttpGet("")]
@@ -405,6 +408,9 @@ public class ArticulosController : Controller
         model.SubCategories = allCategories.Where(c => c.ParentId is not null).OrderBy(c => c.Order).ToList();
         model.LinkedImages = !string.IsNullOrEmpty(id) ? await _imageService.GetByArticleIdAsync(id) : [];
         model.AvailableImages = await GetImagesWithArticleUsageAsync();
+
+        var siteSettings = await _siteSettingsService.GetAsync();
+        ViewBag.EnabledShareNetworks = siteSettings.EnabledShareNetworks;
     }
 
     private async Task<(bool IsValid, string? ErrorMessage)> ValidateHeroEligibilityAsync(

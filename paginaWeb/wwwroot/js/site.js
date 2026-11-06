@@ -131,13 +131,48 @@
         else if (desktop.addListener) desktop.addListener(onChange);
     }
 
+    // 4. Modal público de grupos de WhatsApp
+    function initWhatsAppGroupsModal() {
+        var modal = document.getElementById('whatsAppGroupsPublicModal');
+        var openBtn = document.getElementById('btnOpenWhatsAppGroups');
+        if (!modal || !openBtn) return;
+
+        function open() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+            var closeBtn = modal.querySelector('[data-close-whatsapp-public]');
+            if (closeBtn) closeBtn.focus();
+        }
+
+        function close() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+            openBtn.focus();
+        }
+
+        openBtn.addEventListener('click', open);
+        modal.querySelectorAll('[data-close-whatsapp-public]').forEach(function (btn) {
+            btn.addEventListener('click', close);
+        });
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) close();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !modal.classList.contains('hidden')) close();
+        });
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
             initCookieBanner();
             initNavbar();
+            initWhatsAppGroupsModal();
         });
     } else {
         initCookieBanner();
         initNavbar();
+        initWhatsAppGroupsModal();
     }
 })();

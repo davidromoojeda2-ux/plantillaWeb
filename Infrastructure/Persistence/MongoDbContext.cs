@@ -54,4 +54,7 @@ public class MongoDbContext
 
     public IMongoCollection<AutomationSettings> AutomationSettings =>
         _database.GetCollection<AutomationSettings>("automation_settings");
+
+    public IMongoCollection<SiteSettings> SiteSettings =>
+        _database.GetCollection<SiteSettings>("site_settings");
 }

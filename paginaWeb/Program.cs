@@ -36,6 +36,7 @@ builder.Services.AddScoped<IInformativePageRepository, InformativePageRepository
 builder.Services.AddScoped<IImageMetadataRepository, ImageMetadataRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 builder.Services.AddScoped<IAutomationStateRepository, AutomationStateRepository>();
+builder.Services.AddScoped<ISiteSettingsRepository, SiteSettingsRepository>();
 
 // ─── Seguridad del contenido editorial ────────────────────────────────────────
 builder.Services.Configure<ContentSecurityOptions>(
@@ -49,6 +50,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IPageService, PageService>();
+builder.Services.AddScoped<ISiteSettingsService, SiteSettingsService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAutomationService, ArticleAutomationService>();
 builder.Services.AddSingleton<AutomationCoordinator>();
