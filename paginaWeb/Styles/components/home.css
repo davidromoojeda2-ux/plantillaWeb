@@ -1768,6 +1768,10 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
         }
+
+        .persuasive-stats--2 .persuasive-stat-card--featured {
+            grid-column: span 1;
+        }
     }
 
     .persuasive-stat-card {

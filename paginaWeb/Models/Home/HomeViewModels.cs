@@ -342,7 +342,7 @@ public static class HomePageViewModelFactory
             Subtitle: "Reunimos investigaciones, guías prácticas y análisis rigurosos organizados por especialidades para que encuentres respuestas claras, accionables y respaldadas por evidencia en minutos.",
             TotalArticles: publishedArticlesCount,
             TotalCategories: mainCategories.Count,
-            TotalSubcategories: subCategoriesCount > 0 ? subCategoriesCount : activeCategories.Count,
+            TotalSubcategories: subCategoriesCount,
             ExploreHref: searchHref ?? "/publicaciones"
         );
 
