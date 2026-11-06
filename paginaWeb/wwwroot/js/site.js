@@ -134,10 +134,13 @@
     // 4. Modal público de grupos de WhatsApp
     function initWhatsAppGroupsModal() {
         var modal = document.getElementById('whatsAppGroupsPublicModal');
-        var openBtn = document.getElementById('btnOpenWhatsAppGroups');
-        if (!modal || !openBtn) return;
+        var openButtons = Array.prototype.slice.call(document.querySelectorAll('[data-open-whatsapp-groups]'));
+        if (!modal || openButtons.length === 0) return;
 
-        function open() {
+        var lastTrigger = null;
+
+        function open(event) {
+            lastTrigger = event && event.currentTarget ? event.currentTarget : openButtons[0];
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.classList.add('overflow-hidden');
@@ -149,10 +152,12 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             document.body.classList.remove('overflow-hidden');
-            openBtn.focus();
+            if (lastTrigger) lastTrigger.focus();
         }
 
-        openBtn.addEventListener('click', open);
+        openButtons.forEach(function (btn) {
+            btn.addEventListener('click', open);
+        });
         modal.querySelectorAll('[data-close-whatsapp-public]').forEach(function (btn) {
             btn.addEventListener('click', close);
         });
