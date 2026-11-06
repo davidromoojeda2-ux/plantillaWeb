@@ -16,6 +16,7 @@ public interface IAutomationStateRepository
     Task<bool> HashExistsAsync(string hash);
 
     Task<List<(AutomationRun Run, AutomationDecision Decision)>> GetPendingDecisionsAsync();
+    Task<int> GetPendingDecisionCountAsync();
 
     /// <summary>Totales acumulados de tokens y créditos de Serper.</summary>
     Task<(long TotalTokens, long TotalCredits, long RunCount)> GetUsageTotalsAsync();

@@ -2,6 +2,7 @@ using Aplication.DTOs;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
+using Aplication.Realtime;
 
 namespace Aplication.Services;
 
@@ -19,8 +20,13 @@ public interface ICategoryService
 public class CategoryService : ICategoryService
 {
     private readonly ICategoryRepository _repo;
+    private readonly ICmsChangePublisher? _changes;
 
-    public CategoryService(ICategoryRepository repo) => _repo = repo;
+    public CategoryService(ICategoryRepository repo, ICmsChangePublisher? changes = null)
+    {
+        _repo = repo;
+        _changes = changes;
+    }
 
     public async Task<List<CategoryResponseDto>> GetAllAsync() =>
         CategoryMapper.ToDtoList(await _repo.GetAllAsync());
@@ -49,6 +55,7 @@ public class CategoryService : ICategoryService
             throw new DuplicateSlugException(category.Slug);
 
         await _repo.InsertAsync(category);
+        _changes?.Publish(CmsModule.Categories, category.Id, CmsChangeOperation.Created);
         return CategoryMapper.ToDto(category);
     }
 
@@ -65,6 +72,7 @@ public class CategoryService : ICategoryService
             throw new DuplicateSlugException(existing.Slug);
 
         await _repo.UpdateAsync(existing);
+        _changes?.Publish(CmsModule.Categories, existing.Id, CmsChangeOperation.Updated);
         return CategoryMapper.ToDto(existing);
     }
 
@@ -73,5 +81,6 @@ public class CategoryService : ICategoryService
         _ = await _repo.GetByIdAsync(id)
             ?? throw new NotFoundException("Categoría", id);
         await _repo.DeleteAsync(id);
+        _changes?.Publish(CmsModule.Categories, id, CmsChangeOperation.Deleted);
     }
 }

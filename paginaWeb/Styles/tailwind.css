@@ -2,6 +2,7 @@
 
 @source "../Views";
 @source "../Areas";
+@source "../Components";
 @source "../wwwroot/js";
 
 /* ─── Tokens de diseño corporativo (Fuente única de verdad) ───────────────────── */

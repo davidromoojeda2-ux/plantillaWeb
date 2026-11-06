@@ -1,5 +1,6 @@
 using Aplication.Configuration;
 using Aplication.Interfaces;
+using Aplication.Realtime;
 using Aplication.Services;
 using Infrastructure.Ai;
 using Infrastructure.Auth;
@@ -10,7 +11,9 @@ using Infrastructure.Security;
 using Infrastructure.Serper;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Hosting;
+using paginaWeb.Realtime;
 using paginaWeb.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,6 +52,16 @@ builder.Services.AddScoped<IPageService, PageService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAutomationService, ArticleAutomationService>();
 builder.Services.AddSingleton<AutomationCoordinator>();
+builder.Services.AddSingleton<AutomationLiveState>();
+
+// ─── Cambios en vivo del panel administrativo ────────────────────────────────
+builder.Services.Configure<CmsRealtimeOptions>(builder.Configuration.GetSection("CmsRealtime"));
+builder.Services.AddSingleton<CmsChangeBus>();
+builder.Services.AddSingleton<ICmsChangePublisher>(sp => sp.GetRequiredService<CmsChangeBus>());
+builder.Services.AddSingleton<ICmsChangeStream>(sp => sp.GetRequiredService<CmsChangeBus>());
+builder.Services.AddServerSideBlazor();
+builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingAdminAuthenticationStateProvider>();
+builder.Services.AddCascadingAuthenticationState();
 
 // ─── Almacenamiento de imágenes ───────────────────────────────────────────────
 builder.Services.AddScoped<LocalStorage>();
@@ -137,7 +150,11 @@ if (!string.IsNullOrWhiteSpace(customUploadsPath))
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 app.MapStaticAssets();
+
+// Circuito de Blazor Server para las islas interactivas del Admin.
+app.MapBlazorHub().RequireAuthorization();
 
 // Ruta del área Admin
 app.MapControllerRoute(

@@ -1,5 +1,7 @@
 namespace Aplication.DTOs.Automation;
 
+using Aplication.Realtime;
+
 /// <summary>Estado consolidado de la automatización para el panel administrativo.</summary>
 public sealed class AutomationStatusDto
 {
@@ -13,6 +15,9 @@ public sealed class AutomationStatusDto
     public int PendingDecisionsCount { get; set; }
     public AutomationRunSummary? LastRun { get; set; }
     public UsageTotalsDto Usage { get; set; } = new();
+
+    /// <summary>Estado en memoria de la corrida en curso o de la última finalizada.</summary>
+    public AutomationLiveSnapshot? Live { get; set; }
 }
 
 /// <summary>Resumen de una corrida para la barra de estado.</summary>

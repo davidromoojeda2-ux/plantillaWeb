@@ -50,8 +50,7 @@ public class AutomationStateRepository : IAutomationStateRepository
     }
 
     public async Task<List<(AutomationRun Run, AutomationDecision Decision)>> GetPendingDecisionsAsync()
-    {
-        var filter = Builders<AutomationRun>.Filter.ElemMatch(
+    {        var filter = Builders<AutomationRun>.Filter.ElemMatch(
             r => r.PendingDecisions, d => d.Status == AutomationDecisionStatus.Pendiente);
 
         var runs = await _runs.Find(filter)
@@ -66,6 +65,14 @@ public class AutomationStateRepository : IAutomationStateRepository
         }
 
         return result;
+    }
+
+    public async Task<int> GetPendingDecisionCountAsync()
+    {
+        var filter = Builders<AutomationRun>.Filter.ElemMatch(
+            r => r.PendingDecisions, d => d.Status == AutomationDecisionStatus.Pendiente);
+
+        return (int)await _runs.CountDocumentsAsync(filter);
     }
 
     public async Task<(long TotalTokens, long TotalCredits, long RunCount)> GetUsageTotalsAsync()

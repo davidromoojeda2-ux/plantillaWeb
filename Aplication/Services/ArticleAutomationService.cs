@@ -3,6 +3,7 @@ using Aplication.DTOs;
 using Aplication.DTOs.Automation;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
+using Aplication.Realtime;
 using Domine.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -38,6 +39,8 @@ public sealed class ArticleAutomationService : IAutomationService
     private readonly IAutomationStateRepository _state;
     private readonly AutomationCoordinator _coordinator;
     private readonly ILogger<ArticleAutomationService> _logger;
+    private readonly ICmsChangePublisher? _changes;
+    private readonly AutomationLiveState? _live;
 
     public ArticleAutomationService(
         ITopicDiscoveryService discovery,
@@ -48,7 +51,9 @@ public sealed class ArticleAutomationService : IAutomationService
         ICategoryService categoryService,
         IAutomationStateRepository state,
         AutomationCoordinator coordinator,
-        ILogger<ArticleAutomationService> logger)
+        ILogger<ArticleAutomationService> logger,
+        ICmsChangePublisher? changes = null,
+        AutomationLiveState? live = null)
     {
         _discovery = discovery;
         _ai = ai;
@@ -59,6 +64,8 @@ public sealed class ArticleAutomationService : IAutomationService
         _state = state;
         _coordinator = coordinator;
         _logger = logger;
+        _changes = changes;
+        _live = live;
     }
 
     public async Task<AutomationRun?> RunOnceAsync(AutomationTrigger trigger, CancellationToken ct = default)
@@ -89,6 +96,8 @@ public sealed class ArticleAutomationService : IAutomationService
 
             var run = new AutomationRun { Trigger = trigger, Status = AutomationRunStatus.EnProgreso };
             await _state.InsertRunAsync(run);
+            _live?.Begin(run);
+            _changes?.Publish(CmsModule.Automation, run.Id, CmsChangeOperation.Started);
 
             try
             {
@@ -133,6 +142,7 @@ public sealed class ArticleAutomationService : IAutomationService
                 }
 
                 run.DiscoveredTopicsCount = topics.Count;
+                _live?.Sync(run);
 
                 var generated = 0;
                 var groups = BuildTopicGroups(topics, baseTopics, settings.RoundRobinTopics);
@@ -209,6 +219,16 @@ public sealed class ArticleAutomationService : IAutomationService
             {
                 run.FinishedAt = DateTime.UtcNow;
                 await _state.UpdateRunAsync(run);
+                _live?.Finish(run);
+                _changes?.Publish(
+                    CmsModule.Automation,
+                    run.Id,
+                    run.Status switch
+                    {
+                        AutomationRunStatus.Completado => CmsChangeOperation.Completed,
+                        AutomationRunStatus.Detenido => CmsChangeOperation.Stopped,
+                        _ => CmsChangeOperation.Failed
+                    });
             }
 
             return run;
@@ -222,7 +242,7 @@ public sealed class ArticleAutomationService : IAutomationService
     public async Task<AutomationStatusDto> GetStatusAsync(CancellationToken ct = default)
     {
         var settings = await GetSettingsAsync(ct);
-        var pending = await _state.GetPendingDecisionsAsync();
+        var pendingCount = await _state.GetPendingDecisionCountAsync();
         var runs = await _state.GetRunsAsync(0, 1);
         var (totalTokens, totalCredits, runCount) = await _state.GetUsageTotalsAsync();
 
@@ -232,7 +252,7 @@ public sealed class ArticleAutomationService : IAutomationService
             IsRunning = _coordinator.IsBusy,
             AutoPublish = settings.AutoPublish,
             FrequencyMinutes = settings.FrequencyMinutes,
-            PendingDecisionsCount = pending.Count,
+            PendingDecisionsCount = pendingCount,
             LastRun = runs.FirstOrDefault() is { } r
                 ? new AutomationRunSummary
                 {
@@ -247,7 +267,8 @@ public sealed class ArticleAutomationService : IAutomationService
                 TotalTokens = totalTokens,
                 TotalCredits = totalCredits,
                 RunCount = runCount
-            }
+            },
+            Live = _live?.Snapshot()
         };
     }
 
@@ -260,8 +281,11 @@ public sealed class ArticleAutomationService : IAutomationService
     public async Task<AutomationSettings> GetSettingsAsync(CancellationToken ct = default) =>
         await _state.GetSettingsAsync() ?? new AutomationSettings();
 
-    public Task SaveSettingsAsync(AutomationSettings settings, CancellationToken ct = default) =>
-        _state.SaveSettingsAsync(settings);
+    public async Task SaveSettingsAsync(AutomationSettings settings, CancellationToken ct = default)
+    {
+        await _state.SaveSettingsAsync(settings);
+        _changes?.Publish(CmsModule.Automation, settings.Id, CmsChangeOperation.SettingsChanged);
+    }
 
     public async Task<List<PendingDecisionDto>> GetPendingDecisionsAsync(CancellationToken ct = default)
     {
@@ -325,6 +349,11 @@ public sealed class ArticleAutomationService : IAutomationService
             decision.DraftJson = null;
 
         await _state.UpdateRunAsync(run);
+
+        if (_live?.Snapshot().RunId == run.Id)
+            _live.Sync(run);
+
+        _changes?.Publish(CmsModule.Automation, run.Id, CmsChangeOperation.DecisionResolved);
     }
 
     public Task<int> PublishScheduledAsync(DateTime now, CancellationToken ct = default) =>
@@ -471,6 +500,8 @@ public sealed class ArticleAutomationService : IAutomationService
                 TopicTitle = topic.Title,
                 Source = topic.Source
             });
+            _live?.Sync(run);
+            _changes?.Publish(CmsModule.Automation, run.Id, CmsChangeOperation.DecisionCreated);
             return TopicOutcome.Duplicate;
         }
 
@@ -490,12 +521,16 @@ public sealed class ArticleAutomationService : IAutomationService
             if (info is not null)
             {
                 run.GeneratedArticles.Add(info);
+                _live?.Sync(run);
+                _changes?.Publish(CmsModule.Automation, run.Id, CmsChangeOperation.ArticleGenerated);
                 return TopicOutcome.Generated;
             }
 
             if (pendingDecision is not null)
             {
                 run.PendingDecisions.Add(pendingDecision);
+                _live?.Sync(run);
+                _changes?.Publish(CmsModule.Automation, run.Id, CmsChangeOperation.DecisionCreated);
                 return TopicOutcome.Pending;
             }
 

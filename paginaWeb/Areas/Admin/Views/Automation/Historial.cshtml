@@ -72,10 +72,10 @@
             @if (page > 1)
             {
                 <a asp-area="Admin" asp-controller="Automation" asp-action="Historial" asp-route-page="@(page - 1)"
-                   class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition">← Anterior</a>
+                   class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition"><partial name="_SvgIcon" model="@(new SvgIcon("arrow-left", "w-3.5 h-3.5"))" /> Anterior</a>
             }
             <a asp-area="Admin" asp-controller="Automation" asp-action="Historial" asp-route-page="@(page + 1)"
-               class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition">Siguiente →</a>
+               class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 transition">Siguiente <partial name="_SvgIcon" model="@(new SvgIcon("arrow-right", "w-3.5 h-3.5"))" /></a>
         </div>
     }
 </div>

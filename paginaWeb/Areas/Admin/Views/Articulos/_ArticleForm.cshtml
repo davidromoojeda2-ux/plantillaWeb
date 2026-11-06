@@ -29,13 +29,13 @@
                         @if (string.Equals(Model.Status, "Publicado", StringComparison.OrdinalIgnoreCase))
                         {
                             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                ● Activo en Portada
+                                <partial name="_SvgIcon" model="@(new SvgIcon("dot", "w-2 h-2 text-emerald-600"))" /> Activo en Portada
                             </span>
                         }
                         else
                         {
                             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-200/80 text-amber-900 border border-amber-300">
-                                ○ En espera (Requiere Publicarse)
+                                <partial name="_SvgIcon" model="@(new SvgIcon("dot-outline", "w-2 h-2 text-amber-600"))" /> En espera (Requiere Publicarse)
                             </span>
                         }
                         <button type="button" class="cms-tooltip-icon cms-tooltip-icon--amber"
@@ -50,7 +50,7 @@
             <a asp-area="" asp-controller="Home" asp-action="Index" target="_blank"
                class="self-start sm:self-center inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-amber-50 text-amber-900 text-xs font-semibold border border-amber-300 shadow-2xs transition flex-shrink-0">
                 <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                Ver Portada ↗
+                Ver Portada <partial name="_SvgIcon" model="@(new SvgIcon("external", "w-3.5 h-3.5"))" />
             </a>
         </div>
     }
@@ -178,7 +178,7 @@
                             @if (isHeroFull && !Model.Featured)
                             {
                                 <p class="text-[10px] text-amber-800 font-semibold mt-1">
-                                    ⚠️ Cupo completo (3/3). Para asignar este artículo, primero desmarca uno existente del Hero.
+                                    <partial name="_SvgIcon" model="@(new SvgIcon("warning", "w-4 h-4"))" /> Cupo completo (3/3). Para asignar este artículo, primero desmarca uno existente del Hero.
                                 </p>
                             }
                         </div>
@@ -276,7 +276,7 @@
 
                         <!-- Badge error oculto -->
                         <div id="coverErrorBadge" class="hidden absolute inset-0 flex items-center justify-center bg-slate-950/85 text-rose-300 text-xs font-semibold px-4 text-center">
-                            ⚠️ No se pudo cargar la imagen desde la ruta indicada
+                            <partial name="_SvgIcon" model="@(new SvgIcon("warning", "w-4 h-4"))" /> No se pudo cargar la imagen desde la ruta indicada
                         </div>
 
                         <!-- Acciones flotantes sobre imagen -->

@@ -516,7 +516,7 @@
             if (data.exists) {
                 isNameValid = false;
                 nameCheckBadge.className = 'text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200';
-                nameCheckBadge.textContent = '❌ Nombre ya registrado';
+                nameCheckBadge.innerHTML = '<svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg> Nombre ya registrado';
                 nameFeedbackText.className = 'text-[11px] mt-1 text-rose-600 font-medium';
                 nameFeedbackText.textContent = `Ya existe una imagen llamada "${name}". Cámbialo para evitar sobreescritura o conflicto.`;
                 customNameInput.classList.add('border-rose-400', 'focus:ring-rose-400');
@@ -526,7 +526,7 @@
             } else {
                 isNameValid = true;
                 nameCheckBadge.className = 'text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200';
-                nameCheckBadge.textContent = '✓ Nombre disponible';
+                nameCheckBadge.innerHTML = '<svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg> Nombre disponible';
                 nameFeedbackText.className = 'text-[11px] mt-1 text-emerald-600';
                 nameFeedbackText.textContent = 'Este nombre es único y puede ser almacenado correctamente.';
                 customNameInput.classList.remove('border-rose-400', 'focus:ring-rose-400');

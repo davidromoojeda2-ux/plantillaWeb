@@ -1,8 +1,10 @@
+using Aplication.Content;
 using Aplication.DTOs;
 using Aplication.DTOs.Automation;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
+using Aplication.Realtime;
 
 namespace Aplication.Services;
 
@@ -18,6 +20,7 @@ public interface IArticleService
     Task<List<ArticleResponseDto>> GetAllAdminAsync(int page = 1, int pageSize = 50);
     Task<ArticleResponseDto> CreateAsync(ArticleDto dto);
     Task<ArticleResponseDto> UpdateAsync(string id, ArticleDto dto);
+    Task<(bool Success, bool Featured, string? Error)> ToggleFeaturedAsync(string id);
     Task DeleteAsync(string id);
     Task IncrementViewCountAsync(string id);
     Task<List<ArticleResponseDto>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
@@ -33,15 +36,18 @@ public class ArticleService : IArticleService
     private readonly IArticleRepository _repo;
     private readonly ICategoryRepository _categoryRepo;
     private readonly ContentBodySanitizer _contentSanitizer;
+    private readonly ICmsChangePublisher? _changes;
 
     public ArticleService(
         IArticleRepository repo,
         ICategoryRepository categoryRepo,
-        ContentBodySanitizer contentSanitizer)
+        ContentBodySanitizer contentSanitizer,
+        ICmsChangePublisher? changes = null)
     {
         _repo = repo;
         _categoryRepo = categoryRepo;
         _contentSanitizer = contentSanitizer;
+        _changes = changes;
     }
 
     public Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync() =>
@@ -105,6 +111,7 @@ public class ArticleService : IArticleService
             throw new DuplicateSlugException(article.Slug);
 
         await _repo.InsertAsync(article);
+        _changes?.Publish(CmsModule.Articles, article.Id, CmsChangeOperation.Created);
         return ArticleMapper.ToDto(article);
     }
 
@@ -124,7 +131,36 @@ public class ArticleService : IArticleService
             throw new DuplicateSlugException(existing.Slug);
 
         await _repo.UpdateAsync(existing);
+        _changes?.Publish(CmsModule.Articles, existing.Id, CmsChangeOperation.Updated);
         return ArticleMapper.ToDto(existing);
+    }
+
+    public async Task<(bool Success, bool Featured, string? Error)> ToggleFeaturedAsync(string id)
+    {
+        var article = await _repo.GetByIdAsync(id)
+            ?? throw new NotFoundException("Artículo", id);
+
+        var dto = ArticleMapper.ToEditDto(article);
+        var willBeFeatured = !dto.Featured;
+
+        if (willBeFeatured)
+        {
+            var hasImage = !string.IsNullOrWhiteSpace(dto.CoverImageId)
+                           || !string.IsNullOrWhiteSpace(dto.CoverImageUrl)
+                           || ContentImageResolver.HasImage(dto.Blocks);
+
+            if (!hasImage)
+                return (false, dto.Featured, "No se puede designar en el Hero: el artículo debe tener una imagen asignada.");
+
+            var allAdmin = await _repo.GetAllAsync(0, 100);
+            var currentFeatured = allAdmin.Count(a => a.Featured && a.Id != id);
+            if (currentFeatured >= 3)
+                return (false, dto.Featured, "Límite alcanzado: el Hero principal solo permite un máximo de 3 artículos destacados.");
+        }
+
+        dto.Featured = willBeFeatured;
+        await UpdateAsync(id, dto);
+        return (true, willBeFeatured, null);
     }
 
     private static void ApplyDerivedFields(Domine.Entities.Article article)
@@ -176,6 +212,7 @@ public class ArticleService : IArticleService
         _ = await _repo.GetByIdAsync(id)
             ?? throw new NotFoundException("Artículo", id);
         await _repo.DeleteAsync(id);
+        _changes?.Publish(CmsModule.Articles, id, CmsChangeOperation.Deleted);
     }
 
     public Task IncrementViewCountAsync(string id) => _repo.IncrementViewCountAsync(id);
@@ -234,6 +271,7 @@ public class ArticleService : IArticleService
         {
             article.Publicar();
             await _repo.UpdateAsync(article);
+            _changes?.Publish(CmsModule.Articles, article.Id, CmsChangeOperation.Published);
         }
 
         return due.Count;
