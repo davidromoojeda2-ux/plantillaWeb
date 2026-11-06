@@ -34,6 +34,19 @@
       transform: scale(0.98);
   }
 
+  /* Variante WhatsApp del CTA principal */
+  .btn--nav-cta--whatsapp {
+      gap: 8px;
+      background: #25D366;
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgb(37 211 102 / 0.38);
+  }
+
+  .btn--nav-cta--whatsapp:hover {
+      background: #20BD5C;
+      color: #ffffff;
+  }
+
   /* ─── Estructura del Navbar Global ──────────────────────────────────────── */
   .site-nav {
       position: sticky;
