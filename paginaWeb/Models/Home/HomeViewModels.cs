@@ -123,11 +123,25 @@ public sealed record CategoryBentoCardViewModel(
 public sealed record CategorySectionViewModel(
     string Title,
     string Subtitle,
-    CategoryBentoCardViewModel MainCard,
-    CategoryBentoCardViewModel SubCardLeft,
-    CategoryBentoCardViewModel SubCardRightTop,
-    CategoryBentoCardViewModel SubCardRightBottom,
+    CategoryBentoCardViewModel? MainCard,
+    CategoryBentoCardViewModel? SubCardLeft,
+    CategoryBentoCardViewModel? SubCardRightTop,
+    CategoryBentoCardViewModel? SubCardRightBottom,
     IReadOnlyList<CategoryResponseDto> AllCategories);
+
+/// <summary>
+/// Sección editorial persuasiva con métricas en tiempo real del catálogo (artículos y categorías).
+/// </summary>
+public sealed record textPersuasivSectionViewModel(
+    string Kicker,
+    string Title,
+    string HighlightText,
+    string Subtitle,
+    long TotalArticles,
+    int TotalCategories,
+    int TotalSubcategories,
+    string? ExploreHref = null
+);
 
 /// <summary>Modelo completo de la página principal.</summary>
 public sealed record HomePageViewModel(
@@ -135,7 +149,8 @@ public sealed record HomePageViewModel(
     SectionHeaderViewModel EntriesHeader,
     IReadOnlyList<PostCardViewModel> LatestEntries,
     IReadOnlyList<PostCardViewModel> MostReadEntries,
-    CategorySectionViewModel CategorySection);
+    CategorySectionViewModel CategorySection,
+    textPersuasivSectionViewModel TextoPersuasivo);
 
 /// <summary>
 /// Construye el <see cref="HomePageViewModel"/> a partir de los datos entregados por
@@ -156,7 +171,8 @@ public static class HomePageViewModelFactory
         IReadOnlyDictionary<string, ImageMetadataResponseDto> images,
         Func<string, string> articleHref,
         string? searchHref = null,
-        IReadOnlyList<ArticleResponseDto>? mostRead = null)
+        IReadOnlyList<ArticleResponseDto>? mostRead = null,
+        long? totalArticleCount = null)
     {
         var catDict = allCategories.ToDictionary(c => c.Id, c => c.Name);
 
@@ -227,86 +243,117 @@ public static class HomePageViewModelFactory
             .OrderBy(c => c.Order)
             .ToList();
 
-        // Buscar 'Salud y Bienestar' como principal (o la primera con subcategorías)
-        var mainCat = mainCategories.FirstOrDefault(c => c.Slug.Contains("salud", StringComparison.OrdinalIgnoreCase))
-                      ?? mainCategories.FirstOrDefault(c => allCategories.Any(sub => sub.ParentId == c.Id && sub.IsActive))
-                      ?? mainCategories.FirstOrDefault()
-                      ?? new CategoryResponseDto { Name = "Salud y Bienestar", Slug = "salud-bienestar", Description = "Medicina preventiva, bienestar integral, neurociencia y vida longeva." };
+        // ── Helpers de métricas derivadas de artículos ──────────────────────────
+        long CatViewCount(string catId) => allArticles
+            .Where(a => a.CategoryId == catId || a.SubcategoryId == catId)
+            .Sum(a => a.ViewCount);
 
-        var mainSubs = allCategories
-            .Where(c => c.ParentId == mainCat.Id && c.IsActive)
-            .OrderBy(c => c.Order)
+        int CatArticleCount(string catId) => allArticles
+            .Count(a => a.CategoryId == catId || a.SubcategoryId == catId);
+
+        // ── Conjunto de IDs ya asignados (sin duplicados entre cards) ────────────
+        var usedCategoryIds = new HashSet<string>();
+
+        CategoryBentoCardViewModel? BuildCard(
+            CategoryResponseDto? cat,
+            bool isMain,
+            IReadOnlyList<CategoryResponseDto> subs,
+            string fallbackDesc)
+        {
+            if (cat == null || string.IsNullOrEmpty(cat.Id)) return null;
+            if (!usedCategoryIds.Add(cat.Id)) return null; // ya usado → no mostrar
+            return new CategoryBentoCardViewModel(
+                Name: cat.Name,
+                Slug: cat.Slug,
+                Description: cat.Description ?? fallbackDesc,
+                IsMainCategory: isMain,
+                ParentName: isMain ? null : allCategories.FirstOrDefault(p => p.Id == cat.ParentId)?.Name,
+                ParentSlug: isMain ? null : allCategories.FirstOrDefault(p => p.Id == cat.ParentId)?.Slug,
+                Subcategories: subs,
+                ImageUrl: GetRandomImageForCategory(cat, allArticles, images, allCategories));
+        }
+
+        var allSubs = allCategories
+            .Where(c => !string.IsNullOrEmpty(c.ParentId) && c.IsActive)
             .ToList();
 
-        // SubCard 1 (Izquierda abajo - ej: Neurociencia)
-        var sub1 = mainSubs.ElementAtOrDefault(0);
-        var sub1Cat = sub1 ?? new CategoryResponseDto { Name = "Neurociencia", Slug = "neurociencia", Description = "Plasticidad cerebral, cognición y salud mental." };
-        var subCardLeft = new CategoryBentoCardViewModel(
-            Name: sub1Cat.Name,
-            Slug: sub1Cat.Slug,
-            Description: sub1Cat.Description ?? "Explora avances, investigaciones y perspectivas científicas especializadas.",
-            IsMainCategory: false,
-            ParentName: mainCat.Name,
-            ParentSlug: mainCat.Slug,
-            Subcategories: [],
-            ImageUrl: GetRandomImageForCategory(sub1Cat, allArticles, images, allCategories));
-
-        // SubCard 2 (Derecha arriba - ej: Nutrición y Longevidad)
-        var sub2 = mainSubs.ElementAtOrDefault(1);
-        var sub2Cat = sub2 ?? new CategoryResponseDto { Name = "Nutrición y Longevidad", Slug = "nutricion-longevidad", Description = "Metabolismo, microbioma y hábitos para una vida longeva." };
-        var subCardRightTop = new CategoryBentoCardViewModel(
-            Name: sub2Cat.Name,
-            Slug: sub2Cat.Slug,
-            Description: sub2Cat.Description ?? "Artículos de divulgación y hábitos orientados a la longevidad saludable.",
-            IsMainCategory: false,
-            ParentName: mainCat.Name,
-            ParentSlug: mainCat.Slug,
-            Subcategories: [],
-            ImageUrl: GetRandomImageForCategory(sub2Cat, allArticles, images, allCategories));
-
-        // SubCard 3 (Derecha abajo grande - segunda categoría principal o subcategoría hermana)
-        var secondMainCat = mainCategories.FirstOrDefault(c => c.Id != mainCat.Id)
-                            ?? mainSubs.ElementAtOrDefault(2);
-        var secondSubs = secondMainCat != null
-            ? allCategories.Where(c => c.ParentId == secondMainCat.Id && c.IsActive).Take(4).ToList()
+        // ── SLOT MainCard (top-left grande): categoría principal con MÁS ARTÍCULOS ─
+        var mainCatByArticles = mainCategories
+            .OrderByDescending(c => CatArticleCount(c.Id)).ThenBy(c => c.Order)
+            .FirstOrDefault();
+        var mainSubs1 = mainCatByArticles != null
+            ? allCategories.Where(c => c.ParentId == mainCatByArticles.Id && c.IsActive).OrderBy(c => c.Order).ToList()
             : new List<CategoryResponseDto>();
-        var secondCat = secondMainCat ?? new CategoryResponseDto { Name = "Ciencia y Exploración", Slug = "ciencia-exploracion", Description = "Descubrimientos del universo, física, biotecnología y avances de frontera." };
+        var mainBentoCard = BuildCard(mainCatByArticles, true, mainSubs1, "Área temática principal del sitio.");
 
-        var subCardRightBottom = new CategoryBentoCardViewModel(
-            Name: secondCat.Name,
-            Slug: secondCat.Slug,
-            Description: secondCat.Description ?? "Descubrimientos del universo, física, biotecnología y ciencias biológicas.",
-            IsMainCategory: string.IsNullOrEmpty(secondCat.ParentId),
-            ParentName: null,
-            ParentSlug: null,
-            Subcategories: secondSubs,
-            ImageUrl: GetRandomImageForCategory(secondCat, allArticles, images, allCategories));
+        // ── SLOT SubCardRightBottom (bottom-right grande): cat principal MÁS VISITADA ─
+        var mainCatByViews = mainCategories
+            .Where(c => !usedCategoryIds.Contains(c.Id))
+            .OrderByDescending(c => CatViewCount(c.Id)).ThenBy(c => c.Order)
+            .FirstOrDefault();
+        var mainSubs2 = mainCatByViews != null
+            ? allCategories.Where(c => c.ParentId == mainCatByViews.Id && c.IsActive).Take(4).ToList()
+            : new List<CategoryResponseDto>();
+        var subCardRightBottom = BuildCard(
+            mainCatByViews,
+            string.IsNullOrEmpty(mainCatByViews?.ParentId),
+            mainSubs2,
+            "Categoría destacada del sitio.");
 
-        var mainBentoCard = new CategoryBentoCardViewModel(
-            Name: mainCat.Name,
-            Slug: mainCat.Slug,
-            Description: mainCat.Description ?? "Neurociencia, medicina preventiva, nutrición y estilo de vida basado en evidencia.",
-            IsMainCategory: true,
-            ParentName: null,
-            ParentSlug: null,
-            Subcategories: mainSubs,
-            ImageUrl: GetRandomImageForCategory(mainCat, allArticles, images, allCategories));
+        // ── SLOT SubCardRightTop (top-right compacto): subcategoría MÁS VISITADA ─────
+        var subCatByViews = allSubs
+            .Where(c => !usedCategoryIds.Contains(c.Id))
+            .OrderByDescending(c => CatViewCount(c.Id)).ThenBy(c => c.Order)
+            .FirstOrDefault();
+        var subCardRightTop = BuildCard(
+            subCatByViews,
+            false,
+            Array.Empty<CategoryResponseDto>(),
+            "Especialidad destacada.");
+
+        // ── SLOT SubCardLeft (bottom-left compacto): subcategoría con MÁS ARTÍCULOS ──
+        var subCatByArticles = allSubs
+            .Where(c => !usedCategoryIds.Contains(c.Id))
+            .OrderByDescending(c => CatArticleCount(c.Id)).ThenBy(c => c.Order)
+            .FirstOrDefault();
+        var subCardLeft = BuildCard(
+            subCatByArticles,
+            false,
+            Array.Empty<CategoryResponseDto>(),
+            "Especialidad con amplia cobertura.");
+
+        var activeCategories = allCategories.Where(c => c.IsActive).ToList();
+        var subCategoriesCount = activeCategories.Count(c => !string.IsNullOrEmpty(c.ParentId));
+        var publishedArticlesCount = Math.Max(totalArticleCount ?? 0L, allArticles.Count);
 
         var categorySection = new CategorySectionViewModel(
-            Title: "Encuentra el tema de tu interés",
-            Subtitle: "Explora nuestras áreas temáticas y navega por sus especialidades y coberturas exclusivas.",
+            Title: "Categorías principales",
+            Subtitle: "Revisa las áreas temáticas más importantes de nuestro sitio web y sus especialidades.",
             MainCard: mainBentoCard,
             SubCardLeft: subCardLeft,
             SubCardRightTop: subCardRightTop,
             SubCardRightBottom: subCardRightBottom,
-            AllCategories: allCategories.Where(c => c.IsActive).ToList());
+            AllCategories: activeCategories);
+
+        var textoPersuasivo = new textPersuasivSectionViewModel(
+            Kicker: "Catálogo Editorial Verificado",
+            Title: "Encuentra el tema de tu interés",
+            HighlightText: "y domina cada materia a fondo",
+            Subtitle: "Reunimos investigaciones, guías prácticas y análisis rigurosos organizados por especialidades para que encuentres respuestas claras, accionables y respaldadas por evidencia en minutos.",
+            TotalArticles: publishedArticlesCount,
+            TotalCategories: mainCategories.Count,
+            TotalSubcategories: subCategoriesCount > 0 ? subCategoriesCount : activeCategories.Count,
+            ExploreHref: searchHref ?? "/publicaciones"
+        );
 
         return new HomePageViewModel(
             Hero: hero,
             EntriesHeader: entriesHeader,
             LatestEntries: latestEntries,
             MostReadEntries: mostReadEntries,
-            CategorySection: categorySection);
+            CategorySection: categorySection,
+            TextoPersuasivo: textoPersuasivo);
+
     }
 
     private static string? GetRandomImageForCategory(
