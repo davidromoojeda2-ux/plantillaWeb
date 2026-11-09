@@ -5,6 +5,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>c033c88f-6e47-4795-9266-a80c4cacc51a</UserSecretsId>
+    <!--
+      .NET 10 entrega blazor.server.js/blazor.web.js como static web assets del
+      framework. El Dockerfile hace `dotnet restore` antes de copiar los .razor,
+      así que el restore no detecta componentes y el publish omite _framework.
+      Esta propiedad fuerza la inclusión de esos assets en la publicación.
+    -->
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
   </PropertyGroup>
 
   <ItemGroup>
