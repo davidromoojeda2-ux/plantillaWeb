@@ -1,0 +1,118 @@
+@model List<string>?
+@using Domine.Entities
+@{
+    var enabled = (Model ?? new()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+}
+
+<div id="shareNetworksModal"
+     class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+     role="dialog" aria-modal="true" aria-labelledby="shareNetworksModalTitle">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg flex flex-col">
+        <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
+            <div>
+                <h3 id="shareNetworksModalTitle" class="text-base font-bold text-slate-800">Redes para compartir</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Selecciona las redes que aparecen en la barra “Compartir” de todos los artículos.</p>
+            </div>
+            <button type="button" data-close-share-modal
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                    aria-label="Cerrar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="p-5 space-y-2.5">
+            @foreach (var network in SocialNetworks.Share)
+            {
+                <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-slate-50 transition">
+                    <input type="checkbox" value="@network.Key" data-share-network
+                           checked="@enabled.Contains(network.Key)"
+                           class="rounded border-slate-300 text-[#00296B] focus:ring-[#00509D]" />
+                    <span class="text-sm font-medium text-slate-700">@network.Label</span>
+                </label>
+            }
+        </div>
+
+        <div id="shareNetworksError"
+             class="hidden mx-5 mb-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
+
+        <div class="p-4 border-t border-slate-100 flex items-center justify-end gap-2">
+            <button type="button" data-close-share-modal
+                    class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+            <button type="button" id="btnSaveShareNetworks"
+                    class="px-5 py-2 text-xs font-bold text-white bg-[#00296B] hover:bg-[#00509D] rounded-xl shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed">
+                Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var modal = document.getElementById('shareNetworksModal');
+        if (!modal) return;
+
+        var errorBox = document.getElementById('shareNetworksError');
+        var saveBtn = document.getElementById('btnSaveShareNetworks');
+        var token = document.querySelector('input[name="__RequestVerificationToken"]');
+
+        function setError(message) {
+            if (!errorBox) return;
+            errorBox.textContent = message || '';
+            errorBox.classList.toggle('hidden', !message);
+        }
+
+        function openModal() {
+            setError('');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('btnOpenShareNetworksModal')?.addEventListener('click', openModal);
+        modal.querySelectorAll('[data-close-share-modal]').forEach(function (btn) {
+            btn.addEventListener('click', closeModal);
+        });
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+
+        saveBtn?.addEventListener('click', async function () {
+            var networks = Array.prototype.slice.call(modal.querySelectorAll('[data-share-network]'))
+                .filter(function (checkbox) { return checkbox.checked; })
+                .map(function (checkbox) { return checkbox.value; });
+
+            saveBtn.disabled = true;
+            setError('');
+
+            try {
+                var response = await fetch('/admin/ajustes/share-networks', {
+                    method: 'POST',
+                    headers: Object.assign(
+                        { 'Content-Type': 'application/json' },
+                        token ? { 'RequestVerificationToken': token.value } : {}),
+                    body: JSON.stringify(networks)
+                });
+                var data = await response.json().catch(function () { return {}; });
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.message || 'No se pudieron guardar las redes para compartir.');
+                }
+
+                if (window.showToast) window.showToast('Redes para compartir actualizadas.', 'success');
+                closeModal();
+            } catch (error) {
+                setError(error.message);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    })();
+</script>

@@ -24,6 +24,7 @@ public class ArticleResponseDto
     public bool Featured { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime? PublishedAt { get; set; }
+    public DateTime? ScheduledAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public long ViewCount { get; set; }

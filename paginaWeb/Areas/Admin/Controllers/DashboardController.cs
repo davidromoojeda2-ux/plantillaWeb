@@ -14,17 +14,20 @@ public class DashboardController : Controller
     private readonly ICategoryService _categoryService;
     private readonly ICommentService _commentService;
     private readonly ImageService _imageService;
+    private readonly ISiteSettingsService _siteSettingsService;
 
     public DashboardController(
         IArticleService articleService,
         ICategoryService categoryService,
         ICommentService commentService,
-        ImageService imageService)
+        ImageService imageService,
+        ISiteSettingsService siteSettingsService)
     {
         _articleService = articleService;
         _categoryService = categoryService;
         _commentService = commentService;
         _imageService = imageService;
+        _siteSettingsService = siteSettingsService;
     }
 
     [Route("admin")]
@@ -41,6 +44,10 @@ public class DashboardController : Controller
         ViewBag.PendingCommentsCount = pendingComments.Count;
         ViewBag.PendingComments = pendingComments.Take(5).ToList();
         ViewBag.RecentArticles = articles.Take(5).ToList();
+
+        var siteSettings = await _siteSettingsService.GetAsync();
+        ViewBag.WhatsAppGroups = siteSettings.WhatsAppGroups;
+        ViewBag.SocialProfiles = siteSettings.SocialProfiles;
 
         var coverIds = articles.Where(a => !string.IsNullOrEmpty(a.CoverImageId)).Select(a => a.CoverImageId!).Distinct().ToList();
         var images = await _imageService.GetVariantsDictAsync(coverIds);

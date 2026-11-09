@@ -1,7 +1,10 @@
+using Aplication.Content;
 using Aplication.DTOs;
+using Aplication.DTOs.Automation;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
+using Aplication.Realtime;
 
 namespace Aplication.Services;
 
@@ -17,12 +20,15 @@ public interface IArticleService
     Task<List<ArticleResponseDto>> GetAllAdminAsync(int page = 1, int pageSize = 50);
     Task<ArticleResponseDto> CreateAsync(ArticleDto dto);
     Task<ArticleResponseDto> UpdateAsync(string id, ArticleDto dto);
+    Task<(bool Success, bool Featured, string? Error)> ToggleFeaturedAsync(string id);
     Task DeleteAsync(string id);
     Task IncrementViewCountAsync(string id);
     Task<List<ArticleResponseDto>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
     Task<List<ArticleResponseDto>> GetMostReadAsync(int take = 5);
+    Task<List<InternalLinkCandidate>> GetInternalLinkCandidatesAsync(string query, int take = 5);
     Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
     Task<(ArticleResponseDto? Previous, ArticleResponseDto? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt);
+    Task<int> PublishScheduledAsync(DateTime now);
 }
 
 public class ArticleService : IArticleService
@@ -30,15 +36,18 @@ public class ArticleService : IArticleService
     private readonly IArticleRepository _repo;
     private readonly ICategoryRepository _categoryRepo;
     private readonly ContentBodySanitizer _contentSanitizer;
+    private readonly ICmsChangePublisher? _changes;
 
     public ArticleService(
         IArticleRepository repo,
         ICategoryRepository categoryRepo,
-        ContentBodySanitizer contentSanitizer)
+        ContentBodySanitizer contentSanitizer,
+        ICmsChangePublisher? changes = null)
     {
         _repo = repo;
         _categoryRepo = categoryRepo;
         _contentSanitizer = contentSanitizer;
+        _changes = changes;
     }
 
     public Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync() =>
@@ -102,6 +111,7 @@ public class ArticleService : IArticleService
             throw new DuplicateSlugException(article.Slug);
 
         await _repo.InsertAsync(article);
+        _changes?.Publish(CmsModule.Articles, article.Id, CmsChangeOperation.Created);
         return ArticleMapper.ToDto(article);
     }
 
@@ -121,7 +131,36 @@ public class ArticleService : IArticleService
             throw new DuplicateSlugException(existing.Slug);
 
         await _repo.UpdateAsync(existing);
+        _changes?.Publish(CmsModule.Articles, existing.Id, CmsChangeOperation.Updated);
         return ArticleMapper.ToDto(existing);
+    }
+
+    public async Task<(bool Success, bool Featured, string? Error)> ToggleFeaturedAsync(string id)
+    {
+        var article = await _repo.GetByIdAsync(id)
+            ?? throw new NotFoundException("Artículo", id);
+
+        var dto = ArticleMapper.ToEditDto(article);
+        var willBeFeatured = !dto.Featured;
+
+        if (willBeFeatured)
+        {
+            var hasImage = !string.IsNullOrWhiteSpace(dto.CoverImageId)
+                           || !string.IsNullOrWhiteSpace(dto.CoverImageUrl)
+                           || ContentImageResolver.HasImage(dto.Blocks);
+
+            if (!hasImage)
+                return (false, dto.Featured, "No se puede designar en el Hero: el artículo debe tener una imagen asignada.");
+
+            var allAdmin = await _repo.GetAllAsync(0, 100);
+            var currentFeatured = allAdmin.Count(a => a.Featured && a.Id != id);
+            if (currentFeatured >= 3)
+                return (false, dto.Featured, "Límite alcanzado: el Hero principal solo permite un máximo de 3 artículos destacados.");
+        }
+
+        dto.Featured = willBeFeatured;
+        await UpdateAsync(id, dto);
+        return (true, willBeFeatured, null);
     }
 
     private static void ApplyDerivedFields(Domine.Entities.Article article)
@@ -173,6 +212,7 @@ public class ArticleService : IArticleService
         _ = await _repo.GetByIdAsync(id)
             ?? throw new NotFoundException("Artículo", id);
         await _repo.DeleteAsync(id);
+        _changes?.Publish(CmsModule.Articles, id, CmsChangeOperation.Deleted);
     }
 
     public Task IncrementViewCountAsync(string id) => _repo.IncrementViewCountAsync(id);
@@ -189,10 +229,51 @@ public class ArticleService : IArticleService
         return ArticleMapper.ToDtoList(items);
     }
 
+    /// <summary>
+    /// Devuelve hasta <paramref name="take"/> artículos publicados relacionados con la consulta
+    /// para ofrecer enlaces internos reales. Si la búsqueda no devuelve resultados, usa los recientes.
+    /// </summary>
+    public async Task<List<InternalLinkCandidate>> GetInternalLinkCandidatesAsync(string query, int take = 5)
+    {
+        try
+        {
+            var items = await _repo.SearchAsync(query, 0, take);
+            var candidates = items
+                .Where(a => !string.IsNullOrWhiteSpace(a.Slug))
+                .Select(a => new InternalLinkCandidate { Title = a.Title, Slug = a.Slug })
+                .ToList();
+            if (candidates.Count > 0) return candidates;
+        }
+        catch
+        {
+            // La búsqueda de texto puede no estar disponible; se usa el fallback.
+        }
+
+        var recent = await _repo.GetPublishedAsync(0, take);
+        return recent
+            .Where(a => !string.IsNullOrWhiteSpace(a.Slug))
+            .Select(a => new InternalLinkCandidate { Title = a.Title, Slug = a.Slug })
+            .ToList();
+    }
+
     public async Task<(ArticleResponseDto? Previous, ArticleResponseDto? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt)
     {
         var (prev, next) = await _repo.GetAdjacentArticlesAsync(currentArticleId, publishedAt);
         return (prev != null ? ArticleMapper.ToDto(prev) : null,
                 next != null ? ArticleMapper.ToDto(next) : null);
+    }
+
+    /// <summary>Publica los artículos programados cuya fecha ya venció. Devuelve la cantidad publicada.</summary>
+    public async Task<int> PublishScheduledAsync(DateTime now)
+    {
+        var due = await _repo.GetScheduledToPublishAsync(now);
+        foreach (var article in due)
+        {
+            article.Publicar();
+            await _repo.UpdateAsync(article);
+            _changes?.Publish(CmsModule.Articles, article.Id, CmsChangeOperation.Published);
+        }
+
+        return due.Count;
     }
 }

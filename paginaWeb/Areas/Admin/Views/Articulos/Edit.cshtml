@@ -6,6 +6,11 @@
 
 <partial name="_ArticleForm" model="Model" />
 
+@if (ViewData["IsEdit"] as bool? == true)
+{
+    <partial name="_ShareNetworksModal" model="(List<string>?)ViewBag.EnabledShareNetworks" />
+}
+
 @section Scripts {
     <partial name="_ArticleFormScripts" model="Model" />
 }

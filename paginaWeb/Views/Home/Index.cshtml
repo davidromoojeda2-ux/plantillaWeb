@@ -4,9 +4,6 @@
     ViewData["MetaDescription"] = "Últimas noticias, reportajes y análisis en profundidad sobre tecnología, economía y cultura.";
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
-}
 
 <div class="home">
     <!-- ─── 1. Hero: Título + Barra de búsqueda + Curva ───────────────────────── -->
@@ -33,7 +30,7 @@
         </svg>
     </section>
 
-    <!-- ─── 2. Últimas entradas (Dos columnas: Destacadas y Recientes) ───────── -->
+    <!-- ─── 2. Últimas entradas (Dos columnas: Recientes y Más leídas) ───────── -->
     <section class="section container" id="ultimas-entradas" aria-labelledby="ultimas-entradas-title">
         <div class="section-header" data-reveal>
             <div class="section-header__text">
@@ -58,17 +55,17 @@
         </div>
 
         <div class="entries-grid" data-reveal>
-            <!-- ── Columna Izquierda: Principales / Destacadas (Azul Marino Base) ── -->
+            <!-- ── Columna Izquierda: Publicaciones más recientes ── -->
             <div class="entries-panel entries-panel--featured">
                 <div class="entries-panel__header">
                     <span class="entries-panel__tag">
                         <span class="entries-panel__dot" aria-hidden="true"></span>
-                        <span>Noticias Principales</span>
+                        <span>Últimas publicaciones</span>
                     </span>
                 </div>
 
                 <div class="entries-list">
-                    @foreach (var entry in Model.FeaturedEntries)
+                    @foreach (var entry in Model.LatestEntries)
                     {
                         <a class="card-h" href="@entry.Href" aria-label="Leer @entry.Title">
                             <div class="card-h__media">
@@ -149,7 +146,8 @@
                                         <span class="card-h__meta-sep" aria-hidden="true">•</span>
                                         <span class="card-h__views" title="@entry.ViewCount lecturas acumuladas">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                 aria-hidden="true">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                                 <circle cx="12" cy="12" r="3"></circle>
                                             </svg>
@@ -172,7 +170,58 @@
         </div>
     </section>
 
-    <!-- ─── 3. Sección: Encuentra el tema de tu interés (Colores Base del Tema) ─ -->
+    <!-- ─── 3. Sección: Texto persuasivo + Estadísticas del catálogo ───────── -->
+    <section class="persuasive-section" aria-labelledby="texto-persuasivo-title">
+        <div class="container">
+            <div class="persuasive-section__inner" data-reveal>
+                <!-- Columna Izquierda: Propuesta de valor persuasiva con tipografía de gran impacto -->
+                <div class="persuasive-section__copy">
+                    <h2 id="texto-persuasivo-title" class="persuasive-section__title">
+                        @Model.TextoPersuasivo.Title
+                        <span class="persuasive-section__highlight">@Model.TextoPersuasivo.HighlightText</span>
+                    </h2>
+                </div>
+
+                @{
+                    var hasSubcategories = Model.TextoPersuasivo.TotalSubcategories > 0;
+                }
+                <!-- Columna Derecha: Estadísticas en tiempo real de artículos y categorías -->
+                <div class="persuasive-stats @(hasSubcategories ? "persuasive-stats--3" : "persuasive-stats--2")" aria-label="Estadísticas del catálogo editorial">
+                    <!-- Métrica Principal: Total de Artículos -->
+                    <div class="persuasive-stat-card persuasive-stat-card--featured">
+                        <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalArticles</span>
+                        <div class="persuasive-stat-card__meta">
+                            <span class="persuasive-stat-card__label">Artículos publicados</span>
+                            <p class="persuasive-stat-card__desc">Guías, comparativas y análisis</p>
+                        </div>
+                    </div>
+
+                    <!-- Métrica Secundaria 1: Categorías Principales -->
+                    <div class="persuasive-stat-card">
+                        <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalCategories</span>
+                        <div class="persuasive-stat-card__meta">
+                            <span class="persuasive-stat-card__label">Categorías</span>
+                            <p class="persuasive-stat-card__desc">Áreas temáticas troncales</p>
+                        </div>
+                    </div>
+
+                    @if (hasSubcategories)
+                    {
+                        <!-- Métrica Secundaria 2: Especialidades / Subcategorías -->
+                        <div class="persuasive-stat-card">
+                            <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalSubcategories</span>
+                            <div class="persuasive-stat-card__meta">
+                                <span class="persuasive-stat-card__label">Especialidades</span>
+                                <p class="persuasive-stat-card__desc">Subcategorías y temas específicos</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── 4. Sección: Cards Categorias ─ -->
     <section class="bento-section" id="temas-interes" aria-labelledby="temas-interes-title">
         <div class="container">
             <div class="section-header" data-reveal>
@@ -182,203 +231,226 @@
                 </div>
             </div>
 
-            <!-- Bento Grid 2 Columnas -->
-            <div class="bento-grid" data-reveal>
-                <!-- ── Columna Izquierda: Card Grande (Salud y Bienestar) + Card Compacto (Subcategoría) ── -->
-                <div class="bento-col">
-                    <!-- Tarjeta Grande Superior: Salud y Bienestar (Acento Dorado Base) -->
-                    <div
-                        class="bento-card bento-card--large bento-card--primary @(!string.IsNullOrEmpty(Model.CategorySection.MainCard.ImageUrl) ? "bento-card--has-bg" : "")">
-                        @if (!string.IsNullOrEmpty(Model.CategorySection.MainCard.ImageUrl))
-                        {
-                            <div class="bento-card__bg" aria-hidden="true">
-                                <img class="bento-card__bg-img" src="@Model.CategorySection.MainCard.ImageUrl" alt=""
-                                     loading="lazy" />
-                                <div class="bento-card__scrim"></div>
-                            </div>
-                        }
-                        <div class="bento-card__content">
-                            <div>
-                                <div class="bento-card__header">
-                                    <div>
-                                        <span class="bento-card__parent-badge">Categoría Principal</span>
-                                        <h3 class="bento-card__title">@Model.CategorySection.MainCard.Name</h3>
-                                    </div>
-                                    <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria"
-                                       asp-route-slug="@Model.CategorySection.MainCard.Slug">
-                                        <span>Ver más</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                             stroke-linejoin="round">
-                                            <path d="M5 12h14M12 5l7 7-7 7" />
-                                        </svg>
-                                    </a>
-                                </div>
-
-                                @if (!string.IsNullOrEmpty(Model.CategorySection.MainCard.Description))
-                                {
-                                    <p class="bento-card__desc">@Model.CategorySection.MainCard.Description</p>
-                                }
-                            </div>
-
-                            @if (Model.CategorySection.MainCard.Subcategories.Any())
+            @{
+                var hasMainCard = Model.CategorySection.MainCard != null;
+                var hasSubLeft = Model.CategorySection.SubCardLeft != null;
+                var hasSubRightTop = Model.CategorySection.SubCardRightTop != null;
+                var hasSubRightBottom = Model.CategorySection.SubCardRightBottom != null;
+                var hasLeftCol = hasMainCard || hasSubLeft;
+                var hasRightCol = hasSubRightTop || hasSubRightBottom;
+            }
+            @if (hasLeftCol || hasRightCol)
+            {
+                <!-- Bento Grid 2 Columnas -->
+                <div class="bento-grid" data-reveal>
+                    @if (hasLeftCol)
+                    {
+                        <!-- ── Columna Izquierda ── -->
+                        <div class="bento-col">
+                            @if (hasMainCard)
                             {
-                                <div class="bento-card__tags">
-                                    <span class="bento-card__tags-label">Subcategorías:</span>
-                                    @foreach (var sub in Model.CategorySection.MainCard.Subcategories)
+                                <!-- Tarjeta Grande Superior: Categoría con más artículos -->
+                                <div
+                                    class="bento-card bento-card--large bento-card--primary @(!string.IsNullOrEmpty(Model.CategorySection.MainCard!.ImageUrl) ? "bento-card--has-bg" : "")">
+                                    @if (!string.IsNullOrEmpty(Model.CategorySection.MainCard!.ImageUrl))
                                     {
-                                        <a class="bento-card__tag" asp-controller="Category" asp-action="Categoria"
-                                           asp-route-slug="@sub.Slug">
-                                            <span>@sub.Name</span>
-                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                 stroke-width="2.5">
-                                                <path d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </a>
+                                        <div class="bento-card__bg" aria-hidden="true">
+                                            <img class="bento-card__bg-img" src="@Model.CategorySection.MainCard!.ImageUrl" alt=""
+                                                 loading="lazy" />
+                                            <div class="bento-card__scrim"></div>
+                                        </div>
                                     }
+                                    <div class="bento-card__content">
+                                        <div>
+                                            <div class="bento-card__header">
+                                                <div>
+                                                    <span class="bento-card__parent-badge">Categoría Principal</span>
+                                                    <h3 class="bento-card__title">@Model.CategorySection.MainCard!.Name</h3>
+                                                </div>
+                                                <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria"
+                                                   asp-route-slug="@Model.CategorySection.MainCard!.Slug">
+                                                    <span>Ver más</span>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                                         stroke-linejoin="round">
+                                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(Model.CategorySection.MainCard!.Description))
+                                            {
+                                                <p class="bento-card__desc">@Model.CategorySection.MainCard!.Description</p>
+                                            }
+                                        </div>
+                                        @if (Model.CategorySection.MainCard!.Subcategories.Any())
+                                        {
+                                            <div class="bento-card__tags">
+                                                <span class="bento-card__tags-label">Subcategorías:</span>
+                                                @foreach (var sub in Model.CategorySection.MainCard!.Subcategories)
+                                                {
+                                                    <a class="bento-card__tag" asp-controller="Category" asp-action="Categoria"
+                                                       asp-route-slug="@sub.Slug">
+                                                        <span>@sub.Name</span>
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                             stroke-width="2.5">
+                                                            <path d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </a>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            @if (hasSubLeft)
+                            {
+                                <!-- Tarjeta Compacta Inferior: Subcategoría con más artículos -->
+                                <div
+                                    class="bento-card bento-card--compact @(!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft!.ImageUrl) ? "bento-card--has-bg" : "")">
+                                    @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft!.ImageUrl))
+                                    {
+                                        <div class="bento-card__bg" aria-hidden="true">
+                                            <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardLeft!.ImageUrl" alt=""
+                                                 loading="lazy" />
+                                            <div class="bento-card__scrim"></div>
+                                        </div>
+                                    }
+                                    <div class="bento-card__content">
+                                        <div>
+                                            <div class="bento-card__header">
+                                                <div>
+                                                    <span class="bento-card__parent-badge">Subcategoría</span>
+                                                    <h3 class="bento-card__title">@Model.CategorySection.SubCardLeft!.Name</h3>
+                                                </div>
+                                                <a class="bento-card__link-more bento-card__link-more--outline"
+                                                   asp-controller="Category" asp-action="Categoria"
+                                                   asp-route-slug="@Model.CategorySection.SubCardLeft!.Slug">
+                                                    <span>Explorar</span>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                                         stroke-linejoin="round">
+                                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft!.Description))
+                                            {
+                                                <p class="bento-card__desc">@Model.CategorySection.SubCardLeft!.Description</p>
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
                             }
                         </div>
-                    </div>
+                    }
 
-                    <!-- Tarjeta Compacta Inferior: Subcategoría (ej: Neurociencia) -->
-                    <div
-                        class="bento-card bento-card--compact @(!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft.ImageUrl) ? "bento-card--has-bg" : "")">
-                        @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft.ImageUrl))
-                        {
-                            <div class="bento-card__bg" aria-hidden="true">
-                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardLeft.ImageUrl" alt=""
-                                     loading="lazy" />
-                                <div class="bento-card__scrim"></div>
-                            </div>
-                        }
-                        <div class="bento-card__content">
-                            <div>
-                                <div class="bento-card__header">
-                                    <div>
-                                        <span class="bento-card__parent-badge">Subcategoría</span>
-                                        <h3 class="bento-card__title">@Model.CategorySection.SubCardLeft.Name</h3>
-                                    </div>
-                                    <a class="bento-card__link-more bento-card__link-more--outline"
-                                       asp-controller="Category" asp-action="Categoria"
-                                       asp-route-slug="@Model.CategorySection.SubCardLeft.Slug">
-                                        <span>Explorar</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                             stroke-linejoin="round">
-                                            <path d="M5 12h14M12 5l7 7-7 7" />
-                                        </svg>
-                                    </a>
-                                </div>
-
-                                @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft.Description))
-                                {
-                                    <p class="bento-card__desc">@Model.CategorySection.SubCardLeft.Description</p>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── Columna Derecha: Card Compacto (Subcategoría) + Card Grande ── -->
-                <div class="bento-col">
-                    <!-- Tarjeta Compacta Superior: Subcategoría (ej: Nutrición y Longevidad) -->
-                    <div
-                        class="bento-card bento-card--compact @(!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop.ImageUrl) ? "bento-card--has-bg" : "")">
-                        @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop.ImageUrl))
-                        {
-                            <div class="bento-card__bg" aria-hidden="true">
-                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightTop.ImageUrl" alt=""
-                                     loading="lazy" />
-                                <div class="bento-card__scrim"></div>
-                            </div>
-                        }
-                        <div class="bento-card__content">
-                            <div>
-                                <div class="bento-card__header">
-                                    <div>
-                                        <span class="bento-card__parent-badge">Subcategoría</span>
-                                        <h3 class="bento-card__title">@Model.CategorySection.SubCardRightTop.Name</h3>
-                                    </div>
-                                    <a class="bento-card__link-more bento-card__link-more--outline"
-                                       asp-controller="Category" asp-action="Categoria"
-                                       asp-route-slug="@Model.CategorySection.SubCardRightTop.Slug">
-                                        <span>Explorar</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                             stroke-linejoin="round">
-                                            <path d="M5 12h14M12 5l7 7-7 7" />
-                                        </svg>
-                                    </a>
-                                </div>
-
-                                @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop.Description))
-                                {
-                                    <p class="bento-card__desc">@Model.CategorySection.SubCardRightTop.Description</p>
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tarjeta Grande Inferior: Otra Categoría / Subcategoría destacada -->
-                    <div
-                        class="bento-card bento-card--large @(!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom.ImageUrl) ? "bento-card--has-bg" : "")">
-                        @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom.ImageUrl))
-                        {
-                            <div class="bento-card__bg" aria-hidden="true">
-                                <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightBottom.ImageUrl"
-                                     alt="" loading="lazy" />
-                                <div class="bento-card__scrim"></div>
-                            </div>
-                        }
-                        <div class="bento-card__content">
-                            <div>
-                                <div class="bento-card__header">
-                                    <div>
-                                        <span class="bento-card__parent-badge">
-                                            @(Model.CategorySection.SubCardRightBottom.IsMainCategory ? "Categoría Destacada" : "Subcategoría")
-                                        </span>
-                                        <h3 class="bento-card__title">@Model.CategorySection.SubCardRightBottom.Name
-                                        </h3>
-                                    </div>
-                                    <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria"
-                                       asp-route-slug="@Model.CategorySection.SubCardRightBottom.Slug">
-                                        <span>Ver más</span>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                             stroke-linejoin="round">
-                                            <path d="M5 12h14M12 5l7 7-7 7" />
-                                        </svg>
-                                    </a>
-                                </div>
-
-                                @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom.Description))
-                                {
-                                    <p class="bento-card__desc">@Model.CategorySection.SubCardRightBottom.Description</p>
-                                }
-                            </div>
-
-                            @if (Model.CategorySection.SubCardRightBottom.Subcategories.Any())
+                    @if (hasRightCol)
+                    {
+                        <!-- ── Columna Derecha ── -->
+                        <div class="bento-col">
+                            @if (hasSubRightTop)
                             {
-                                <div class="bento-card__tags">
-                                    <span class="bento-card__tags-label">Especialidades:</span>
-                                    @foreach (var sub in Model.CategorySection.SubCardRightBottom.Subcategories)
+                                <!-- Tarjeta Compacta Superior: Subcategoría más visitada -->
+                                <div
+                                    class="bento-card bento-card--compact @(!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop!.ImageUrl) ? "bento-card--has-bg" : "")">
+                                    @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop!.ImageUrl))
                                     {
-                                        <a class="bento-card__tag" asp-controller="Category" asp-action="Categoria"
-                                           asp-route-slug="@sub.Slug">
-                                            <span>@sub.Name</span>
-                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                 stroke-width="2.5">
-                                                <path d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </a>
+                                        <div class="bento-card__bg" aria-hidden="true">
+                                            <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightTop!.ImageUrl"
+                                                 alt="" loading="lazy" />
+                                            <div class="bento-card__scrim"></div>
+                                        </div>
                                     }
+                                    <div class="bento-card__content">
+                                        <div>
+                                            <div class="bento-card__header">
+                                                <div>
+                                                    <span class="bento-card__parent-badge">Subcategoría</span>
+                                                    <h3 class="bento-card__title">@Model.CategorySection.SubCardRightTop!.Name</h3>
+                                                </div>
+                                                <a class="bento-card__link-more bento-card__link-more--outline"
+                                                   asp-controller="Category" asp-action="Categoria"
+                                                   asp-route-slug="@Model.CategorySection.SubCardRightTop!.Slug">
+                                                    <span>Explorar</span>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                                         stroke-linejoin="round">
+                                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightTop!.Description))
+                                            {
+                                                <p class="bento-card__desc">@Model.CategorySection.SubCardRightTop!.Description</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (hasSubRightBottom)
+                            {
+                                <!-- Tarjeta Grande Inferior: Categoría más visitada -->
+                                <div
+                                    class="bento-card bento-card--large @(!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom!.ImageUrl) ? "bento-card--has-bg" : "")">
+                                    @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom!.ImageUrl))
+                                    {
+                                        <div class="bento-card__bg" aria-hidden="true">
+                                            <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightBottom!.ImageUrl"
+                                                 alt="" loading="lazy" />
+                                            <div class="bento-card__scrim"></div>
+                                        </div>
+                                    }
+                                    <div class="bento-card__content">
+                                        <div>
+                                            <div class="bento-card__header">
+                                                <div>
+                                                    <span class="bento-card__parent-badge">
+                                                        @(Model.CategorySection.SubCardRightBottom!.IsMainCategory ? "Categoría Destacada" : "Subcategoría")
+                                                    </span>
+                                                    <h3 class="bento-card__title">@Model.CategorySection.SubCardRightBottom!.Name
+                                                    </h3>
+                                                </div>
+                                                <a class="bento-card__link-more" asp-controller="Category" asp-action="Categoria"
+                                                   asp-route-slug="@Model.CategorySection.SubCardRightBottom!.Slug">
+                                                    <span>Ver más</span>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                                         stroke-linejoin="round">
+                                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardRightBottom!.Description))
+                                            {
+                                                <p class="bento-card__desc">@Model.CategorySection.SubCardRightBottom!.Description</p>
+                                            }
+                                        </div>
+                                        @if (Model.CategorySection.SubCardRightBottom!.Subcategories.Any())
+                                        {
+                                            <div class="bento-card__tags">
+                                                <span class="bento-card__tags-label">Especialidades:</span>
+                                                @foreach (var sub in Model.CategorySection.SubCardRightBottom!.Subcategories)
+                                                {
+                                                    <a class="bento-card__tag" asp-controller="Category" asp-action="Categoria"
+                                                       asp-route-slug="@sub.Slug">
+                                                        <span>@sub.Name</span>
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                             stroke-width="2.5">
+                                                            <path d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </a>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             }
                         </div>
-                    </div>
+                    }
                 </div>
-            </div>
+            }
         </div>
     </section>
 </div>

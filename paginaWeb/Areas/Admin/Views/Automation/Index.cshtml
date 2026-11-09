@@ -1,0 +1,93 @@
+﻿@model AutomationIndexViewModel
+@using Domine.Entities
+@{
+    ViewData["Title"] = "Automatización";
+    var status = Model.Status;
+    var isRunning = status.IsRunning;
+}
+
+@section HeaderActions {
+    <a asp-area="Admin" asp-controller="Automation" asp-action="Configuracion"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00509D] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition-all">
+        Configuración
+    </a>
+}
+
+<div class="space-y-6">
+
+    <!-- ─── Consumo, estado y barra de progreso en vivo ─────────────────────── -->
+    <component type="typeof(AutomationStatusPanel)" render-mode="Server" param-InitialStatus="Model.Status" />
+
+    <!-- ─── Tarjetas de estado (en vivo) ─────────────────────────────────────── -->
+    <component type="typeof(AutomationSummaryCards)" render-mode="Server" param-InitialStatus="Model.Status" />
+
+    <!-- ─── Acciones ────────────────────────────────────────────────────────── -->
+    <div class="flex flex-wrap items-center gap-3">
+        <form method="post" asp-area="Admin" asp-controller="Automation" asp-action="Run"
+              id="runForm"
+              class="@(isRunning ? "hidden" : "")"
+              data-confirm="¿Ejecutar la automatización ahora? Se consultarán Serper e IA y puede tardar unos segundos."
+              data-confirm-type="primary"
+              data-loading="Iniciando…">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-semibold text-sm shadow-sm transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                </svg>
+                Ejecutar ahora
+            </button>
+        </form>
+
+        <form method="post" asp-area="Admin" asp-controller="Automation" asp-action="Stop"
+              id="stopForm"
+              class="flex items-center gap-2 @(isRunning ? "" : "hidden")"
+              data-confirm="¿Detener la corrida en curso? Se cancelará la generación actual."
+              data-confirm-type="warning"
+              data-loading="Deteniendo…">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm shadow-sm transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="1.5" stroke-width="2" />
+                </svg>
+                Detener
+            </button>
+        </form>
+
+        <form method="post" asp-area="Admin" asp-controller="Automation" asp-action="TogglePause"
+              data-confirm="@(status.Paused ? "¿Reanudar la automatización?" : "¿Pausar la automatización? Se detendrán las corridas programadas.")"
+              data-confirm-type="@(status.Paused ? "success" : "warning")"
+              data-loading="Procesando…">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00509D] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition-all">
+                @(status.Paused ? "Reanudar" : "Pausar")
+            </button>
+        </form>
+
+        <a asp-area="Admin" asp-controller="Automation" asp-action="Historial"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition-all">
+            Ver historial
+        </a>
+    </div>
+
+    <!-- ─── Decisiones pendientes ───────────────────────────────────────────── -->
+    <component type="typeof(PendingDecisionsList)" render-mode="Server"
+               param-InitialItems="Model.PendingDecisions" />
+
+    <!-- ─── Últimas corridas (en vivo) ───────────────────────────────────────── -->
+    <component type="typeof(RecentRunsList)" render-mode="Server" param-InitialRuns="Model.RecentRuns" />
+</div>
+
+@section Scripts {
+    <script>
+        window.cmsAutomationStatus = function (running) {
+            var runForm = document.getElementById('runForm');
+            var stopForm = document.getElementById('stopForm');
+            if (runForm) runForm.classList.toggle('hidden', !!running);
+            if (stopForm) stopForm.classList.toggle('hidden', !running);
+        };
+        window.cmsAutomationStatus(@isRunning.ToString().ToLowerInvariant());
+    </script>
+}

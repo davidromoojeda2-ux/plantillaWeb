@@ -1,0 +1,120 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace Domine.Entities;
+
+/// <summary>Estado de una corrida del pipeline de automatización.</summary>
+public enum AutomationRunStatus
+{
+    EnProgreso,
+    Completado,
+    Fallido,
+    Detenido
+}
+
+/// <summary>Origen de disparo de una corrida de automatización.</summary>
+public enum AutomationTrigger
+{
+    Programada,
+    Manual
+}
+
+/// <summary>Estado de una decisión editorial sobre una temática repetida.</summary>
+public enum AutomationDecisionStatus
+{
+    Pendiente,
+    Continuado,
+    Omitido
+}
+
+/// <summary>Motivo de una decisión pendiente: título repetido o artículo fuera de estándar.</summary>
+public enum AutomationDecisionKind
+{
+    Duplicado,
+    Validacion
+}
+
+/// <summary>
+/// Registro de una ejecución del pipeline de automatización (descubrir → generar → publicar).
+/// </summary>
+[BsonIgnoreExtraElements]
+public class AutomationRun
+{
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+
+    public AutomationRunStatus Status { get; set; } = AutomationRunStatus.EnProgreso;
+    public AutomationTrigger Trigger { get; set; } = AutomationTrigger.Programada;
+
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? FinishedAt { get; set; }
+
+    /// <summary>Total de temáticas descubiertas en la corrida.</summary>
+    public int DiscoveredTopicsCount { get; set; }
+
+    /// <summary>Créditos de Serper consumidos en la corrida.</summary>
+    public int SerperCredits { get; set; }
+
+    /// <summary>Tokens totales consumidos por la IA en la corrida.</summary>
+    public int TotalTokens { get; set; }
+
+    /// <summary>Artículos creados durante la corrida.</summary>
+    public List<GeneratedArticleInfo> GeneratedArticles { get; set; } = [];
+
+    /// <summary>Temáticas repetidas pendientes de decisión del usuario.</summary>
+    public List<AutomationDecision> PendingDecisions { get; set; } = [];
+
+    /// <summary>Temas descartados por no corresponder al país configurado.</summary>
+    public List<AutomationSkippedTopic> SkippedTopics { get; set; } = [];
+
+    /// <summary>Hashes de títulos de temáticas procesadas (para deduplicación).</summary>
+    public List<string> TopicHashes { get; set; } = [];
+
+    /// <summary>Errores no fatales registrados durante la corrida.</summary>
+    public List<string> Errors { get; set; } = [];
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>Artículo creado por la automatización.</summary>
+[BsonIgnoreExtraElements]
+public class GeneratedArticleInfo
+{
+    public string ArticleId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>"Publicado", "Programado" o "Borrador".</summary>
+    public string Status { get; set; } = string.Empty;
+}
+
+/// <summary>Tema descartado porque la IA determinó que no corresponde al país configurado.</summary>
+[BsonIgnoreExtraElements]
+public class AutomationSkippedTopic
+{
+    public string TopicTitle { get; set; } = string.Empty;
+    public string? Source { get; set; }
+
+    /// <summary>Temática base a la que pertenecía el candidato.</summary>
+    public string? BaseTopic { get; set; }
+
+    /// <summary>Motivo del descarte indicado por la IA (o el error técnico que lo impidió validar).</summary>
+    public string? Reason { get; set; }
+}
+
+/// <summary>Decisión editorial sobre una temática detectada como repetida.</summary>
+[BsonIgnoreExtraElements]
+public class AutomationDecision
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string TopicTitle { get; set; } = string.Empty;
+    public string? Source { get; set; }
+    public AutomationDecisionStatus Status { get; set; } = AutomationDecisionStatus.Pendiente;
+    public AutomationDecisionKind Kind { get; set; } = AutomationDecisionKind.Duplicado;
+
+    /// <summary>Incumplimientos detectados por el validador (solo para decisiones de validación).</summary>
+    public List<string> ValidationErrors { get; set; } = [];
+
+    /// <summary>Artículo generado pendiente de confirmación, serializado como JSON.</summary>
+    public string? DraftJson { get; set; }
+}

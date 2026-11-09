@@ -1,4 +1,11 @@
 /* ==========================================================================
+   DEPRECATED: Este archivo ha sido migrado a Tailwind CSS v4 Single Source.
+   Fuente centralizada: paginaWeb/Styles/components/home.css
+   Compilado en: paginaWeb/wwwroot/css/tailwind.css
+   Se mantiene este archivo únicamente como referencia histórica.
+   ========================================================================== */
+
+/* ==========================================================================
    Home — Portal Noticias
    Hoja de estilos de la página principal (CSS plano, sin dependencias).
    Reglas de rendimiento: solo se animan `transform` y `opacity`.

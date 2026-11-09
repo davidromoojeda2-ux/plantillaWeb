@@ -1,5 +1,6 @@
 using Aplication.Content;
 using Aplication.DTOs;
+using Aplication.DTOs.Automation;
 using Aplication.DTOs.ContentBlocks;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
@@ -23,17 +24,26 @@ public class ArticulosController : Controller
     private readonly ICategoryService _categoryService;
     private readonly ImageService _imageService;
     private readonly IMenuService _menuService;
+    private readonly IAiArticleRewriter _rewriter;
+    private readonly IAutomationService _automation;
+    private readonly ISiteSettingsService _siteSettingsService;
 
     public ArticulosController(
         IArticleService articleService,
         ICategoryService categoryService,
         ImageService imageService,
-        IMenuService menuService)
+        IMenuService menuService,
+        IAiArticleRewriter rewriter,
+        IAutomationService automation,
+        ISiteSettingsService siteSettingsService)
     {
         _articleService = articleService;
         _categoryService = categoryService;
         _imageService = imageService;
         _menuService = menuService;
+        _rewriter = rewriter;
+        _automation = automation;
+        _siteSettingsService = siteSettingsService;
     }
 
     [HttpGet("")]
@@ -229,6 +239,86 @@ public class ArticulosController : Controller
         }
     }
 
+    [HttpPost("reescribir/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reescribir(string id)
+    {
+        var article = await _articleService.GetByIdAsync(id);
+        if (article is null) return NotFound();
+
+        try
+        {
+            var settings = await _automation.GetSettingsAsync();
+            var plan = ArticleGenerationPlanner.FromSettings(settings);
+            var internalLinks = await _articleService.GetInternalLinkCandidatesAsync(article.Title) ?? [];
+
+            var rewritten = await _rewriter.RewriteAsync(new ArticleRewriteRequest
+            {
+                Title = article.Title,
+                Summary = article.Summary,
+                Blocks = article.Blocks,
+                Language = settings.Language,
+                Tone = plan.Tone,
+                Template = plan.Template,
+                TargetWords = plan.TargetWords,
+                MinBlocks = plan.MinBlocks,
+                MaxTokens = plan.MaxTokens,
+                IncludeList = plan.IncludeList,
+                IncludeTable = plan.IncludeTable,
+                IncludeQuote = plan.IncludeQuote,
+                IncludeConclusion = plan.IncludeConclusion,
+                IncludeFaq = plan.IncludeFaq,
+                IncludeCta = plan.IncludeCta,
+                IncludeLinks = plan.IncludeLinks,
+                InternalLinks = internalLinks,
+                Temperature = plan.Temperature,
+                ApiKey = settings.AiApiKey,
+                BaseUrl = settings.AiBaseUrl,
+                Model = settings.AiModel
+            });
+
+            GeneratedArticleSectionFilter.Apply(rewritten, plan);
+
+            var slugBase = SlugGenerator.Slugify(rewritten.Title);
+            var slug = string.IsNullOrWhiteSpace(slugBase)
+                ? $"reescritura-{DateTime.UtcNow:yyyyMMddHHmmss}"
+                : $"{slugBase}-reescrito-{DateTime.UtcNow:yyyyMMddHHmmss}";
+
+            var summary = new[] { rewritten.Summary, rewritten.MetaDescription, rewritten.Title }
+                .First(s => !string.IsNullOrWhiteSpace(s));
+
+            await _articleService.CreateAsync(new ArticleDto
+            {
+                Title = rewritten.Title.Trim(),
+                Slug = slug,
+                Summary = summary.Trim(),
+                Blocks = rewritten.Blocks,
+                Author = article.Author,
+                AuthorBio = article.AuthorBio,
+                AuthorAvatarUrl = article.AuthorAvatarUrl,
+                AuthorRole = article.AuthorRole,
+                AuthorSocialUrl = article.AuthorSocialUrl,
+                CategoryId = article.CategoryId,
+                SubcategoryId = article.SubcategoryId,
+                Tags = rewritten.Tags,
+                CoverImageId = article.CoverImageId,
+                CoverImageUrl = article.CoverImageUrl,
+                ImageIds = [.. article.ImageIds],
+                Featured = false,
+                Status = "Borrador"
+            });
+
+            _menuService.InvalidateMenu();
+            TempData["Success"] = "Artículo reescrito y guardado como borrador. Revísalo antes de publicar.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"No se pudo reescribir el artículo: {ex.Message}";
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
     [HttpPost("upload-inline")]
     public async Task<IActionResult> UploadInline(IFormFile file, string? articleId = null)
     {
@@ -318,6 +408,9 @@ public class ArticulosController : Controller
         model.SubCategories = allCategories.Where(c => c.ParentId is not null).OrderBy(c => c.Order).ToList();
         model.LinkedImages = !string.IsNullOrEmpty(id) ? await _imageService.GetByArticleIdAsync(id) : [];
         model.AvailableImages = await GetImagesWithArticleUsageAsync();
+
+        var siteSettings = await _siteSettingsService.GetAsync();
+        ViewBag.EnabledShareNetworks = siteSettings.EnabledShareNetworks;
     }
 
     private async Task<(bool IsValid, string? ErrorMessage)> ValidateHeroEligibilityAsync(

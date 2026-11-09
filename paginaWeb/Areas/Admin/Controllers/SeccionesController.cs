@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using paginaWeb.Areas.Admin.Models;
 using paginaWeb.Helpers;
+using paginaWeb.Models;
 
 namespace paginaWeb.Areas.Admin.Controllers;
 
@@ -22,10 +23,28 @@ public class SeccionesController : Controller
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = 1)
     {
+        const int pageSize = 10;
+
         var pages = await _pageService.GetAllAsync();
-        return View(pages);
+        var totalPages = Math.Max(1, (int)Math.Ceiling(pages.Count / (double)pageSize));
+        var currentPage = Math.Clamp(page, 1, totalPages);
+
+        var pagedPages = pages
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        ViewBag.TotalCount = pages.Count;
+        ViewBag.Pagination = new PaginationViewModel(
+            currentPage,
+            totalPages,
+            "Index",
+            "Secciones",
+            ariaLabel: "Paginación de páginas informativas");
+
+        return View(pagedPages);
     }
 
     [HttpGet("nueva")]

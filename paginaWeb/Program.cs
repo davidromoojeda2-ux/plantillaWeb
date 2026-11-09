@@ -1,12 +1,20 @@
 using Aplication.Configuration;
 using Aplication.Interfaces;
+using Aplication.Realtime;
 using Aplication.Services;
+using Infrastructure.Ai;
 using Infrastructure.Auth;
+using Infrastructure.Balances;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
+using Infrastructure.Serper;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.Extensions.Hosting;
+using paginaWeb.Realtime;
+using paginaWeb.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +35,8 @@ builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
 builder.Services.AddScoped<IInformativePageRepository, InformativePageRepository>();
 builder.Services.AddScoped<IImageMetadataRepository, ImageMetadataRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+builder.Services.AddScoped<IAutomationStateRepository, AutomationStateRepository>();
+builder.Services.AddScoped<ISiteSettingsRepository, SiteSettingsRepository>();
 
 // ─── Seguridad del contenido editorial ────────────────────────────────────────
 builder.Services.Configure<ContentSecurityOptions>(
@@ -40,7 +50,20 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IPageService, PageService>();
+builder.Services.AddScoped<ISiteSettingsService, SiteSettingsService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAutomationService, ArticleAutomationService>();
+builder.Services.AddSingleton<AutomationCoordinator>();
+builder.Services.AddSingleton<AutomationLiveState>();
+
+// ─── Cambios en vivo del panel administrativo ────────────────────────────────
+builder.Services.Configure<CmsRealtimeOptions>(builder.Configuration.GetSection("CmsRealtime"));
+builder.Services.AddSingleton<CmsChangeBus>();
+builder.Services.AddSingleton<ICmsChangePublisher>(sp => sp.GetRequiredService<CmsChangeBus>());
+builder.Services.AddSingleton<ICmsChangeStream>(sp => sp.GetRequiredService<CmsChangeBus>());
+builder.Services.AddServerSideBlazor();
+builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingAdminAuthenticationStateProvider>();
+builder.Services.AddCascadingAuthenticationState();
 
 // ─── Almacenamiento de imágenes ───────────────────────────────────────────────
 builder.Services.AddScoped<LocalStorage>();
@@ -48,6 +71,18 @@ builder.Services.AddScoped<S3Storage>();
 builder.Services.AddScoped<CloudflareR2Storage>();
 builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<S3Storage>());
 builder.Services.AddScoped<ImageService>();
+
+// ─── Automatización: Serper + IA ─────────────────────────────────────────────
+builder.Services.AddHttpClient<ITopicDiscoveryService, SerperTopicDiscoveryService>();
+builder.Services.AddHttpClient<IAiArticleGenerator, OpenAiCompatibleArticleGenerator>();
+builder.Services.AddHttpClient<ITopicCountryValidator, OpenAiCompatibleTopicCountryValidator>();
+builder.Services.AddHttpClient<IAiArticleRewriter, OpenAiCompatibleArticleRewriter>();
+builder.Services.AddHttpClient<IProviderBalanceService, ProviderBalanceService>();
+
+// ─── Worker de automatización (embebido, a prueba de fallos) ─────────────────
+builder.Services.AddHostedService<ArticleAutomationWorker>();
+builder.Services.Configure<HostOptions>(options =>
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
 
 
 // ─── Autenticación por cookies ────────────────────────────────────────────────
@@ -117,7 +152,11 @@ if (!string.IsNullOrWhiteSpace(customUploadsPath))
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 app.MapStaticAssets();
+
+// Circuito de Blazor Server para las islas interactivas del Admin.
+app.MapBlazorHub().RequireAuthorization();
 
 // Ruta del área Admin
 app.MapControllerRoute(

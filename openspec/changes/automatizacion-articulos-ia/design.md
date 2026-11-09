@@ -47,7 +47,7 @@ El proyecto es una solución .NET (ASP.NET Core MVC) con capas `Domine`, `Aplica
 - `ITopicDiscoveryService` → `DiscoverAsync(TopicDiscoveryRequest, CancellationToken)`.
 - `IAiArticleGenerator` → `GenerateAsync(TopicGenerationRequest, CancellationToken)`.
 - `IAutomationStateRepository` → consulta/escritura de corridas y de configuración.
-- `IAutomationService` (orquestador) → `RunOnceAsync`, `GetStatusAsync`, `GetRunsAsync`, `GetSettingsAsync`, `SaveSettingsAsync`.
+- `IAutomationService` (orquestador) → `RunOnceAsync`, `GetStatusAsync`, `GetRunsAsync`, `GetSettingsAsync`, `SaveSettingsAsync`, `GetPendingDecisionsAsync`, `ResolveDecisionAsync`.
 
 En `Infrastructure`: `SerperTopicDiscoveryService` (HttpClient a `api.serper.dev`), `OpenAiCompatibleArticleGenerator` (salida JSON), `AutomationStateRepository` (MongoDB).
 
@@ -67,7 +67,7 @@ En `Infrastructure`: `SerperTopicDiscoveryService` (HttpClient a `api.serper.dev
 
 **Decisión**: dos colecciones nuevas en la misma base (`portal_noticias`):
 
-- `automation_runs`: una por corrida, con `Status` (EnProgreso/Completado/Fallido), disparador (Programada/Manual), temas descubiertos, artículos creados y errores.
+- `automation_runs`: una por corrida, con `Status` (EnProgreso/Completado/Fallido), disparador (Programada/Manual), temas descubiertos, artículos creados, decisiones pendientes y errores.
 - `automation_settings`: documento único con la configuración (auto-publicar, frecuencia, categorías habilitadas, temas base, país/idioma, límites) y el estado de pausa.
 
 Entidades correspondientes en `Domine` (`AutomationRun`, `AutomationSettings`).
@@ -76,13 +76,13 @@ Entidades correspondientes en `Domine` (`AutomationRun`, `AutomationSettings`).
 
 **Alternativas descartadas**: estado solo en memoria (se pierde al reiniciar y rompe el idempotencia); una cola externa (Redis/RabbitMQ) innecesaria para una sola réplica.
 
-### 5. Deduplicación por hash normalizado + slug existente
+### 5. Deduplicación por detección + decisión del usuario
 
-**Decisión**: antes de generar, normalizar el título (minúsculas, sin acentos, sin signos) y calcular un hash; descartar si el hash ya figura en `automation_runs` o si existe un artículo con un slug equivalente (`IArticleRepository.SlugExistsAsync` / título normalizado). La comprobación de slug existente ya cubre colisiones al publicar.
+**Decisión**: antes de generar, normalizar el título (minúsculas, sin acentos, sin signos) y calcular un hash; compararlo contra `automation_runs` y contra artículos con slug/título equivalente (`IArticleRepository.SlugExistsAsync`). Las temáticas repetidas NO se descartan automáticamente: se marcan como "pendiente de decisión" (estado en `automation_runs`) y se muestran en el panel para que el usuario decida continuar (la temática puede repetirse de nombre pero abordar otro tema) u omitir. La corrida no se detiene ante estas repeticiones. La comprobación de slug existente al publicar sigue cubriendo las colisiones reales.
 
-**Razón**: evita contenido duplicado (riesgo SEO) y reintentos redundantes entre corridas.
+**Razón**: evita contenido duplicado (riesgo SEO) sin bloquear temáticas que se repiten de nombre pero tocan otro tema; delega el criterio editorial al usuario en lugar de descartar en silencio.
 
-**Alternativas descartadas**: comparar solo el slug (no cubre temas procesados pero no publicados); comparar el título sin normalizar (falla ante diferencias de capitalización/acentos).
+**Alternativas descartadas**: descartar automáticamente toda repetición (bloquea temas legítimos); detener la corrida a la espera de una decisión síncrona (paraliza la automatización); comparar solo el slug (no cubre temas procesados pero no publicados); comparar el título sin normalizar (falla ante capitalización/acentos).
 
 ### 6. Resiliencia: fail-safe + `BackgroundServiceExceptionBehavior.Ignore` + Polly
 
@@ -113,14 +113,55 @@ Entidades correspondientes en `Domine` (`AutomationRun`, `AutomationSettings`).
 
 **Alternativas descartadas**: exponer un dashboard de Hangfire (UI ajena y sin acoplar a la auth de cookies).
 
+### 9. Claves API y proveedor de IA en `AutomationSettings`
+
+**Decisión**: mover las claves de Serper e IA, el proveedor, la URL base y el modelo a `AutomationSettings` (MongoDB), editables desde el panel y enmascaradas en pantalla. Los clientes (`SerperTopicDiscoveryService`, `OpenAiCompatibleArticleGenerator`) dejan de leer la configuración estática y reciben esos valores en cada solicitud (`ApiKey`, `BaseUrl`, `Model`). Se eliminan `SerperOptions`/`AiOptions` y sus secciones de `appsettings`.
+
+**Razón**: permite editar las claves sin reiniciar la app ni tocar archivos; desacopla los clientes de la configuración y habilita el proveedor-agnóstico (cualquier endpoint compatible con OpenAI).
+
+**Alternativas descartadas**: leer claves solo de `IConfiguration` (no editable en runtime); un archivo de configuración escribible (inviable dentro del contenedor Docker).
+
+### 10. Proveedor de IA agnóstico con presets
+
+**Decisión**: un desplegable de presets compatibles con el formato OpenAI (OpenAI, DeepSeek, OpenRouter, Groq, Mistral, Ollama/local y Personalizado), cada uno con URL base y modelo por defecto editables. El generador es genérico: recibe `ApiKey`, `BaseUrl` y `Model` y habla el formato `chat/completions`, por lo que cualquier proveedor compatible funciona sin código adicional.
+
+**Razón**: cubre la gran mayoría de proveedores (incluidos LLMs locales) con una única implementación; "cualquiera" se resuelve por configuración, no por código.
+
+**Alternativas descartadas**: implementaciones específicas para Anthropic/Gemini (formatos distintos; el usuario optó por OpenAI-compatible).
+
+### 11. Programación de publicación (nuevo estado `Programado`)
+
+**Decisión**: añadir `ArticleStatus.Programado` y `Article.ScheduledAt`. El orquestador decide el estado final según la configuración: publicar (auto-publicar, sin programación), programar (programación habilitada → siguiente ocurrencia del horario por defecto, o fecha explícita por artículo) o borrador. El worker publica periódicamente los artículos cuya `ScheduledAt` haya vencido mediante `IArticleService.PublishScheduledAsync`.
+
+**Razón**: permite publicar a una hora/fecha concreta sin intervención manual, y reutiliza el dominio y el flujo de publicación existentes.
+
+**Alternativas descartadas**: una cola externa de publicación (sobredimensionada); publicar solo con auto-publicar inmediato (no cubre la programación).
+
+### 12. Panel: desplegables y gestión de categorías inline
+
+**Decisión**: el panel de configuración presenta país e idioma como `<select>`, las claves como campos enmascarados, el proveedor como desplegable de presets, y un formulario inline para crear categorías/subcategorías que delega en `ICategoryService` (reutiliza la lógica existente). La revisión de decisiones pendientes permite fijar una fecha de publicación opcional por artículo.
+
+**Razón**: evita salir de la vista de configuración y reutiliza el módulo de categorías sin duplicar reglas.
+
+**Alternativas descartadas**: enlazar únicamente al módulo de categorías (rompe el flujo); campos de texto libre para país/idioma (propenso a errores).
+
+### 13. Ejecución manual asíncrona y barra de estado
+
+**Decisión**: el botón "Ejecutar ahora" ya no espera la corrida: señala al worker (`AutomationCoordinator.SignalRun`) y redirige de inmediato. La corrida ocurre en segundo plano. El panel muestra una barra de estado que consulta `GET /admin/automatizacion/estado` cada 3 s: **roja** mientras hay una corrida en curso (`IsRunning`) y **verde** al finalizar, con el resumen (estado, artículos, disparador).
+
+**Razón**: la generación con IA puede tardar decenas de segundos; bloquear la petición HTTP daba la sensación de que la app no respondía. La ejecución asíncrona mantiene la UI fluida y la barra comunica el progreso.
+
+**Alternativas descartadas**: bloquear la petición hasta terminar (mala experiencia y timeouts); WebSockets/SignalR (sobreingeniería para una sola réplica; el polling cada 3 s es suficiente).
+
 ## Risks / Trade-offs
 
-- **[Riesgo] Contenido duplicado o alucinado por la IA.** → Mitigación: deduplicación por hash/slug, revisión en borrador por defecto y sanitización obligatoria.
+- **[Riesgo] Contenido duplicado o alucinado por la IA.** → Mitigación: detección de repeticiones con decisión del usuario (continuar/omitir), revisión en borrador por defecto y sanitización obligatoria.
 - **[Riesgo] Costo descontrolado (tokens + créditos Serper).** → Mitigación: límites por corrida, circuit breaker y pausa automática ante fallos repetidos.
 - **[Riesgo] El worker comparte CPU/memoria con las peticiones web.** → Mitigación: límites estrictos y timeouts; en caso de contención severa, extraer a worker externo (el orquestador ya está en `Aplication`).
 - **[Riesgo] `BackgroundServiceExceptionBehavior.Ignore` enmascara errores si el catch falla.** → Mitigación: logging explícito y estado de corrida persistido; el `Ignore` es solo red de seguridad.
 - **[Riesgo] El JSON de la IA no respeta el contrato de bloques.** → Mitigación: JSON Schema estricto y validación/sanitización del lado servidor antes de persistir.
-- **[Riesgo] Claves API filtradas.** → Mitigación: solo en User Secrets/`.env`, nunca en la UI ni en el repo; el panel muestra únicamente "configurado/ausente".
+- **[Riesgo] Claves API filtradas.** → Mitigación: se muestran enmascaradas y nunca se registran en logs; el panel requiere autenticación administrativa.
+- **[Riesgo] Claves almacenadas en texto plano en MongoDB.** → Mitigación: el acceso a la base está restringido al despliegue; se valora cifrar en un futuro sin cambiar la especificación actual (decisión confirmada por el usuario).
 
 ## Migration Plan
 

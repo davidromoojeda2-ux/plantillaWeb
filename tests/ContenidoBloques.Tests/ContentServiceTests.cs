@@ -101,7 +101,9 @@ public class ContentServiceTests
         public Task<List<Article>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3) => throw new NotImplementedException();
         public Task<List<Article>> GetMostReadAsync(int take = 5) => throw new NotImplementedException();
         public Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync() => throw new NotImplementedException();
+        public Task<List<CategoryArticleSignalDto>> GetPublishedCategorySignalsAsync() => throw new NotImplementedException();
         public Task<(Article? Previous, Article? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt) => throw new NotImplementedException();
+        public Task<List<Article>> GetScheduledToPublishAsync(DateTime now) => throw new NotImplementedException();
     }
 
     private sealed class FakeCategoryRepository : ICategoryRepository

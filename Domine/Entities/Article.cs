@@ -75,6 +75,9 @@ public class Article
 
     public DateTime? PublishedAt { get; set; }
 
+    /// <summary>Fecha y hora en que se publicará un artículo programado.</summary>
+    public DateTime? ScheduledAt { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -181,6 +184,12 @@ public class Article
         if (Status == ArticleStatus.Publicado && Blocks.Count == 0)
             throw new DomainValidationException("No se puede publicar un artículo sin contenido.", nameof(Blocks));
 
+        if (Status == ArticleStatus.Programado && Blocks.Count == 0)
+            throw new DomainValidationException("No se puede programar un artículo sin contenido.", nameof(Blocks));
+
+        if (Status == ArticleStatus.Programado && ScheduledAt is null)
+            throw new DomainValidationException("Un artículo programado debe tener una fecha de publicación.", nameof(ScheduledAt));
+
         if (ReadingTimeMinutes < 1)
             ReadingTimeMinutes = 1;
     }
@@ -193,6 +202,7 @@ public class Article
     {
         Status = ArticleStatus.Publicado;
         PublishedAt ??= DateTime.UtcNow;
+        ScheduledAt = null;
         UpdatedAt = DateTime.UtcNow;
         SearchText = BuildSearchText();
         ReadingTimeMinutes = EstimateReadingTime(Blocks);

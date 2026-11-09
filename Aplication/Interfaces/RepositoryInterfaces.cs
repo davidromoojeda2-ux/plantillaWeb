@@ -1,3 +1,4 @@
+using Aplication.DTOs;
 using Domine.Entities;
 
 namespace Aplication.Interfaces;
@@ -40,7 +41,9 @@ public interface IArticleRepository
     Task<List<Article>> GetRecommendedAsync(string currentArticleId, string? categoryId, int take = 3);
     Task<List<Article>> GetMostReadAsync(int take = 5);
     Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync();
+    Task<List<CategoryArticleSignalDto>> GetPublishedCategorySignalsAsync();
     Task<(Article? Previous, Article? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt);
+    Task<List<Article>> GetScheduledToPublishAsync(DateTime now);
 }
 
 // ─── Comment Repository Interface ─────────────────────────────────────────────

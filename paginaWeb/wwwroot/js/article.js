@@ -22,50 +22,144 @@
     // 2. Índice Interactivo ("En esta página")
     function initTableOfContents() {
         var body = document.getElementById('articleBody');
-        var toc = document.getElementById('tableOfContents');
-        if (!body || !toc) return;
+        // Índice de escritorio (sidebar) + índice plegable para móviles/tablets.
+        var tocs = Array.prototype.filter.call(
+            [document.getElementById('tableOfContents'), document.getElementById('tableOfContentsMobile')],
+            Boolean);
+        if (!body || tocs.length === 0) return;
 
         var headings = body.querySelectorAll('h2, h3');
         if (headings.length === 0) {
-            toc.innerHTML = '<span class="text-white/70 italic text-sm">Lectura corrida continua</span>';
+            tocs.forEach(function (toc) {
+                toc.innerHTML = '<span class="block px-3 text-blue-100 italic text-sm">Lectura corrida continua</span>';
+            });
+            var mobileWrapper = document.getElementById('mobileTocWrapper');
+            if (mobileWrapper) mobileWrapper.classList.add('hidden');
             return;
         }
 
-        toc.innerHTML = '';
+        // Clases pensadas para fondo azul marino (#00296B): alto contraste.
+        var activeClasses = ['bg-white/10', 'text-[#FDC500]!', 'border-[#FDC500]!'];
+        // La sección padre (H2) de un subtítulo activo queda marcada de forma más tenue.
+        var parentClasses = ['border-[#FDC500]/40!', 'bg-white/5'];
+        var baseClass = 'block border-l-2 border-transparent rounded-r-md py-1.5 pr-3 leading-snug transition-colors duration-200 hover:bg-white/5 hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-[#FDC500] ';
+
         headings.forEach(function (h, idx) {
             // El renderizador de bloques genera ids deterministas; se conservan
             // para que los enlaces profundos y la tabla de contenido coincidan.
             if (!h.id) {
                 h.id = 'seccion-' + idx;
             }
-            var id = h.id;
-
-            var link = document.createElement('a');
-            link.href = '#' + id;
-            link.innerText = h.innerText;
-            link.className = 'block py-1.5 transition text-sm leading-snug rounded-none ' +
-                (h.tagName === 'H3' ? 'pl-3 text-white/80 hover:text-white' : 'font-medium text-white hover:text-amber-100');
-
-            toc.appendChild(link);
         });
 
-        // Resaltar sección activa al hacer scroll
-        var allLinks = toc.querySelectorAll('a');
-        var observer = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    allLinks.forEach(function (l) {
-                        l.classList.remove('bg-black/15', 'px-2', '!font-bold', 'border-l-2', 'border-white');
-                    });
-                    var activeLink = toc.querySelector('a[href="#' + entry.target.id + '"]');
-                    if (activeLink) {
-                        activeLink.classList.add('bg-black/15', 'px-2', '!font-bold', 'border-l-2', 'border-white');
-                    }
+        tocs.forEach(function (toc) {
+            toc.innerHTML = '';
+            headings.forEach(function (h) {
+                var link = document.createElement('a');
+                link.href = '#' + h.id;
+                link.innerText = h.innerText;
+                link.className = baseClass +
+                    (h.tagName === 'H3' ? 'pl-6 text-sm text-blue-100' : 'pl-3 text-[15px] font-semibold text-white');
+                link.addEventListener('click', function () {
+                    var details = toc.closest('details');
+                    if (details) details.open = false;
+                });
+                toc.appendChild(link);
+            });
+        });
+
+        // Resaltar sección activa al hacer scroll.
+        // Se calcula de forma exacta: la sección activa es el último encabezado cuyo
+        // borde superior ya cruzó la línea de lectura (justo bajo la barra fija).
+        var headingList = Array.prototype.slice.call(headings);
+        var currentId; // undefined: fuerza la primera actualización aunque no haya sección activa
+
+        function readingLine() {
+            return Math.min(160, window.innerHeight * 0.3);
+        }
+
+        function findActiveHeading() {
+            var line = readingLine();
+            var active = null;
+            for (var i = 0; i < headingList.length; i++) {
+                if (headingList[i].getBoundingClientRect().top - line <= 1) {
+                    active = headingList[i];
+                } else {
+                    break;
+                }
+            }
+            // Al final de la página, el último encabezado siempre queda activo.
+            var atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+            if (atBottom) active = headingList[headingList.length - 1];
+            return active;
+        }
+
+        // H2 al que pertenece un H3 (para marcar también la sección padre).
+        function parentSectionOf(heading) {
+            if (!heading || heading.tagName !== 'H3') return null;
+            for (var i = headingList.indexOf(heading) - 1; i >= 0; i--) {
+                if (headingList[i].tagName === 'H2') return headingList[i];
+            }
+            return null;
+        }
+
+        // Desplaza el índice (no la página) para mantener visible y centrado el enlace activo.
+        function keepLinkInView(toc, link) {
+            if (toc.scrollHeight <= toc.clientHeight) return;
+            var target = link.offsetTop - (toc.clientHeight / 2) + (link.offsetHeight / 2);
+            toc.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+        }
+
+        function setActive(heading) {
+            var id = heading ? heading.id : null;
+            if (id === currentId) return;
+            currentId = id;
+            var parent = parentSectionOf(heading);
+
+            // Contador "3 / 12" en la cabecera del índice.
+            var counter = document.getElementById('tocCounter');
+            if (counter) {
+                counter.textContent = heading
+                    ? (headingList.indexOf(heading) + 1) + ' / ' + headingList.length
+                    : headingList.length + ' secciones';
+            }
+
+            tocs.forEach(function (toc) {
+                toc.querySelectorAll('a').forEach(function (l) {
+                    activeClasses.forEach(function (c) { l.classList.remove(c); });
+                    parentClasses.forEach(function (c) { l.classList.remove(c); });
+                    l.removeAttribute('aria-current');
+                });
+                if (!id) {
+                    toc.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+                if (parent) {
+                    var parentLink = toc.querySelector('a[href="#' + CSS.escape(parent.id) + '"]');
+                    if (parentLink) parentClasses.forEach(function (c) { parentLink.classList.add(c); });
+                }
+                var activeLink = toc.querySelector('a[href="#' + CSS.escape(id) + '"]');
+                if (activeLink) {
+                    activeClasses.forEach(function (c) { activeLink.classList.add(c); });
+                    activeLink.setAttribute('aria-current', 'location');
+                    keepLinkInView(toc, activeLink);
                 }
             });
-        }, { rootMargin: '-20% 0px -70% 0px' });
+        }
 
-        headings.forEach(function (h) { observer.observe(h); });
+        var ticking = false;
+        function onScroll() {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(function () {
+                setActive(findActiveHeading());
+                ticking = false;
+            });
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+        onScroll();
     }
 
     // 3. Copiar enlace al portapapeles con Toast

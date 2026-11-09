@@ -48,4 +48,13 @@ public class MongoDbContext
 
     public IMongoCollection<AdminUser> Users =>
         _database.GetCollection<AdminUser>("users");
+
+    public IMongoCollection<AutomationRun> AutomationRuns =>
+        _database.GetCollection<AutomationRun>("automation_runs");
+
+    public IMongoCollection<AutomationSettings> AutomationSettings =>
+        _database.GetCollection<AutomationSettings>("automation_settings");
+
+    public IMongoCollection<SiteSettings> SiteSettings =>
+        _database.GetCollection<SiteSettings>("site_settings");
 }

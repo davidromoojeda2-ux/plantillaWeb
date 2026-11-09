@@ -1,0 +1,200 @@
+@inherits RealtimeComponentBase
+@inject AutomationLiveState Live
+@inject IAutomationService Automation
+@inject IProviderBalanceService Balances
+
+<section class="bg-white rounded-2xl border border-slate-200/80 p-6">
+    <div class="flex items-center justify-between mb-5">
+        <h3 class="font-bold text-slate-800 text-lg">Consumo y saldo</h3>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="rounded-xl border border-slate-200/80 p-4">
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Tokens IA</p>
+            <p class="text-2xl font-bold text-[#00296B] mt-1">@_status.Usage.TotalTokens</p>
+        </div>
+        <div class="rounded-xl border border-slate-200/80 p-4">
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Créditos Serper</p>
+            <p class="text-2xl font-bold text-[#00509D] mt-1">@_status.Usage.TotalCredits</p>
+        </div>
+        <div class="rounded-xl border border-slate-200/80 p-4">
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Corridas</p>
+            <p class="text-2xl font-bold text-slate-800 mt-1">@_status.Usage.RunCount</p>
+        </div>
+        <div class="rounded-xl border border-slate-200/80 p-4">
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Tokens última</p>
+            <p class="text-2xl font-bold text-slate-800 mt-1">@(_status.LastRun?.TotalTokens ?? 0)</p>
+        </div>
+        <div class="rounded-xl border border-slate-200/80 p-4">
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Saldo Serper</p>
+            <p class="text-2xl font-bold text-[#00509D] mt-1">@SerperText</p>
+        </div>
+        <div class="rounded-xl border border-slate-200/80 p-4">
+            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Saldo IA</p>
+            <p class="text-2xl font-bold text-[#00509D] mt-1">@AiText</p>
+        </div>
+    </div>
+</section>
+
+<div id="runStatusBar" class="rounded-xl px-5 py-3.5 text-sm font-semibold flex items-center gap-3 @(IsRunning ? "bg-red-600 text-white border border-red-700" : "bg-green-600 text-white border border-green-700")">
+    <span id="runStatusDot" class="w-2.5 h-2.5 rounded-full bg-white flex-shrink-0 @(IsRunning ? "animate-pulse" : "")"></span>
+    <span id="runStatusText">@(IsRunning ? "Procesando…" : "Listo")</span>
+    <span id="runStatusDetail" class="text-xs font-normal opacity-80 ml-1">@Detail</span>
+</div>
+
+@code {
+    [Parameter] public AutomationStatusDto InitialStatus { get; set; } = new();
+
+    private AutomationStatusDto _status = new();
+    private AutomationLiveSnapshot _live = AutomationLiveSnapshot.Empty;
+    private bool _balanceLoading;
+    private CancellationTokenSource? _balanceRefreshCts;
+    private bool _balancesLoaded;
+    private ProviderBalanceDto? _balances;
+
+    private bool IsRunning => _live.IsRunning || _status.IsRunning;
+
+    private string SerperText =>
+        _balances?.SerperCredits is { } credits
+            ? $"{credits} créditos"
+            : (_balancesLoaded ? "No disponible" : "—");
+
+    private string AiText =>
+        _balances?.AiBalance is { } balance
+            ? $"{(_balances.AiCurrency is { Length: > 0 } currency ? currency + " " : string.Empty)}{balance}"
+            : (!string.IsNullOrWhiteSpace(_balances?.AiNote) ? _balances!.AiNote! : (_balancesLoaded ? "No disponible" : "—"));
+
+    private string Detail
+    {
+        get
+        {
+            if (IsRunning)
+            {
+                var generated = _live.GeneratedCount;
+                var pending = _live.PendingCount;
+                return $"Corrida {_live.Trigger.ToLowerInvariant()} · {generated} artículo(s) · {pending} pendiente(s)";
+            }
+
+            if (_live.RunId is not null)
+                return $"{_live.Status} · {_live.GeneratedCount} artículo(s) · {_live.Trigger.ToLowerInvariant()}";
+
+            return _status.LastRun is { } last
+                ? $"{last.Status} · {last.GeneratedCount} artículo(s) · {last.Trigger.ToLowerInvariant()}"
+                : string.Empty;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        _status = InitialStatus;
+        _live = InitialStatus.Live ?? Live.Snapshot();
+        _status.IsRunning = _live.IsRunning || _status.IsRunning;
+    }
+
+    protected override bool Accepts(CmsChangeEvent change) =>
+        change.Module == CmsModule.Automation;
+
+    protected override async Task OnChangeAsync(CmsChangeEvent change)
+    {
+        _live = Live.Snapshot();
+        _status.IsRunning = _live.IsRunning;
+        _status.Live = _live;
+        _status.PendingDecisionsCount = _live.PendingCount;
+
+        if (change.Operation is CmsChangeOperation.Completed
+            or CmsChangeOperation.Failed
+            or CmsChangeOperation.Stopped
+            or CmsChangeOperation.SettingsChanged)
+        {
+            _status = await Automation.GetStatusAsync();
+            _live = _status.Live ?? Live.Snapshot();
+
+            if (change.Operation is CmsChangeOperation.Completed)
+                await RefreshBalancesAsync();
+        }
+
+        await NotifyRunningStateAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender) return;
+
+        _balanceRefreshCts = new CancellationTokenSource();
+        _ = BalanceRefreshLoopAsync(_balanceRefreshCts.Token);
+
+        await RefreshBalancesAsync();
+        StateHasChanged();
+        await NotifyRunningStateAsync();
+    }
+
+    private async Task BalanceRefreshLoopAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(60));
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                await InvokeAsync(async () =>
+                {
+                    await RefreshBalancesAsync();
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Navegación o apagado normal.
+        }
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        if (_balanceRefreshCts is not null)
+        {
+            _balanceRefreshCts.Cancel();
+            _balanceRefreshCts.Dispose();
+            _balanceRefreshCts = null;
+        }
+
+        await base.DisposeAsync();
+    }
+
+    private async Task RefreshBalancesAsync()
+    {
+        if (_balanceLoading) return;
+
+        _balanceLoading = true;
+        try
+        {
+            _balances = await Balances.GetBalancesAsync();
+        }
+        catch
+        {
+            _balances = null;
+        }
+        finally
+        {
+            _balanceLoading = false;
+            _balancesLoaded = true;
+        }
+    }
+
+    private async Task NotifyRunningStateAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("cmsAutomationStatus", IsRunning);
+        }
+        catch (JSDisconnectedException)
+        {
+            // El circuito se desconectó; no hay nada que notificar.
+        }
+        catch (InvalidOperationException)
+        {
+            // El script de la vista no está disponible en un render aislado.
+        }
+    }
+}

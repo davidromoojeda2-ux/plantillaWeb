@@ -4,6 +4,7 @@ using Aplication.DTOs;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
+using Aplication.Realtime;
 using Domine.Entities;
 
 namespace Aplication.Services;
@@ -26,11 +27,16 @@ public class CommentService : ICommentService
 {
     private readonly ICommentRepository _commentRepo;
     private readonly IVisitorRepository _visitorRepo;
+    private readonly ICmsChangePublisher? _changes;
 
-    public CommentService(ICommentRepository commentRepo, IVisitorRepository visitorRepo)
+    public CommentService(
+        ICommentRepository commentRepo,
+        IVisitorRepository visitorRepo,
+        ICmsChangePublisher? changes = null)
     {
         _commentRepo = commentRepo;
         _visitorRepo = visitorRepo;
+        _changes = changes;
     }
 
     public async Task<List<CommentResponseDto>> GetApprovedByArticleAsync(string articleId) =>
@@ -71,11 +77,26 @@ public class CommentService : ICommentService
 
         var comment = CommentMapper.ToEntity(dto, visitor.Id);
         await _commentRepo.InsertAsync(comment);
+        _changes?.Publish(CmsModule.Comments, comment.Id, CmsChangeOperation.Created);
     }
 
-    public Task ApproveAsync(string id) => _commentRepo.UpdateStatusAsync(id, CommentStatus.Aprobado);
-    public Task RejectAsync(string id) => _commentRepo.UpdateStatusAsync(id, CommentStatus.Rechazado);
-    public Task DeleteAsync(string id) => _commentRepo.DeleteAsync(id);
+    public async Task ApproveAsync(string id)
+    {
+        await _commentRepo.UpdateStatusAsync(id, CommentStatus.Aprobado);
+        _changes?.Publish(CmsModule.Comments, id, CmsChangeOperation.Updated);
+    }
+
+    public async Task RejectAsync(string id)
+    {
+        await _commentRepo.UpdateStatusAsync(id, CommentStatus.Rechazado);
+        _changes?.Publish(CmsModule.Comments, id, CmsChangeOperation.Updated);
+    }
+
+    public async Task DeleteAsync(string id)
+    {
+        await _commentRepo.DeleteAsync(id);
+        _changes?.Publish(CmsModule.Comments, id, CmsChangeOperation.Deleted);
+    }
 
     private static string HashIp(string ip) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(ip)));

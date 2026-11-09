@@ -1,0 +1,129 @@
+@model Domine.Entities.AutomationRun
+@using Domine.Entities
+@{
+    ViewData["Title"] = "Detalle de Corrida";
+}
+
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <a asp-area="Admin" asp-controller="Automation" asp-action="Historial"
+           class="text-xs font-semibold text-[#00509D] hover:underline"><partial name="_SvgIcon" model="@(new SvgIcon("arrow-left", "w-3.5 h-3.5"))" /> Volver al historial</a>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Resumen</h3>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div><dt class="text-slate-400 text-xs uppercase">Estado</dt><dd class="text-slate-800 font-medium">@Model.Status</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Disparador</dt><dd class="text-slate-800 font-medium">@(Model.Trigger == AutomationTrigger.Manual ? "Manual" : "Programada")</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Inicio</dt><dd class="text-slate-800">@Model.StartedAt.ToString("dd/MM/yyyy HH:mm:ss")</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Fin</dt><dd class="text-slate-800">@(Model.FinishedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—")</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Temas descubiertos</dt><dd class="text-slate-800">@Model.DiscoveredTopicsCount</dd></div>
+            <div><dt class="text-slate-400 text-xs uppercase">Artículos creados</dt><dd class="text-slate-800">@Model.GeneratedArticles.Count</dd></div>
+        </dl>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Artículos generados</h3>
+        @if (!Model.GeneratedArticles.Any())
+        {
+            <p class="text-slate-400 text-sm">Sin artículos generados.</p>
+        }
+        else
+        {
+            <div class="divide-y divide-slate-100">
+                @foreach (var a in Model.GeneratedArticles)
+                {
+                    <div class="py-3 flex items-center justify-between">
+                        <div class="min-w-0 pr-4">
+                            <p class="font-medium text-slate-800 text-sm truncate">@a.Title</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold @(a.Status == "Publicado" ? "bg-green-600 text-white" : "bg-slate-600 text-white")">
+                            @a.Status
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Decisiones pendientes</h3>
+        @if (!Model.PendingDecisions.Any())
+        {
+            <p class="text-slate-400 text-sm">Sin decisiones pendientes.</p>
+        }
+        else
+        {
+            <div class="divide-y divide-slate-100">
+                @foreach (var d in Model.PendingDecisions)
+                {
+                    <div class="py-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="text-sm text-slate-800">@d.TopicTitle</p>
+                            @if (d.Kind == AutomationDecisionKind.Validacion)
+                            {
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                                    Fuera de estándar
+                                </span>
+                            }
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Estado: @d.Status</p>
+                        @if (d.ValidationErrors.Any())
+                        {
+                            <ul class="mt-2 space-y-1 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-700 list-disc list-inside">
+                                @foreach (var error in d.ValidationErrors)
+                                {
+                                    <li>@error</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
+        <h3 class="font-bold text-slate-800 text-lg mb-4">Temas omitidos por país</h3>
+        @if (!Model.SkippedTopics.Any())
+        {
+            <p class="text-slate-400 text-sm">Sin temas omitidos.</p>
+        }
+        else
+        {
+            <div class="divide-y divide-slate-100">
+                @foreach (var s in Model.SkippedTopics)
+                {
+                    <div class="py-3">
+                        <p class="text-sm text-slate-800">@s.TopicTitle</p>
+                        @if (!string.IsNullOrWhiteSpace(s.BaseTopic))
+                        {
+                            <p class="text-xs text-slate-400 mt-0.5">Temática base: @s.BaseTopic</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(s.Source))
+                        {
+                            <p class="text-xs text-slate-400 mt-0.5">Fuente: @s.Source</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(s.Reason))
+                        {
+                            <p class="text-xs text-rose-700 mt-0.5">@s.Reason</p>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (Model.Errors.Count > 0)
+    {
+        <div class="bg-white border border-red-600 rounded-2xl p-6">
+            <h3 class="font-bold text-red-700 text-lg mb-3">Errores</h3>
+            <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
+                @foreach (var e in Model.Errors)
+                {
+                    <li>@e</li>
+                }
+            </ul>
+        </div>
+    }
+</div>

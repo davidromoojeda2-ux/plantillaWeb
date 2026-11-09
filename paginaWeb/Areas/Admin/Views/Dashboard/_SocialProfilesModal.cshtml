@@ -1,0 +1,195 @@
+@model List<SocialProfileDto>
+@using Domine.Entities
+@{
+    var profiles = Model ?? new();
+}
+
+<div id="socialProfilesModal"
+     class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+     role="dialog" aria-modal="true" aria-labelledby="socialProfilesModalTitle">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[85vh] flex flex-col">
+        <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
+            <div>
+                <h3 id="socialProfilesModalTitle" class="text-base font-bold text-slate-800">Redes sociales del sitio</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Los perfiles activos con enlace se muestran como iconos en el footer.</p>
+            </div>
+            <button type="button" data-close-social-modal
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                    aria-label="Cerrar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="p-5 overflow-y-auto flex-1 space-y-3" id="socialProfilesRows"></div>
+
+        <div id="socialProfilesError"
+             class="hidden mx-5 mb-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
+
+        <div class="p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <button type="button" id="btnAddSocialProfile"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Agregar red
+            </button>
+            <div class="flex items-center justify-end gap-2">
+                <button type="button" data-close-social-modal
+                        class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                <button type="button" id="btnSaveSocialProfiles"
+                        class="px-5 py-2 text-xs font-bold text-white bg-[#00296B] hover:bg-[#00509D] rounded-xl shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="socialProfileRowTemplate">
+    <div class="social-profile-row grid grid-cols-1 sm:grid-cols-12 gap-2 items-start p-3 rounded-xl border border-slate-200 bg-slate-50/60">
+        <div class="sm:col-span-4">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Red social</label>
+            <select data-field="platform"
+                    class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-[#00509D]">
+                @foreach (var network in SocialNetworks.Profiles)
+                {
+                    <option value="@network.Key">@network.Label</option>
+                }
+            </select>
+        </div>
+        <div class="sm:col-span-6">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Enlace del perfil</label>
+            <input type="url" data-field="url" maxlength="500" placeholder="https://..."
+                   class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-[#00509D]" />
+        </div>
+        <div class="sm:col-span-2 flex items-center justify-between gap-2 pt-5">
+            <label class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                <input type="checkbox" data-field="active" checked
+                       class="rounded border-slate-300 text-[#00296B] focus:ring-[#00509D]" /> Activo
+            </label>
+            <button type="button" data-remove-row
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                    aria-label="Eliminar red social">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</template>
+
+<script>
+    (function () {
+        var modal = document.getElementById('socialProfilesModal');
+        if (!modal) return;
+
+        var rows = document.getElementById('socialProfilesRows');
+        var template = document.getElementById('socialProfileRowTemplate');
+        var errorBox = document.getElementById('socialProfilesError');
+        var saveBtn = document.getElementById('btnSaveSocialProfiles');
+        var token = document.querySelector('input[name="__RequestVerificationToken"]');
+        var currentProfiles = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(profiles, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+
+        function setError(message) {
+            if (!errorBox) return;
+            errorBox.textContent = message || '';
+            errorBox.classList.toggle('hidden', !message);
+        }
+
+        function createRow(profile) {
+            var node = template.content.firstElementChild.cloneNode(true);
+            var platform = node.querySelector('[data-field="platform"]');
+            var url = node.querySelector('[data-field="url"]');
+            var active = node.querySelector('[data-field="active"]');
+
+            platform.value = profile && profile.platform ? profile.platform : platform.options[0].value;
+            url.value = profile && profile.url ? profile.url : '';
+            active.checked = profile ? profile.active !== false : true;
+
+            node.querySelector('[data-remove-row]').addEventListener('click', function () { node.remove(); });
+            return node;
+        }
+
+        function render(list) {
+            rows.innerHTML = '';
+            (list && list.length ? list : [null]).forEach(function (profile) {
+                rows.appendChild(createRow(profile));
+            });
+        }
+
+        function collect() {
+            return Array.prototype.slice.call(rows.querySelectorAll('.social-profile-row'))
+                .map(function (row) {
+                    return {
+                        platform: row.querySelector('[data-field="platform"]').value,
+                        url: row.querySelector('[data-field="url"]').value.trim(),
+                        active: row.querySelector('[data-field="active"]').checked
+                    };
+                })
+                .filter(function (profile) { return profile.url; });
+        }
+
+        function openModal() {
+            setError('');
+            render(currentProfiles);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('btnOpenSocialProfilesModal')?.addEventListener('click', openModal);
+        modal.querySelectorAll('[data-close-social-modal]').forEach(function (btn) {
+            btn.addEventListener('click', closeModal);
+        });
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+        document.getElementById('btnAddSocialProfile')?.addEventListener('click', function () {
+            rows.appendChild(createRow(null));
+        });
+
+        saveBtn?.addEventListener('click', async function () {
+            var profilesToSave = collect();
+            saveBtn.disabled = true;
+            setError('');
+
+            try {
+                var response = await fetch('/admin/ajustes/social-profiles', {
+                    method: 'POST',
+                    headers: Object.assign(
+                        { 'Content-Type': 'application/json' },
+                        token ? { 'RequestVerificationToken': token.value } : {}),
+                    body: JSON.stringify(profilesToSave)
+                });
+                var data = await response.json().catch(function () { return {}; });
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.message || 'No se pudieron guardar las redes sociales.');
+                }
+
+                currentProfiles = profilesToSave;
+                var count = document.getElementById('socialProfilesCount');
+                if (count) {
+                    count.textContent = profilesToSave.filter(function (profile) {
+                        return profile.active && profile.url;
+                    }).length;
+                }
+                if (window.showToast) window.showToast('Redes sociales guardadas.', 'success');
+                closeModal();
+            } catch (error) {
+                setError(error.message);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    })();
+</script>

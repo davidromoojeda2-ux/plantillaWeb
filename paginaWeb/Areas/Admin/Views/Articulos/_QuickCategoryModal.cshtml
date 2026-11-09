@@ -51,7 +51,7 @@
             if (isSubcategory) {
                 const parentId = categorySelect?.value;
                 if (!parentId) {
-                    alert('Por favor selecciona primero una Categoría Principal a la que pertenecerá la subcategoría.');
+                    window.appAlert('Por favor selecciona primero una Categoría Principal a la que pertenecerá la subcategoría.', { title: 'Falta la categoría principal', type: 'warning' });
                     categorySelect?.focus();
                     return;
                 }

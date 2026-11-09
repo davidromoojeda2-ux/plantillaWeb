@@ -1,0 +1,26 @@
+@inherits RealtimeComponentBase
+@inject ICommentService CommentService
+
+@if (_count > 0)
+{
+    <span class="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-[#FDC500] text-[#00296B] text-[10px] font-black">
+        @_count
+    </span>
+}
+
+@code {
+    private int _count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _count = (await CommentService.GetPendingAsync()).Count;
+    }
+
+    protected override bool Accepts(CmsChangeEvent change) =>
+        change.Module == CmsModule.Comments;
+
+    protected override async Task OnChangeAsync(CmsChangeEvent change)
+    {
+        _count = (await CommentService.GetPendingAsync()).Count;
+    }
+}

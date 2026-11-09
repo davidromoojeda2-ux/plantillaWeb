@@ -1,0 +1,136 @@
+@inherits RealtimeComponentBase
+@inject IAutomationService Automation
+
+<div class="bg-white rounded-2xl border border-slate-200/80 p-6">
+    <div class="flex items-center justify-between mb-5">
+        <h3 class="font-bold text-slate-800 text-lg">
+            Decisiones pendientes
+            <span class="text-slate-400 font-normal text-base">(requieren tu confirmación)</span>
+        </h3>
+        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+            @_items.Count
+        </span>
+    </div>
+
+    @if (!_items.Any())
+    {
+        <div class="text-center py-10 text-slate-400 text-sm">
+            No hay decisiones pendientes de confirmación.
+        </div>
+    }
+    else
+    {
+        <div class="divide-y divide-slate-100">
+            @foreach (var d in _items)
+            {
+                var isValidation = d.Kind == AutomationDecisionKind.Validacion;
+
+                <div class="py-4 flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="font-medium text-slate-800 text-sm">@d.TopicTitle</p>
+                                @if (isValidation)
+                                {
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                                        Fuera de estándar
+                                    </span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(d.Source))
+                            {
+                                <p class="text-xs text-slate-400 mt-0.5">Fuente: @d.Source</p>
+                            }
+                            @if (isValidation && d.ValidationErrors.Any())
+                            {
+                                <ul class="mt-2.5 space-y-1 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 list-disc list-inside">
+                                    @foreach (var error in d.ValidationErrors)
+                                    {
+                                        <li>@error</li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                            <input type="datetime-local" value="@ScheduledValue(d.DecisionId)"
+                                   @onchange="e => SetScheduled(d.DecisionId, e.Value?.ToString())"
+                                   class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-[#00509D]/30 focus:border-[#00509D]"
+                                   title="Fecha de publicación opcional" />
+                            <button type="button" @onclick="() => ResolveAsync(d, true)" disabled="@_busy"
+                                    class="px-3.5 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors disabled:opacity-50 @(isValidation ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-600 hover:bg-emerald-700")">
+                                @(isValidation ? "Guardar de todos modos" : "Continuar")
+                            </button>
+                            <button type="button" @onclick="() => ResolveAsync(d, false)" disabled="@_busy"
+                                    class="px-3.5 py-1.5 rounded-lg bg-slate-500 hover:bg-slate-600 text-white text-xs font-semibold transition-colors disabled:opacity-50">
+                                @(isValidation ? "Descartar" : "Omitir")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<PendingDecisionDto> InitialItems { get; set; } = [];
+
+    private List<PendingDecisionDto> _items = [];
+    private readonly Dictionary<string, string> _scheduled = new();
+    private bool _busy;
+
+    protected override void OnInitialized()
+    {
+        _items = InitialItems;
+    }
+
+    private string ScheduledValue(string decisionId) =>
+        _scheduled.TryGetValue(decisionId, out var value) ? value : string.Empty;
+
+    private void SetScheduled(string decisionId, string? value)
+    {
+        _scheduled[decisionId] = value ?? string.Empty;
+    }
+
+    private async Task ResolveAsync(PendingDecisionDto decision, bool continueCreating)
+    {
+        if (_busy) return;
+
+        _busy = true;
+        try
+        {
+            DateTime? scheduledAt = null;
+            if (continueCreating
+                && _scheduled.TryGetValue(decision.DecisionId, out var raw)
+                && DateTime.TryParse(raw, out var parsed))
+            {
+                scheduledAt = parsed;
+            }
+
+            await Automation.ResolveDecisionAsync(
+                decision.RunId, decision.DecisionId, continueCreating, scheduledAt);
+
+            _items = await Automation.GetPendingDecisionsAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    protected override bool Accepts(CmsChangeEvent change) =>
+        change.Module == CmsModule.Automation;
+
+    protected override async Task OnChangeAsync(CmsChangeEvent change)
+    {
+        if (change.Operation is CmsChangeOperation.DecisionCreated
+            or CmsChangeOperation.DecisionResolved
+            or CmsChangeOperation.Completed
+            or CmsChangeOperation.Failed
+            or CmsChangeOperation.Stopped)
+        {
+            _items = await Automation.GetPendingDecisionsAsync();
+        }
+    }
+}

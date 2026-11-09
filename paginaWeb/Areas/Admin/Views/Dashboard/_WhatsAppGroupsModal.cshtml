@@ -1,0 +1,187 @@
+@model List<WhatsAppGroupDto>
+@{
+    var groups = Model ?? new();
+}
+
+<div id="whatsAppGroupsModal"
+     class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+     role="dialog" aria-modal="true" aria-labelledby="whatsAppGroupsModalTitle">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[85vh] flex flex-col">
+        <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
+            <div>
+                <h3 id="whatsAppGroupsModalTitle" class="text-base font-bold text-slate-800">Grupos de WhatsApp</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Estos enlaces aparecen en el modal del botón “Únete” del sitio público.</p>
+            </div>
+            <button type="button" data-close-whatsapp-modal
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                    aria-label="Cerrar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="p-5 overflow-y-auto flex-1 space-y-3" id="whatsAppGroupsRows"></div>
+
+        <div id="whatsAppGroupsError"
+             class="hidden mx-5 mb-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
+
+        <div class="p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <button type="button" id="btnAddWhatsAppGroup"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Agregar grupo
+            </button>
+            <div class="flex items-center justify-end gap-2">
+                <button type="button" data-close-whatsapp-modal
+                        class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+                <button type="button" id="btnSaveWhatsAppGroups"
+                        class="px-5 py-2 text-xs font-bold text-white bg-[#00296B] hover:bg-[#00509D] rounded-xl shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="whatsAppGroupRowTemplate">
+    <div class="whatsapp-group-row grid grid-cols-1 sm:grid-cols-12 gap-2 items-start p-3 rounded-xl border border-slate-200 bg-slate-50/60">
+        <input type="hidden" data-field="id" />
+        <div class="sm:col-span-4">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nombre</label>
+            <input type="text" data-field="name" maxlength="80" placeholder="Ej. Comunidad solar"
+                   class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-[#00509D]" />
+        </div>
+        <div class="sm:col-span-6">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Enlace del grupo</label>
+            <input type="url" data-field="url" maxlength="500" placeholder="https://chat.whatsapp.com/..."
+                   class="w-full text-sm rounded-lg border border-slate-300 px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-[#00509D]" />
+        </div>
+        <div class="sm:col-span-2 flex items-center justify-between gap-2 pt-5">
+            <label class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                <input type="checkbox" data-field="active" checked
+                       class="rounded border-slate-300 text-[#00296B] focus:ring-[#00509D]" /> Activo
+            </label>
+            <button type="button" data-remove-row
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                    aria-label="Eliminar grupo">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</template>
+
+<script>
+    (function () {
+        var modal = document.getElementById('whatsAppGroupsModal');
+        if (!modal) return;
+
+        var rows = document.getElementById('whatsAppGroupsRows');
+        var template = document.getElementById('whatsAppGroupRowTemplate');
+        var errorBox = document.getElementById('whatsAppGroupsError');
+        var saveBtn = document.getElementById('btnSaveWhatsAppGroups');
+        var token = document.querySelector('input[name="__RequestVerificationToken"]');
+        var currentGroups = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(groups, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+
+        function setError(message) {
+            if (!errorBox) return;
+            errorBox.textContent = message || '';
+            errorBox.classList.toggle('hidden', !message);
+        }
+
+        function createRow(group) {
+            var node = template.content.firstElementChild.cloneNode(true);
+            node.querySelector('[data-field="id"]').value = group && group.id ? group.id : '';
+            node.querySelector('[data-field="name"]').value = group && group.name ? group.name : '';
+            node.querySelector('[data-field="url"]').value = group && group.url ? group.url : '';
+            node.querySelector('[data-field="active"]').checked = group ? group.active !== false : true;
+            node.querySelector('[data-remove-row]').addEventListener('click', function () { node.remove(); });
+            return node;
+        }
+
+        function render(list) {
+            rows.innerHTML = '';
+            (list && list.length ? list : [null]).forEach(function (group) {
+                rows.appendChild(createRow(group));
+            });
+        }
+
+        function collect() {
+            return Array.prototype.slice.call(rows.querySelectorAll('.whatsapp-group-row'))
+                .map(function (row) {
+                    return {
+                        id: row.querySelector('[data-field="id"]').value.trim(),
+                        name: row.querySelector('[data-field="name"]').value.trim(),
+                        url: row.querySelector('[data-field="url"]').value.trim(),
+                        active: row.querySelector('[data-field="active"]').checked
+                    };
+                })
+                .filter(function (group) { return group.name || group.url; });
+        }
+
+        function openModal() {
+            setError('');
+            render(currentGroups);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('btnOpenWhatsAppGroupsModal')?.addEventListener('click', openModal);
+        modal.querySelectorAll('[data-close-whatsapp-modal]').forEach(function (btn) {
+            btn.addEventListener('click', closeModal);
+        });
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+        document.getElementById('btnAddWhatsAppGroup')?.addEventListener('click', function () {
+            rows.appendChild(createRow(null));
+        });
+
+        saveBtn?.addEventListener('click', async function () {
+            var groupsToSave = collect();
+            saveBtn.disabled = true;
+            setError('');
+
+            try {
+                var response = await fetch('/admin/ajustes/whatsapp-groups', {
+                    method: 'POST',
+                    headers: Object.assign(
+                        { 'Content-Type': 'application/json' },
+                        token ? { 'RequestVerificationToken': token.value } : {}),
+                    body: JSON.stringify(groupsToSave)
+                });
+                var data = await response.json().catch(function () { return {}; });
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.message || 'No se pudieron guardar los grupos de WhatsApp.');
+                }
+
+                currentGroups = groupsToSave;
+                var count = document.getElementById('whatsAppGroupsCount');
+                if (count) {
+                    count.textContent = groupsToSave.filter(function (group) {
+                        return group.active && group.url;
+                    }).length;
+                }
+                if (window.showToast) window.showToast('Grupos de WhatsApp guardados.', 'success');
+                closeModal();
+            } catch (error) {
+                setError(error.message);
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+    })();
+</script>

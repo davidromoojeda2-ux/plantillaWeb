@@ -1,4 +1,4 @@
-@model List<PageResponseDto>
+﻿@model List<PageResponseDto>
 @{
     ViewData["Title"] = "Páginas Informativas";
 }
@@ -10,19 +10,20 @@
     </a>
 }
 
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+<div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden">
     <div class="p-6 border-b border-slate-100 flex items-center justify-between">
         <div>
             <h3 class="font-bold text-slate-800 text-base">Secciones Institucionales</h3>
             <p class="text-xs text-slate-400 mt-0.5">Políticas de calidad, privacidad, términos de uso y acerca de nosotros.</p>
         </div>
+        <span class="text-xs text-slate-400">Total: @ViewBag.TotalCount</span>
     </div>
 
     @if (!Model.Any())
     {
         <div class="p-12 text-center text-slate-400">
             <p class="font-medium text-slate-600">No hay páginas informativas creadas.</p>
-            <a asp-area="Admin" asp-controller="Secciones" asp-action="Create" class="mt-2 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear primera sección →</a>
+            <a asp-area="Admin" asp-controller="Secciones" asp-action="Create" class="mt-2 inline-block text-xs font-semibold text-[#00509D] hover:underline">Crear primera sección <partial name="_SvgIcon" model="@(new SvgIcon("arrow-right", "w-3.5 h-3.5"))" /></a>
         </div>
     }
     else
@@ -41,21 +42,31 @@
                                 <span class="text-xs text-slate-400 font-mono">/info/@p.Slug</span>
                             </div>
                             <p class="text-xs text-slate-400 mt-0.5">
-                                @(p.ShowInFooter ? "✓ Enlace visible en pie de página" : "Oculto del pie de página") • Modificado: @p.UpdatedAt.ToString("dd/MM/yyyy")
+                                @if (p.ShowInFooter)
+                                {
+                                    <partial name="_SvgIcon" model="@(new SvgIcon("check", "w-3.5 h-3.5"))" />
+                                    <text>Enlace visible en pie de página</text>
+                                }
+                                else
+                                {
+                                    <text>Oculto del pie de página</text>
+                                }
+                                • Modificado: @p.UpdatedAt.ToString("dd/MM/yyyy")
                             </p>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <a asp-area="" asp-controller="Home" asp-action="Info" asp-route-slug="@p.Slug" target="_blank" class="p-2 text-slate-400 hover:text-[#00509D] rounded-lg transition" title="Ver en portal público">
+                        <a asp-area="" asp-controller="Home" asp-action="Info" asp-route-slug="@p.Slug" target="_blank" class="p-2 text-slate-400 hover:text-[#00509D] hover:bg-blue-50 rounded-xl transition" title="Ver en portal público">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         </a>
-                        <a asp-area="Admin" asp-controller="Secciones" asp-action="Edit" asp-route-id="@p.Id" class="p-2 text-slate-400 hover:text-slate-700 rounded-lg transition" title="Editar">
+                        <a asp-area="Admin" asp-controller="Secciones" asp-action="Edit" asp-route-id="@p.Id" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition" title="Editar">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                         </a>
-                        <form method="post" asp-area="Admin" asp-controller="Secciones" asp-action="Delete" asp-route-id="@p.Id" onsubmit="return confirm('¿Eliminar esta sección institucional?');" class="inline">
+                        <form method="post" asp-area="Admin" asp-controller="Secciones" asp-action="Delete" asp-route-id="@p.Id"
+                              data-confirm="¿Eliminar esta sección institucional?" data-confirm-type="danger" class="inline">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg transition" title="Eliminar">
+                            <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition" title="Eliminar">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
                         </form>
@@ -63,5 +74,10 @@
                 </div>
             }
         </div>
+    }
+
+    @if (ViewBag.Pagination is paginaWeb.Models.PaginationViewModel pagination)
+    {
+        <partial name="_AdminPagination" model="pagination" />
     }
 </div>

@@ -37,6 +37,9 @@ public class ArticleDto
     public List<string> ImageIds { get; set; } = [];
     public bool Featured { get; set; } = false;
 
-    /// <summary>"Borrador" o "Publicado"</summary>
+    /// <summary>"Borrador", "Programado" o "Publicado"</summary>
     public string Status { get; set; } = "Borrador";
+
+    /// <summary>Fecha/hora de publicación cuando el estado es "Programado".</summary>
+    public DateTime? ScheduledAt { get; set; }
 }

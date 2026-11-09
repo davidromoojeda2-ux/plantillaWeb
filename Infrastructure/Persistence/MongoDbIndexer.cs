@@ -1,4 +1,3 @@
-using Infrastructure.Persistence;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -106,6 +105,30 @@ public static class MongoDbIndexer
                 Builders<Domine.Entities.ImageMetadata>.IndexKeys.Ascending(i => i.ArticleId),
                 new CreateIndexOptions { Name = "ix_images_article_id" })
         ]);
+
+        // ─── automation_runs ──────────────────────────────────────────────────
+        await EnsureCollectionExistsAsync(context.Database, "automation_runs");
+        await context.AutomationRuns.Indexes.CreateManyAsync(
+        [
+            new CreateIndexModel<Domine.Entities.AutomationRun>(
+                Builders<Domine.Entities.AutomationRun>.IndexKeys.Descending(r => r.CreatedAt),
+                new CreateIndexOptions { Name = "ix_automation_runs_created" }),
+
+            new CreateIndexModel<Domine.Entities.AutomationRun>(
+                Builders<Domine.Entities.AutomationRun>.IndexKeys.Ascending(r => r.TopicHashes),
+                new CreateIndexOptions { Name = "ix_automation_runs_hashes" })
+        ]);
+
+        // ─── automation_settings (documento único) ─────────────────────────────
+        await EnsureCollectionExistsAsync(context.Database, "automation_settings");
+    }
+
+    private static async Task EnsureCollectionExistsAsync(IMongoDatabase database, string name)
+    {
+        var names = await database.ListCollectionNamesAsync();
+        var list = await names.ToListAsync();
+        if (!list.Contains(name))
+            await database.CreateCollectionAsync(name);
     }
 
     public static async Task EnsureSeedDataAsync(MongoDbContext context)
@@ -135,15 +158,12 @@ public static class MongoDbIndexer
                 Title = "Política de Privacidad y Cookies",
                 Slug = "politica-de-privacidad",
                 Subtitle = "Cómo recopilamos, usamos y protegemos tus datos personales al visitar nuestro portal.",
-                Blocks = SeedContentBlocks.FromHtml("<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>"),
+                Blocks = LegacyContentBlocks.FromHtml("<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>"),
                 Order = 1,
                 ShowInFooter = true
             };
             await context.Pages.InsertOneAsync(privacidad);
         }
-
-        // ─── Siembra de Artículos de Prueba (Mínimo 10 completos de temas variados) ───
-        await SeedArticlesData.SeedAsync(context);
 
         // ─── Auto-vincular artículos huérfanos sin categoría (CategoryId == null) ───
         await EnsureOrphanArticlesLinkedAsync(context);
@@ -182,7 +202,7 @@ public static class MongoDbIndexer
             if (page.Blocks.Count == 0)
             {
                 var html = document["Content"].IsString ? document["Content"].AsString : string.Empty;
-                var blocks = SeedContentBlocks.FromHtml(html);
+                var blocks = LegacyContentBlocks.FromHtml(html);
 
                 if (blocks.Count > 0)
                 {

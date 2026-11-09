@@ -1,0 +1,156 @@
+/* ==========================================================================
+   Design Tokens & Compatibilidad de Variables Unificadas
+   Sincroniza todos los alias (--nav-*, --c-*) directamente con @theme de Tailwind v4.
+   ========================================================================== */
+
+:root {
+  /* Mapeo de compatibilidad con tokens de marca unificados */
+  --nav-navy-900: var(--color-brand-900);
+  --nav-navy-700: var(--color-brand-700);
+  --nav-navy-500: var(--color-brand-500);
+  --nav-accent: var(--color-accent);
+  --nav-accent-light: var(--color-accent-light);
+  --nav-surface: #FFFFFF;
+  --nav-ink: var(--color-ink);
+  --nav-ink-muted: var(--color-ink-muted);
+  --nav-line: var(--color-line);
+  --nav-glass: rgb(255 255 255 / 0.85);
+
+  --nav-font-ui: var(--font-body);
+  --nav-font-display: var(--font-heading);
+
+  --nav-h: 68px;
+  --nav-tap-min: 44px;
+  --nav-radius-md: 14px;
+  --nav-radius-pill: 999px;
+  --radius-card: 12px;
+
+  --nav-shadow-nav: 0 6px 24px rgb(15 27 45 / 0.08);
+  --nav-shadow-pop: 0 18px 40px rgb(15 27 45 / 0.16);
+
+  --nav-dur-hover: 250ms;
+  --nav-dur-link: 200ms;
+  --nav-dur-press: 150ms;
+  --nav-ease-out: ease-out;
+
+  /* Variables de Home / Componentes */
+  --c-navy-900: var(--color-brand-900);
+  --c-navy-700: var(--color-brand-700);
+  --c-navy-500: var(--color-brand-500);
+  --c-accent: var(--color-accent);
+  --c-accent-light: var(--color-accent-light);
+  --c-page: var(--color-surface);
+  --c-surface: #FFFFFF;
+  --c-ink: var(--color-ink);
+  --c-ink-muted: var(--color-ink-muted);
+  --c-line: var(--color-line);
+  --c-on-dark: #FFFFFF;
+  --c-on-dark-muted: rgb(219 234 254 / 0.82);
+  --c-nav-glass: rgb(255 255 255 / 0.72);
+  --c-focus: var(--color-accent);
+  --font-ui: var(--font-body);
+  --font-display: var(--font-heading);
+
+  /* Tipografía fluida */
+  --fs-h1: clamp(1.85rem, 5vw + 0.5rem, 3.5rem);
+  --fs-h2: clamp(1.35rem, 2.5vw + 0.5rem, 2.25rem);
+  --fs-h3: clamp(1.05rem, 1.2vw + 0.5rem, 1.25rem);
+  --fs-body: 1rem;
+  --fs-small: 0.875rem;
+  --fs-xs: 0.75rem;
+
+  /* Layout y espaciados */
+  --container-max: 100%;
+  --container-pad: 16px;
+  --tap-min: 44px;
+  --hero-cards-max: 100%;
+  --hero-curve-h: clamp(55px, 8vw, 75px);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 56px;
+  --space-9: 80px;
+  --space-10: 112px;
+  --grid-gap: var(--space-4);
+
+  --radius-md: 8px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgb(15 27 45 / 0.04), 0 6px 20px rgb(15 27 45 / 0.06);
+  --shadow-card-hover: 0 4px 8px rgb(15 27 45 / 0.06), 0 22px 44px rgb(15 27 45 / 0.14);
+  --shadow-pop: 0 18px 40px rgb(15 27 45 / 0.16);
+
+  --dur-hover: 250ms;
+  --dur-link: 200ms;
+  --dur-press: 150ms;
+  --dur-focus: 160ms;
+  --dur-reveal: 600ms;
+  --dur-marquee: 25s;
+  --stagger-step: 80ms;
+
+  --ease-out: ease-out;
+  --lift: -6px;
+  --zoom: 1.05;
+  --arrow-shift: 6px;
+  --btn-hover-scale: 1.03;
+  --btn-press-scale: 0.98;
+  --reveal-distance: 24px;
+  --menu-offset: -8px;
+}
+
+@media (min-width: 480px) {
+  :root {
+    --container-pad: 20px;
+    --nav-h: 68px;
+  }
+}
+
+@media (min-width: 640px) {
+  :root {
+    --container-pad: 24px;
+    --grid-gap: var(--space-5);
+    --hero-curve-h: clamp(65px, 7vw, 90px);
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --container-pad: 28px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --container-pad: 32px;
+    --container-max: 1120px;
+    --hero-curve-h: clamp(75px, 6vw, 105px);
+    --hero-cards-max: 980px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --container-max: 1240px;
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --container-pad: 40px;
+    --container-max: 1440px;
+    --grid-gap: var(--space-6);
+    --hero-curve-h: clamp(85px, 5vw, 115px);
+    --hero-cards-max: 1100px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --container-pad: 48px;
+    --container-max: 1600px;
+  }
+}
+

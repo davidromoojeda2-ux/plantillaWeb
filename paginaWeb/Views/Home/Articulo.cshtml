@@ -1,4 +1,5 @@
 @model ArticleResponseDto
+@inject Aplication.Services.ISiteSettingsService SiteSettingsService
 @{
     ViewData["Title"] = Model.Title;
     ViewData["MetaDescription"] = Model.Summary;
@@ -14,74 +15,93 @@ ImageMapper.GetBestUrl(coverImage);
     var nextArticle = (ArticleResponseDto?)ViewBag.NextArticle;
     var adjacentImages = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.AdjacentImages ?? new();
     var pageUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/articulos/{Model.Slug}";
+    var badgeCategory = subcategory ?? category;
+    var shareNetworks = (await SiteSettingsService.GetAsync()).EnabledShareNetworks;
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
-}
 
 <!-- ─── Barra de Progreso de Lectura ──────────────────────────────────────── -->
-<div id="readingProgress" class="fixed top-0 left-0 h-1.5 bg-[#FDC500] z-50 w-0 transition-all duration-75"></div>
+<div id="readingProgress"
+     class="fixed top-0 left-0 h-1 bg-gradient-to-r from-[#FDC500] to-[#FFD500] shadow-[0_0_10px_rgb(253_197_0/0.6)] z-50 w-0 transition-all duration-75"></div>
 
 <!-- ─── Toast de copia de enlace ─────────────────────────────────────────── -->
 <div id="copyToast"
-     class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 opacity-0 pointer-events-none transition-all duration-300">
-    <div class="flex items-center gap-2 bg-[#00296B] text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl">
-        <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
+     class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 opacity-0 pointer-events-none transition-all duration-300"
+     role="status" aria-live="polite">
+    <div class="flex items-center gap-2.5 bg-[#00296B] text-white text-sm font-semibold pl-3 pr-5 py-2.5 rounded-full shadow-2xl ring-1 ring-white/10">
+        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-[#FDC500] text-[#00296B]">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+            </svg>
+        </span>
         <span>Enlace copiado al portapapeles</span>
     </div>
 </div>
 
-<article class="container py-10 space-y-12">
+<article class="container py-8 sm:py-12 space-y-10 sm:space-y-14">
     <!-- ─── Cabecera Editorial ──────────────────────────────────────────────── -->
-    <header class="max-w-4xl mx-auto space-y-6 text-center">
+    <header class="max-w-5xl mx-auto space-y-6 sm:space-y-8 text-center">
         <!-- Breadcrumbs y Navegabilidad Rápida -->
-        <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-200/80 pb-3">
-            <div class="flex items-center gap-2 flex-wrap">
-                <a asp-controller="Home" asp-action="Index" class="hover:underline">Inicio</a>
-                <span>/</span>
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-medium text-slate-500">
+            <nav aria-label="Ruta de navegación" class="flex items-center gap-1.5 flex-wrap">
+                <a asp-controller="Home" asp-action="Index"
+                   class="inline-flex items-center gap-1 hover:text-[#00296B] transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
+                    </svg>
+                    Inicio
+                </a>
                 @if (category != null)
                 {
+                    <svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
                     <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@category.Slug"
-                       class="text-[#00509D] hover:underline font-bold">@category.Name</a>
-                    <span>/</span>
+                       class="text-[#00509D] hover:text-[#00296B] font-semibold transition-colors">@category.Name</a>
                 }
                 @if (subcategory != null)
                 {
+                    <svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
                     <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@subcategory.Slug"
-                       class="text-[#00509D] hover:underline font-bold">@subcategory.Name</a>
-                    <span>/</span>
+                       class="text-[#00509D] hover:text-[#00296B] font-semibold transition-colors">@subcategory.Name</a>
                 }
-                <span class="text-slate-400">Lectura</span>
-            </div>
+                <svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+                <span class="text-slate-400" aria-current="page">Lectura</span>
+            </nav>
 
             @if (previousArticle != null || nextArticle != null)
             {
-                <div class="flex items-center gap-1.5 ml-auto">
+                <div class="flex items-center gap-1 ml-auto p-1 rounded-full bg-white border border-slate-200 shadow-xs">
                     @if (previousArticle != null)
                     {
-                        <a id="nav-prev-quick"
-                           asp-controller="Home" asp-action="Articulo" asp-route-slug="@previousArticle.Slug"
-                           title="Artículo anterior: @previousArticle.Title"
+                        <a id="nav-prev-quick" asp-controller="Home" asp-action="Articulo"
+                           asp-route-slug="@previousArticle.Slug" title="Artículo anterior: @previousArticle.Title"
                            aria-label="Artículo anterior: @previousArticle.Title"
-                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-[#00296B] hover:text-[#FDC500] text-slate-600 transition-all text-xs font-bold shadow-2xs group">
-                            <svg class="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-600 hover:bg-[#00296B] hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-[#FDC500] transition-all text-xs font-bold group">
+                            <svg class="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" fill="none"
+                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                             </svg>
                             <span class="hidden sm:inline">Anterior</span>
                         </a>
                     }
+                    @if (previousArticle != null && nextArticle != null)
+                    {
+                        <span class="w-px h-4 bg-slate-200" aria-hidden="true"></span>
+                    }
                     @if (nextArticle != null)
                     {
-                        <a id="nav-next-quick"
-                           asp-controller="Home" asp-action="Articulo" asp-route-slug="@nextArticle.Slug"
-                           title="Artículo siguiente: @nextArticle.Title"
-                           aria-label="Artículo siguiente: @nextArticle.Title"
-                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-[#00296B] hover:text-[#FDC500] text-slate-600 transition-all text-xs font-bold shadow-2xs group">
+                        <a id="nav-next-quick" asp-controller="Home" asp-action="Articulo" asp-route-slug="@nextArticle.Slug"
+                           title="Artículo siguiente: @nextArticle.Title" aria-label="Artículo siguiente: @nextArticle.Title"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-600 hover:bg-[#00296B] hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-[#FDC500] transition-all text-xs font-bold group">
                             <span class="hidden sm:inline">Siguiente</span>
-                            <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none"
+                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                         </a>
@@ -90,47 +110,65 @@ ImageMapper.GetBestUrl(coverImage);
             }
         </div>
 
+        <!-- Insignia de Categoría -->
+        @if (badgeCategory != null)
+        {
+            <div class="flex justify-center pt-2">
+                <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@badgeCategory.Slug"
+                   class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FDC500] text-[#00296B] text-[11px] font-extrabold uppercase tracking-[0.14em] shadow-sm hover:bg-[#FFD500] transition-colors">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#00296B]" aria-hidden="true"></span>
+                    @badgeCategory.Name
+                </a>
+            </div>
+        }
+
         <!-- H1 Principal -->
-        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-serif font-black text-[#00296B] leading-[1.15]">
+        <h1 class="text-[2.25rem] min-[400px]:text-[2.6rem] sm:text-6xl lg:text-7xl xl:text-[5rem] font-sans font-black text-[#00296B] tracking-tight leading-[1.05] text-balance break-words hyphens-auto">
             @Model.Title
         </h1>
 
         <!-- Bajada Destacada -->
-        <p class="text-lg sm:text-xl text-slate-600 font-sans leading-relaxed max-w-3xl mx-auto">
+        <p class="text-lg sm:text-xl text-slate-600 font-serif leading-relaxed max-w-2xl mx-auto text-pretty">
             @Model.Summary
         </p>
 
         <!-- Ficha de Autor, Fecha y Tiempo de Lectura -->
-        <div
-            class="pt-4 flex items-center justify-center gap-6 text-xs text-slate-500 border-t border-b border-slate-200 py-4 max-w-xl mx-auto">
+        <div class="inline-flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-xs text-slate-500 bg-white border border-slate-200 rounded-2xl sm:rounded-full px-5 py-3 shadow-xs">
             <div class="flex items-center gap-2.5">
                 @if (!string.IsNullOrWhiteSpace(Model.AuthorAvatarUrl))
                 {
-                    <img src="@Model.AuthorAvatarUrl" alt="@Model.Author" class="w-8 h-8 rounded-full object-cover" />
+                    <img src="@Model.AuthorAvatarUrl" alt="@Model.Author"
+                         class="w-9 h-9 rounded-full object-cover ring-2 ring-[#FDC500] ring-offset-2 ring-offset-white" />
                 }
                 else
                 {
-                    <div
-                        class="w-8 h-8 rounded-full bg-[#00296B] text-[#FDC500] flex items-center justify-center font-bold text-xs">
+                    <div class="w-9 h-9 rounded-full bg-[#00296B] text-[#FDC500] flex items-center justify-center font-black text-sm ring-2 ring-[#FDC500] ring-offset-2 ring-offset-white">
                         @(Model.Author.Length > 0 ? Model.Author.Substring(0, 1).ToUpper() : "A")
                     </div>
                 }
-                <div class="text-left">
-                    <span class="block font-bold text-slate-800">@Model.Author</span>
-                    <span class="block text-[10px] text-slate-400">@(Model.AuthorRole ?? "Redacción Especial")</span>
+                <div class="text-left leading-tight">
+                    <span class="block font-bold text-sm text-[#00296B]">@Model.Author</span>
+                    <span class="block text-[11px] text-slate-400">@(Model.AuthorRole ?? "Redacción Especial")</span>
                 </div>
             </div>
 
-            <div class="h-6 w-px bg-slate-200"></div>
+            <div class="hidden sm:block h-7 w-px bg-slate-200" aria-hidden="true"></div>
 
-            <div class="text-left">
-                <span class="block font-medium text-slate-700">@Model.PublishedAt?.ToString("dd MMMM yyyy")</span>
-                <span class="block text-[10px] text-slate-400">@Model.ViewCount lecturas</span>
+            <div class="flex items-center gap-2 text-left leading-tight">
+                <svg class="w-4 h-4 text-[#00509D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div>
+                    <time class="block font-semibold text-slate-700"
+                          datetime="@Model.PublishedAt?.ToString("yyyy-MM-dd")">@Model.PublishedAt?.ToString("dd MMMM yyyy")</time>
+                    <span class="block text-[11px] text-slate-400">@Model.ViewCount lecturas</span>
+                </div>
             </div>
 
-            <div class="h-6 w-px bg-slate-200"></div>
+            <div class="hidden sm:block h-7 w-px bg-slate-200" aria-hidden="true"></div>
 
-            <div class="flex items-center gap-1.5 text-[#003F88] font-bold">
+            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00296B]/5 text-[#003F88] font-bold">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -143,63 +181,101 @@ ImageMapper.GetBestUrl(coverImage);
     <!-- ─── Portada Principal Destacada ─────────────────────────────────────── -->
     @if (!string.IsNullOrEmpty(coverUrl))
     {
-        <div class="w-full overflow-hidden shadow-xl border border-slate-200 rounded-xl">
-            <img src="@coverUrl" alt="@(!string.IsNullOrWhiteSpace(coverImage?.Alt) ? coverImage.Alt : Model.Title)"
-                 class="w-full h-[360px] sm:h-[460px] lg:h-[560px] object-cover" />
-        </div>
+        <figure class="relative w-full">
+            <div class="absolute inset-x-6 -bottom-3 top-10 rounded-3xl bg-gradient-to-br from-[#00296B]/10 to-[#FDC500]/20 blur-2xl -z-10" aria-hidden="true"></div>
+            <div class="overflow-hidden rounded-2xl sm:rounded-3xl shadow-2xl shadow-[#00296B]/15 ring-1 ring-slate-900/5 bg-slate-100">
+                <img src="@coverUrl" alt="@(!string.IsNullOrWhiteSpace(coverImage?.Alt) ? coverImage.Alt : Model.Title)"
+                     class="w-full h-[320px] min-[480px]:h-[380px] sm:h-[480px] md:h-[560px] lg:h-[660px] xl:h-[740px] 2xl:h-[800px] object-cover" />
+            </div>
+        </figure>
     }
 
     <!-- ─── Barra Interactiva para Compartir (Componente Modular) ──────────── -->
     <div class="w-full">
-        <partial name="Partials/_SocialShareBar" model="(Url: pageUrl, Title: Model.Title)" />
+        <partial name="Partials/_SocialShareBar" model="(Url: pageUrl, Title: Model.Title, Networks: (IReadOnlyList<string>)shareNetworks)" />
     </div>
 
     <!-- ─── Layout a Dos Columnas de Ancho Completo (Índice Adhesivo + Contenido) ─ -->
-    <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start pt-6">
+    <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-10 items-start">
         <!-- Columna Izquierda Adhesiva (Índice "En esta página") -->
-        <aside
-            class="hidden lg:block lg:col-span-4 xl:col-span-3 sticky top-28 z-10 bg-[#00296B] text-white p-6 shadow-md space-y-4 border border-[#001D4A] rounded-xl">
-            <h4
-                class="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2 border-b border-white/20 pb-3">
-                <svg class="w-5 h-5 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
-                </svg>
-                En esta página
-            </h4>
-            <nav id="tableOfContents" class="space-y-2 text-sm text-white/90">
-                <span class="text-white/75 italic">Cargando secciones...</span>
-            </nav>
+        <aside class="hidden lg:block lg:col-span-3 sticky top-28 z-10 overflow-hidden bg-[#00296B] text-white rounded-2xl shadow-xl shadow-[#00296B]/20">
+            <div class="h-1 bg-gradient-to-r from-[#FDC500] to-[#FFD500]" aria-hidden="true"></div>
+            <div class="p-6 space-y-4">
+                <h4 class="font-extrabold text-[#FDC500] text-xs uppercase tracking-[0.16em] flex items-center gap-2.5 pb-4 border-b border-white/15">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-[#FDC500] text-[#00296B]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                    </span>
+                    En esta página
+                    <span id="tocCounter" class="ml-auto text-[11px] font-bold tracking-normal normal-case text-blue-100 tabular-nums"></span>
+                </h4>
+                <nav id="tableOfContents" aria-label="Índice del artículo"
+                     class="relative space-y-0.5 max-h-[min(22rem,calc(100vh-16rem))] overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_bottom,transparent,black_1.25rem,black_calc(100%-1.25rem),transparent)] py-3">
+                    <span class="block px-3 text-blue-100 italic text-sm">Cargando secciones...</span>
+                </nav>
+            </div>
         </aside>
 
+        <!-- Índice plegable para móviles y tablets -->
+        <details id="mobileTocWrapper"
+                 class="lg:hidden group overflow-hidden bg-[#00296B] text-white rounded-2xl shadow-lg shadow-[#00296B]/20">
+            <summary class="flex items-center justify-between gap-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden px-5 py-4 min-h-[56px]">
+                <span class="flex items-center gap-2.5 font-extrabold text-[#FDC500] text-xs uppercase tracking-[0.16em]">
+                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-[#FDC500] text-[#00296B]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                    </span>
+                    En esta página
+                </span>
+                <svg class="w-5 h-5 text-white transition-transform duration-200 group-open:rotate-180" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                </svg>
+            </summary>
+            <nav id="tableOfContentsMobile" aria-label="Índice del artículo (móvil)"
+                 class="space-y-1 px-3 pb-4 pt-1 border-t border-white/15 max-h-[60vh] overflow-y-auto">
+                <span class="block px-3 text-blue-100 italic text-sm">Cargando secciones...</span>
+            </nav>
+        </details>
+
         <!-- Columna Derecha (Cuerpo del Artículo + Autor) -->
-        <main class="lg:col-span-8 xl:col-span-9 bg-white p-8 sm:p-12 rounded-xl border border-slate-200/90 shadow-xs">
-            <div id="articleBody" class="article-prose max-w-none font-sans leading-relaxed text-slate-800 space-y-6">
-                <partial name="Partials/ContentBlocks/_ContentBlocks" model="Model.Blocks" />
-            </div>
-
-            <!-- Tags del Artículo -->
-            @if (Model.Tags.Any())
-            {
-                <div class="mt-12 pt-8 border-t border-slate-200 flex flex-wrap items-center gap-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 mr-2">Temas:</span>
-                    @foreach (var tag in Model.Tags)
-                    {
-                        <span
-                            class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
-                            #@tag
-                        </span>
-                    }
+        <main class="min-w-0 lg:col-span-9 bg-white px-4 py-7 min-[400px]:px-5 sm:p-10 md:p-12 lg:px-10 xl:px-12 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="max-w-4xl mx-auto">
+                <div id="articleBody" class="article-prose max-w-none">
+                    <partial name="Partials/ContentBlocks/_ContentBlocks" model="Model.Blocks" />
                 </div>
-            }
 
-            <!-- ─── Ficha Extendida del Autor (Componente Modular) ───────────── -->
-            <div class="mt-12 pt-8 border-t border-slate-200">
-                <partial name="Partials/_AuthorBioCard" model="AuthorMapper.ToAuthorDto(Model)" />
+                <!-- Tags del Artículo -->
+                @if (Model.Tags.Any())
+                {
+                    <div class="mt-14 pt-8 border-t border-slate-200 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-[#00296B] mr-2">
+                            <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M7 7h.01M7 3h5a1.99 1.99 0 011.41.59l7 7a2 2 0 010 2.82l-7 7a2 2 0 01-2.82 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            Temas
+                        </span>
+                        @foreach (var tag in Model.Tags)
+                        {
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-[#00296B]/5 text-[#003F88] border border-[#00296B]/10 hover:bg-[#FDC500] hover:text-[#00296B] hover:border-[#FDC500] transition-colors cursor-default">
+                                #@tag
+                            </span>
+                        }
+                    </div>
+                }
+
+                <!-- ─── Ficha Extendida del Autor (Componente Modular) ───────────── -->
+                <div class="mt-12 pt-8 border-t border-slate-200">
+                    <partial name="Partials/_AuthorBioCard" model="AuthorMapper.ToAuthorDto(Model)" />
+                </div>
+
+                <!-- ─── Navegabilidad entre Artículos (Anterior / Siguiente) ───────── -->
+                <partial name="Partials/_ArticleNavigation"
+                         model="(Previous: previousArticle, Next: nextArticle, Images: adjacentImages)" />
             </div>
-
-            <!-- ─── Navegabilidad entre Artículos (Anterior / Siguiente) ───────── -->
-            <partial name="Partials/_ArticleNavigation"
-                     model="(Previous: previousArticle, Next: nextArticle, Images: adjacentImages)" />
         </main>
     </div>
 
@@ -208,10 +284,22 @@ ImageMapper.GetBestUrl(coverImage);
              model="(Articles: recommended, Images: recommendedImages, CategoryName: category?.Name)" />
 
     <!-- ─── Sección de Comentarios y Discusión (Componentes Modulares) ─────── -->
-    <section class="max-w-3xl mx-auto pt-12 space-y-10 border-t border-slate-200">
-        <div class="flex items-center justify-between">
-            <h3 class="font-serif font-black text-2xl text-[#00296B]">Comentarios (@comments.Count)</h3>
-            <span class="text-xs text-slate-500">Moderación previa requerida</span>
+    <section class="max-w-3xl mx-auto space-y-8 bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-8 sm:p-10">
+        <div class="flex flex-wrap items-end justify-between gap-3 pb-6 border-b border-slate-100">
+            <div class="space-y-2">
+                <span class="block h-1 w-10 rounded-full bg-[#FDC500]" aria-hidden="true"></span>
+                <h3 class="font-serif font-black text-2xl text-[#00296B] flex items-center gap-3">
+                    Comentarios
+                    <span class="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-[#00296B] text-[#FDC500] text-sm font-sans font-bold">@comments.Count</span>
+                </h3>
+            </div>
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1">
+                <svg class="w-3.5 h-3.5 text-[#00509D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                Moderación previa requerida
+            </span>
         </div>
 
         <partial name="Partials/_CommentForm" model="(ArticleId: Model.Id, ArticleSlug: Model.Slug)" />
