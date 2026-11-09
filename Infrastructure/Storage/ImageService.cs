@@ -3,6 +3,7 @@ using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 using Domine.Entities;
+using Domine.Exceptions;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
@@ -236,6 +237,40 @@ public class ImageService
     public Task UpdateAltAsync(string id, string alt) =>
         _metadataRepo.UpdateAltAsync(id, alt);
 
+    /// <summary>
+    /// Renombra el nombre visible de una imagen manteniendo intactas sus variantes y URLs públicas.
+    /// </summary>
+    public async Task<ImageMetadataResponseDto> RenameAsync(string id, string newName, CancellationToken ct = default)
+    {
+        var metadata = await _metadataRepo.GetByIdAsync(id)
+            ?? throw new NotFoundException($"No se encontró la imagen con ID '{id}'.");
+
+        var fileName = (newName ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            throw new DomainValidationException("El nombre de la imagen es obligatorio.", nameof(newName));
+        }
+
+        // Si el usuario no incluye extensión, se conserva la del nombre actual.
+        if (!Path.HasExtension(fileName) && Path.HasExtension(metadata.OriginalFileName))
+        {
+            fileName += Path.GetExtension(metadata.OriginalFileName);
+        }
+
+        if (!string.Equals(fileName, metadata.OriginalFileName, StringComparison.OrdinalIgnoreCase) &&
+            await _metadataRepo.ExistsByNameAsync(fileName, ct))
+        {
+            throw new ConflictException(
+                $"Ya existe una imagen registrada con el nombre \"{fileName}\". Elige un nombre diferente.",
+                nameof(newName));
+        }
+
+        await _metadataRepo.UpdateFileNameAsync(id, fileName);
+        metadata.OriginalFileName = fileName;
+
+        return ImageMapper.ToDto(metadata);
+    }
+
     public async Task<List<ImageMetadataResponseDto>> GetByArticleIdAsync(string articleId) =>
         ImageMapper.ToDtoList(await _metadataRepo.GetByArticleIdAsync(articleId));
 
@@ -286,31 +321,31 @@ public class ImageService
             }
         }
 
-        // 2. Desvincular de artículos que la referencien
+        // 2. Desvincular de todos los artículos que la referencien (portada o galería)
         if (_articleRepo != null)
         {
             try
             {
-                if (!string.IsNullOrEmpty(metadata.ArticleId))
+                var articles = await _articleRepo.GetAllAsync(0, 5000);
+                foreach (var article in articles)
                 {
-                    var article = await _articleRepo.GetByIdAsync(metadata.ArticleId);
-                    if (article != null)
+                    bool modified = false;
+
+                    if (article.CoverImageId == metadata.Id)
                     {
-                        bool modified = false;
-                        if (article.CoverImageId == metadata.Id)
-                        {
-                            article.CoverImageId = null;
-                            article.CoverImageUrl = null;
-                            modified = true;
-                        }
-                        if (article.ImageIds.Remove(metadata.Id))
-                        {
-                            modified = true;
-                        }
-                        if (modified)
-                        {
-                            await _articleRepo.UpdateAsync(article);
-                        }
+                        article.CoverImageId = null;
+                        article.CoverImageUrl = null;
+                        modified = true;
+                    }
+
+                    if (article.ImageIds is not null && article.ImageIds.Remove(metadata.Id))
+                    {
+                        modified = true;
+                    }
+
+                    if (modified)
+                    {
+                        await _articleRepo.UpdateAsync(article);
                     }
                 }
             }

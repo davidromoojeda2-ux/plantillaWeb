@@ -32,8 +32,6 @@
     </text>
 }
 
-    const coverUploadBox = document.getElementById('coverUploadBox');
-    const coverFileInput = document.getElementById('coverFileInput');
     const coverImageUrlInput = document.getElementById('coverImageUrlInput');
     const coverImageIdInput = document.getElementById('coverImageIdInput');
     const coverPreviewContainer = document.getElementById('coverPreviewContainer');
@@ -78,42 +76,10 @@
         window.updateCoverPreview(coverImageUrlInput.value.trim());
     });
 
-    coverUploadBox?.addEventListener('click', () => coverFileInput?.click());
-    coverFileInput?.addEventListener('change', async () => {
-        if (!coverFileInput.files || coverFileInput.files.length === 0) return;
-        const file = coverFileInput.files[0];
-        const formData = new FormData();
-        formData.append('file', file);
-@if (isEdit)
-{
-    <text>
-        formData.append('articleId', '@(Model.Id ?? string.Empty)');
-    </text>
-}
-
-        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-        try {
-            const res = await fetch('/admin/articulos/upload-inline', {
-                method: 'POST',
-                headers: token ? { 'RequestVerificationToken': token } : {},
-                body: formData
-            });
-            const data = await res.json();
-            if (data.id) {
-                coverImageIdInput.value = data.id;
-                coverImageUrlInput.value = data.url;
-                window.updateCoverPreview(data.url);
-            }
-        } catch (err) {
-            window.appAlert('Error al subir portada: ' + err, { title: 'No se pudo subir la portada', type: 'danger' });
-        }
-    });
-
     removeCoverBtn?.addEventListener('click', () => {
         coverImageIdInput.value = '';
         coverImageUrlInput.value = '';
         window.updateCoverPreview('');
-        coverFileInput.value = '';
     });
 
     // Filtrado dinámico de subcategorías según la categoría seleccionada
@@ -145,6 +111,46 @@
 
     categorySelect?.addEventListener('change', window.filterSubcategories);
     window.filterSubcategories();
+
+    // Reconstruye los selects de taxonomía cuando el modal de categorías cambia los datos.
+    window.addEventListener('category-manager:changed', (event) => {
+        const categories = Array.isArray(event.detail?.categories) ? event.detail.categories : [];
+        if (!categorySelect || !subcategorySelect) return;
+
+        const currentCategory = categorySelect.value;
+        const currentSubcategory = subcategorySelect.value;
+
+        const parents = categories
+            .filter(c => !c.parentId)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+        const children = categories.filter(c => !!c.parentId);
+
+        categorySelect.innerHTML = '<option value="">-- Seleccionar Categoría --</option>';
+        parents.forEach(c => {
+            const option = document.createElement('option');
+            option.value = c.id;
+            option.textContent = c.name;
+            categorySelect.appendChild(option);
+        });
+
+        subcategorySelect.innerHTML = '<option value="">-- Ninguna --</option>';
+        children.forEach(c => {
+            const option = document.createElement('option');
+            option.value = c.id;
+            option.textContent = c.name;
+            option.dataset.parent = c.parentId;
+            subcategorySelect.appendChild(option);
+        });
+
+        if (Array.from(categorySelect.options).some(o => o.value === currentCategory)) {
+            categorySelect.value = currentCategory;
+        }
+        if (Array.from(subcategorySelect.options).some(o => o.value === currentSubcategory)) {
+            subcategorySelect.value = currentSubcategory;
+        }
+
+        window.filterSubcategories();
+    });
 
     function toggleFeaturedStyling(input) {
         const card = document.getElementById('featuredCardWrapper');

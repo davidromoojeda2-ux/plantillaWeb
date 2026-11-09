@@ -1,0 +1,726 @@
+@model paginaWeb.Areas.Admin.Models.ImageManagerModalViewModel
+@{
+    var currentArticleIdAttr = Model?.CurrentArticleId ?? string.Empty;
+    var confirmLabelAttr = Model?.ConfirmLabel ?? "Usar como Portada";
+    var allowSelectionAttr = (Model?.AllowSelection ?? true).ToString().ToLowerInvariant();
+}
+
+<!-- ─── Modal reutilizable: Biblioteca y Gestión de Imágenes ─────────────────── -->
+<div id="imageManagerModal"
+     class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4"
+     data-current-article-id="@currentArticleIdAttr"
+     data-confirm-label="@confirmLabelAttr"
+     data-allow-selection="@allowSelectionAttr"
+     role="dialog" aria-modal="true" aria-labelledby="imageManagerTitle">
+
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full flex flex-col max-h-[92vh] overflow-hidden">
+
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/70">
+            <div>
+                <h3 id="imageManagerTitle" class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-[#00509D]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    @Model?.Title
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">@Model?.Subtitle</p>
+            </div>
+            <button type="button" id="imageManagerClose"
+                    class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition"
+                    aria-label="Cerrar gestor de imágenes">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Barra de búsqueda, filtros y carga -->
+        <div class="p-4 border-b border-slate-100 bg-white flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div class="relative w-full lg:w-80">
+                <input type="text" id="imageManagerSearch" placeholder="Buscar por nombre, alt o artículo..."
+                       class="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+                <button type="button" data-image-filter="all" class="image-manager-tab px-3 py-1.5 rounded-lg font-semibold bg-[#00296B] text-white transition">
+                    Todas (<span id="imageManagerCountAll">0</span>)
+                </button>
+                <button type="button" data-image-filter="free" class="image-manager-tab px-3 py-1.5 rounded-lg font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    Disponibles (<span id="imageManagerCountFree">0</span>)
+                </button>
+                <button type="button" data-image-filter="used" class="image-manager-tab px-3 py-1.5 rounded-lg font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    En artículos (<span id="imageManagerCountUsed">0</span>)
+                </button>
+                <button type="button" id="imageManagerToggleUpload"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold transition shadow-2xs">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Subir imagen
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel de carga -->
+        <div id="imageManagerUploadPanel" class="hidden p-4 border-b border-slate-200 bg-slate-50">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                <div class="md:col-span-4">
+                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Archivo de imagen <span class="text-rose-500">*</span></label>
+                    <input type="file" id="imageManagerFileInput" accept="image/*"
+                           class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#003F88] hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl p-1 bg-white" />
+                </div>
+                <div class="md:col-span-4">
+                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre del archivo</label>
+                    <input type="text" id="imageManagerCustomName" placeholder="Se completa al elegir el archivo..."
+                           class="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+                </div>
+                <div class="md:col-span-3">
+                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Texto alternativo</label>
+                    <input type="text" id="imageManagerAlt"
+                           class="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+                </div>
+                <div class="md:col-span-1">
+                    <button type="button" id="imageManagerUploadBtn"
+                            class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white text-xs font-bold transition">
+                        <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    </button>
+                </div>
+            </div>
+            <p id="imageManagerUploadError" class="hidden mt-2 text-[11px] font-semibold text-rose-600"></p>
+            <p class="mt-2 text-[11px] text-slate-400">La imagen se optimizará a WebP automáticamente y quedará disponible en la biblioteca.</p>
+        </div>
+
+        <!-- Galería -->
+        <div class="flex-1 overflow-y-auto p-4 bg-slate-50/50 min-h-[280px]">
+            <div id="imageManagerGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+
+            <div id="imageManagerEmpty" class="hidden py-16 text-center text-slate-400">
+                <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <p class="text-sm font-semibold text-slate-600">No se encontraron imágenes</p>
+                <p class="text-xs text-slate-400 mt-0.5">Sube una nueva imagen o cambia los filtros de búsqueda.</p>
+            </div>
+
+            <div id="imageManagerLoading" class="hidden py-16 text-center text-slate-400">
+                <svg class="animate-spin h-6 w-6 mx-auto text-[#00509D]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <p class="text-xs font-semibold mt-2">Cargando biblioteca...</p>
+            </div>
+        </div>
+
+        <!-- Aviso de selección / duplicidad -->
+        <div id="imageManagerNoticeArea" class="p-3.5 border-t border-slate-200 bg-white">
+            <div id="imageManagerNoticeBox" class="p-3 rounded-xl text-xs flex items-start gap-2.5 bg-slate-100 text-slate-600 border border-slate-200">
+                <svg class="w-4 h-4 shrink-0 mt-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="flex-1">
+                    <span id="imageManagerNoticeTitle" class="font-bold">Selecciona una imagen de la cuadrícula superior.</span>
+                    <p id="imageManagerNoticeDesc" class="mt-0.5 text-slate-500">Haz clic en una imagen para ver su información. También puedes cargar, renombrar, editar su alt o eliminarla.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
+            <button type="button" id="imageManagerCancel"
+                    class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition">
+                Cancelar
+            </button>
+            <button type="button" id="imageManagerConfirm" disabled
+                    class="px-5 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span id="imageManagerConfirmLabel">@Model?.ConfirmLabel</span>
+            </button>
+        </div>
+    </div>
+
+    @Html.AntiForgeryToken()
+</div>
+
+<script>
+    (function () {
+        'use strict';
+
+        var modal = document.getElementById('imageManagerModal');
+        if (!modal || modal.dataset.bound === 'true') return;
+        modal.dataset.bound = 'true';
+
+        var els = {
+            search: document.getElementById('imageManagerSearch'),
+            grid: document.getElementById('imageManagerGrid'),
+            empty: document.getElementById('imageManagerEmpty'),
+            loading: document.getElementById('imageManagerLoading'),
+            countAll: document.getElementById('imageManagerCountAll'),
+            countFree: document.getElementById('imageManagerCountFree'),
+            countUsed: document.getElementById('imageManagerCountUsed'),
+            toggleUpload: document.getElementById('imageManagerToggleUpload'),
+            uploadPanel: document.getElementById('imageManagerUploadPanel'),
+            fileInput: document.getElementById('imageManagerFileInput'),
+            customName: document.getElementById('imageManagerCustomName'),
+            alt: document.getElementById('imageManagerAlt'),
+            uploadBtn: document.getElementById('imageManagerUploadBtn'),
+            uploadError: document.getElementById('imageManagerUploadError'),
+            noticeBox: document.getElementById('imageManagerNoticeBox'),
+            noticeTitle: document.getElementById('imageManagerNoticeTitle'),
+            noticeDesc: document.getElementById('imageManagerNoticeDesc'),
+            close: document.getElementById('imageManagerClose'),
+            cancel: document.getElementById('imageManagerCancel'),
+            confirm: document.getElementById('imageManagerConfirm'),
+            confirmLabel: document.getElementById('imageManagerConfirmLabel')
+        };
+
+        var currentArticleId = modal.getAttribute('data-current-article-id') || '';
+        var defaultConfirmLabel = modal.getAttribute('data-confirm-label') || 'Usar como Portada';
+        var allowSelection = modal.getAttribute('data-allow-selection') !== 'false';
+
+        var images = [];
+        var selected = null;
+        var filter = 'all';
+        var inlineCallback = null;
+        var onSelectCallback = null;
+
+        function token() {
+            var input = modal.querySelector('input[name="__RequestVerificationToken"]');
+            return input ? input.value : '';
+        }
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function toast(message, type) {
+            if (typeof window.showToast === 'function') {
+                window.showToast(message, type || 'success');
+            }
+        }
+
+        function setLoading(loading) {
+            els.loading?.classList.toggle('hidden', !loading);
+            if (loading) els.empty?.classList.add('hidden');
+        }
+
+        function updateCounts() {
+            var free = images.filter(function (img) { return !img.isUsed; }).length;
+            var used = images.filter(function (img) { return img.isUsed && !img.isCurrentArticle; }).length;
+            if (els.countAll) els.countAll.textContent = images.length;
+            if (els.countFree) els.countFree.textContent = free;
+            if (els.countUsed) els.countUsed.textContent = used;
+        }
+
+        function visibleImages() {
+            var term = (els.search?.value || '').trim().toLowerCase();
+
+            return images.filter(function (img) {
+                if (filter === 'free' && img.isUsed) return false;
+                if (filter === 'used' && (!img.isUsed || img.isCurrentArticle)) return false;
+
+                if (!term) return true;
+
+                return (img.fileName || '').toLowerCase().indexOf(term) !== -1 ||
+                    (img.alt || '').toLowerCase().indexOf(term) !== -1 ||
+                    (img.usedInArticleTitle || '').toLowerCase().indexOf(term) !== -1;
+            });
+        }
+
+        function badgeFor(img) {
+            if (img.isUsed && !img.isCurrentArticle) {
+                var title = img.usedInArticleTitle || 'Otro artículo';
+                var shortTitle = title.length > 20 ? title.substring(0, 18) + '...' : title;
+                return '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200" title="En uso por: ' + escapeHtml(title) + '">' +
+                    '<svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>' +
+                    ' En: ' + escapeHtml(shortTitle) + '</span>';
+            }
+
+            if (img.isCurrentArticle) {
+                return '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">' +
+                    '<svg class="w-2.5 h-2.5 inline" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"/></svg> Portada actual</span>';
+            }
+
+            return '<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">' +
+                '<svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg> Disponible</span>';
+        }
+
+        function render() {
+            if (!els.grid) return;
+
+            var filtered = visibleImages();
+            els.grid.innerHTML = '';
+            els.empty?.classList.toggle('hidden', filtered.length !== 0);
+
+            filtered.forEach(function (img) {
+                var card = document.createElement('div');
+                var isSelected = selected && selected.id === img.id;
+
+                card.className = 'image-manager-card group relative rounded-xl border bg-white p-2.5 flex flex-col justify-between cursor-pointer transition shadow-2xs hover:shadow-md ' +
+                    (isSelected ? 'ring-2 ring-[#00509D] border-[#00509D] bg-blue-50/30' : 'border-slate-200 hover:border-slate-300');
+                card.setAttribute('data-image-id', img.id);
+
+                card.innerHTML =
+                    '<div>' +
+                        '<div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-100 relative mb-2">' +
+                            '<img src="' + escapeHtml(img.thumbnailUrl || img.url || '') + '" alt="' + escapeHtml(img.alt || img.fileName) + '" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" />' +
+                            '<span class="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-xs">' +
+                                (img.width || 0) + '×' + (img.height || 0) +
+                            '</span>' +
+                        '</div>' +
+                        '<div class="space-y-1">' +
+                            '<div>' + badgeFor(img) + '</div>' +
+                            '<p class="text-[11px] font-semibold text-slate-800 truncate" title="' + escapeHtml(img.fileName) + '">' + escapeHtml(img.fileName) + '</p>' +
+                            '<p class="text-[10px] text-slate-400 truncate" title="' + escapeHtml(img.alt || '') + '">Alt: ' + escapeHtml(img.alt || '—') + '</p>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1 text-[10px]">' +
+                        '<button type="button" data-image-action="rename" class="px-1.5 py-1 rounded-md text-[#00509D] hover:bg-blue-50 font-semibold transition" title="Renombrar imagen">Renombrar</button>' +
+                        '<button type="button" data-image-action="alt" class="px-1.5 py-1 rounded-md text-slate-500 hover:bg-slate-100 font-semibold transition" title="Editar texto alternativo">Alt</button>' +
+                        '<button type="button" data-image-action="delete" class="px-1.5 py-1 rounded-md text-rose-600 hover:bg-rose-50 font-semibold transition" title="Eliminar imagen">Eliminar</button>' +
+                    '</div>';
+
+                card.addEventListener('click', function (event) {
+                    if (event.target.closest('[data-image-action]')) return;
+                    selectImage(img);
+                });
+
+                card.addEventListener('dblclick', function (event) {
+                    if (event.target.closest('[data-image-action]')) return;
+                    selectImage(img);
+                    confirmSelection();
+                });
+
+                card.querySelector('[data-image-action="rename"]')?.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    renameImage(img);
+                });
+
+                card.querySelector('[data-image-action="alt"]')?.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    editAlt(img);
+                });
+
+                card.querySelector('[data-image-action="delete"]')?.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    deleteImage(img);
+                });
+
+                els.grid.appendChild(card);
+            });
+        }
+
+        function updateNotice() {
+            if (!els.noticeBox) return;
+
+            if (!selected) {
+                els.noticeBox.className = 'p-3 rounded-xl text-xs flex items-start gap-2.5 bg-slate-100 text-slate-600 border border-slate-200';
+                if (els.noticeTitle) els.noticeTitle.textContent = 'Selecciona una imagen de la cuadrícula superior.';
+                if (els.noticeDesc) els.noticeDesc.textContent = 'Haz clic en una imagen para ver su información. También puedes cargar, renombrar, editar su alt o eliminarla.';
+                return;
+            }
+
+            if (selected.isUsed && !selected.isCurrentArticle) {
+                els.noticeBox.className = 'p-3 rounded-xl text-xs flex items-start gap-2.5 bg-amber-50 text-amber-900 border border-amber-300 shadow-xs';
+                if (els.noticeTitle) els.noticeTitle.textContent = 'Aviso de duplicidad: imagen en uso en otro artículo';
+                if (els.noticeDesc) {
+                    els.noticeDesc.innerHTML = 'Esta imagen ya está siendo utilizada en el artículo <strong>"' +
+                        escapeHtml(selected.usedInArticleTitle || 'Otro artículo') +
+                        '"</strong>. Puedes usarla igualmente, pero se informa para evitar duplicidad de contenidos.';
+                }
+                return;
+            }
+
+            if (selected.isCurrentArticle) {
+                els.noticeBox.className = 'p-3 rounded-xl text-xs flex items-start gap-2.5 bg-blue-50 text-blue-900 border border-blue-200 shadow-xs';
+                if (els.noticeTitle) els.noticeTitle.textContent = 'Imagen vinculada a este artículo';
+                if (els.noticeDesc) els.noticeDesc.textContent = 'Esta imagen ya pertenece o está vinculada al artículo que estás editando.';
+                return;
+            }
+
+            els.noticeBox.className = 'p-3 rounded-xl text-xs flex items-start gap-2.5 bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs';
+            if (els.noticeTitle) els.noticeTitle.textContent = 'Imagen disponible (sin duplicidad)';
+            if (els.noticeDesc) els.noticeDesc.textContent = 'Esta imagen no está en uso en otro artículo. Es una opción limpia para tu publicación.';
+        }
+
+        function updateCoverDuplicityNotice() {
+            var notice = document.getElementById('coverDuplicityNotice');
+            var title = document.getElementById('coverDuplicityArticleTitle');
+            if (!notice || !selected) return;
+
+            if (selected.isUsed && !selected.isCurrentArticle && selected.usedInArticleTitle) {
+                if (title) title.textContent = '"' + selected.usedInArticleTitle + '"';
+                notice.classList.remove('hidden');
+            } else {
+                notice.classList.add('hidden');
+            }
+        }
+
+        function selectImage(img) {
+            selected = img;
+            if (els.confirm) els.confirm.disabled = !allowSelection;
+            updateNotice();
+            render();
+        }
+
+        function clearSelection() {
+            selected = null;
+            if (els.confirm) els.confirm.disabled = true;
+            updateNotice();
+        }
+
+        function loadImages() {
+            setLoading(true);
+            var url = '/admin/imagenes/listado?currentArticleId=' + encodeURIComponent(currentArticleId);
+
+            return fetch(url, { headers: { 'Accept': 'application/json' } })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('No se pudo cargar la biblioteca de imágenes.');
+                    return response.json();
+                })
+                .then(function (data) {
+                    images = Array.isArray(data) ? data : [];
+
+                    if (selected) {
+                        var updated = images.find(function (img) { return img.id === selected.id; });
+                        selected = updated || null;
+                        if (!selected && els.confirm) els.confirm.disabled = true;
+                    }
+
+                    updateCounts();
+                    render();
+                })
+                .catch(function (error) {
+                    toast(error.message || 'Error al cargar imágenes.', 'error');
+                })
+                .finally(function () {
+                    setLoading(false);
+                });
+        }
+
+        function renameImage(img) {
+            window.appPrompt('Nuevo nombre para el archivo:', img.fileName, {
+                title: 'Renombrar imagen',
+                acceptLabel: 'Renombrar',
+                placeholder: 'nombre-de-la-imagen.webp'
+            }).then(function (newName) {
+                if (newName === null || newName === undefined) return;
+
+                var payload = new URLSearchParams();
+                payload.append('id', img.id);
+                payload.append('fileName', newName);
+
+                return fetch('/admin/imagenes/renombrar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'RequestVerificationToken': token()
+                    },
+                    body: payload.toString()
+                })
+                    .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+                    .then(function (result) {
+                        if (!result.ok || !result.data.success) {
+                            throw new Error(result.data.message || 'No se pudo renombrar la imagen.');
+                        }
+
+                        img.fileName = result.data.fileName;
+                        if (selected && selected.id === img.id) selected.fileName = result.data.fileName;
+                        render();
+                        toast('Imagen renombrada correctamente.', 'success');
+                    });
+            }).catch(function (error) {
+                toast(error.message || 'No se pudo renombrar la imagen.', 'error');
+            });
+        }
+
+        function editAlt(img) {
+            window.appPrompt('Texto alternativo (accesibilidad):', img.alt || '', {
+                title: 'Editar texto alternativo',
+                acceptLabel: 'Guardar',
+                requireValue: false
+            }).then(function (newAlt) {
+                if (newAlt === null || newAlt === undefined) return;
+
+                var payload = new URLSearchParams();
+                payload.append('id', img.id);
+                payload.append('alt', newAlt);
+
+                return fetch('/admin/imagenes/actualizar-alt-ajax', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'RequestVerificationToken': token()
+                    },
+                    body: payload.toString()
+                })
+                    .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+                    .then(function (result) {
+                        if (!result.ok || !result.data.success) {
+                            throw new Error(result.data.message || 'No se pudo actualizar el texto alt.');
+                        }
+
+                        img.alt = result.data.alt;
+                        if (selected && selected.id === img.id) selected.alt = result.data.alt;
+                        render();
+                        toast('Texto alternativo actualizado.', 'success');
+                    });
+            }).catch(function (error) {
+                toast(error.message || 'No se pudo actualizar el texto alternativo.', 'error');
+            });
+        }
+
+        function deleteImage(img) {
+            var isUsed = img.isUsed && !img.isCurrentArticle;
+            var message = isUsed
+                ? 'La imagen "' + img.fileName + '" está en uso en otro artículo. ¿Eliminarla de todos modos? Se quitará de la portada o galería donde aparezca.'
+                : '¿Eliminar la imagen "' + img.fileName + '" y todas sus variantes optimizadas?';
+
+            window.appConfirm(message, {
+                title: 'Eliminar imagen',
+                type: 'danger',
+                acceptLabel: 'Sí, eliminar'
+            }).then(function (confirmed) {
+                if (!confirmed) return;
+
+                return fetch('/admin/imagenes/eliminar-ajax/' + encodeURIComponent(img.id), {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token() }
+                })
+                    .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+                    .then(function (result) {
+                        if (!result.ok || !result.data.success) {
+                            throw new Error(result.data.message || 'No se pudo eliminar la imagen.');
+                        }
+
+                        images = images.filter(function (item) { return item.id !== img.id; });
+                        if (selected && selected.id === img.id) clearSelection();
+                        updateCounts();
+                        render();
+                        toast('Imagen eliminada correctamente.', 'success');
+                    });
+            }).catch(function (error) {
+                toast(error.message || 'No se pudo eliminar la imagen.', 'error');
+            });
+        }
+
+        function submitUpload() {
+            var file = els.fileInput?.files && els.fileInput.files[0];
+            if (!file) {
+                showUploadError('Selecciona un archivo de imagen.');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('customName', els.customName?.value || file.name);
+            formData.append('alt', els.alt?.value || '');
+            if (currentArticleId) formData.append('articleId', currentArticleId);
+
+            els.uploadBtn.disabled = true;
+            els.uploadBtn.classList.add('opacity-60', 'cursor-not-allowed');
+            showUploadError('');
+
+            fetch('/admin/imagenes/subir-ajax', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token() },
+                body: formData
+            })
+                .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+                .then(function (result) {
+                    if (!result.ok || !result.data.success) {
+                        throw new Error(result.data.message || 'No se pudo subir la imagen.');
+                    }
+
+                    if (els.fileInput) els.fileInput.value = '';
+                    if (els.customName) els.customName.value = '';
+                    if (els.alt) els.alt.value = '';
+
+                    return loadImages().then(function () {
+                        var uploaded = images.find(function (img) { return img.id === result.data.image.id; });
+                        if (uploaded) selectImage(uploaded);
+                        toast('Imagen subida y optimizada correctamente.', 'success');
+                    });
+                })
+                .catch(function (error) {
+                    showUploadError(error.message || 'No se pudo subir la imagen.');
+                })
+                .finally(function () {
+                    els.uploadBtn.disabled = false;
+                    els.uploadBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                });
+        }
+
+        function showUploadError(message) {
+            if (!els.uploadError) return;
+            els.uploadError.textContent = message || '';
+            els.uploadError.classList.toggle('hidden', !message);
+        }
+
+        function confirmSelection() {
+            if (!selected || !allowSelection) return;
+
+            if (typeof inlineCallback === 'function') {
+                var callback = inlineCallback;
+                inlineCallback = null;
+                callback(selected);
+                close();
+                return;
+            }
+
+            if (typeof onSelectCallback === 'function') {
+                var selectCallback = onSelectCallback;
+                onSelectCallback = null;
+                selectCallback(selected);
+                close();
+                return;
+            }
+
+            var coverIdInput = document.getElementById('coverImageIdInput');
+            var coverUrlInput = document.getElementById('coverImageUrlInput');
+            if (coverIdInput) coverIdInput.value = selected.id;
+            if (coverUrlInput) coverUrlInput.value = selected.url || '';
+
+            if (typeof window.updateCoverPreview === 'function') {
+                window.updateCoverPreview(selected.url || '');
+            }
+
+            updateCoverDuplicityNotice();
+            close();
+        }
+
+        function open(options) {
+            options = options || {};
+            inlineCallback = typeof options.inlineCallback === 'function' ? options.inlineCallback : null;
+            onSelectCallback = typeof options.onSelect === 'function' ? options.onSelect : null;
+            allowSelection = options.allowSelection !== undefined
+                ? !!options.allowSelection
+                : modal.getAttribute('data-allow-selection') !== 'false';
+
+            if (options.articleId !== undefined) currentArticleId = options.articleId || '';
+            if (options.currentArticleId !== undefined) currentArticleId = options.currentArticleId || '';
+
+            var confirmLabel = options.confirmLabel || defaultConfirmLabel;
+            if (els.confirmLabel) els.confirmLabel.textContent = confirmLabel;
+            if (els.confirm) {
+                els.confirm.disabled = true;
+                els.confirm.classList.toggle('hidden', !allowSelection);
+            }
+
+            els.uploadPanel?.classList.add('hidden');
+            showUploadError('');
+            if (els.search) els.search.value = '';
+            filter = 'all';
+            document.querySelectorAll('.image-manager-tab').forEach(function (tab) {
+                var isActive = tab.getAttribute('data-image-filter') === 'all';
+                tab.className = 'image-manager-tab px-3 py-1.5 rounded-lg font-semibold transition ' +
+                    (isActive ? 'bg-[#00296B] text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700');
+            });
+
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            document.body.classList.add('overflow-hidden');
+
+            updateNotice();
+            loadImages();
+        }
+
+        function close() {
+            inlineCallback = null;
+            onSelectCallback = null;
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        els.toggleUpload?.addEventListener('click', function () {
+            els.uploadPanel?.classList.toggle('hidden');
+        });
+
+        els.fileInput?.addEventListener('change', function () {
+            if (!this.files || !this.files[0]) return;
+            var file = this.files[0];
+            if (els.customName) els.customName.value = file.name;
+            if (els.alt && !els.alt.value.trim()) {
+                var base = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                els.alt.value = base.replace(/[-_]+/g, ' ');
+            }
+            showUploadError('');
+        });
+
+        els.uploadBtn?.addEventListener('click', submitUpload);
+        els.search?.addEventListener('input', render);
+        els.close?.addEventListener('click', close);
+        els.cancel?.addEventListener('click', close);
+        els.confirm?.addEventListener('click', confirmSelection);
+
+        document.querySelectorAll('.image-manager-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                filter = tab.getAttribute('data-image-filter') || 'all';
+                document.querySelectorAll('.image-manager-tab').forEach(function (other) {
+                    var isActive = other === tab;
+                    other.className = 'image-manager-tab px-3 py-1.5 rounded-lg font-semibold transition ' +
+                        (isActive ? 'bg-[#00296B] text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700');
+                });
+                render();
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+                close();
+            }
+        });
+
+        // ── API pública reutilizable ──────────────────────────────────────────
+        window.imageManager = {
+            open: open,
+            close: close,
+            refresh: loadImages,
+            getSelected: function () { return selected; },
+            getImages: function () { return images.slice(); }
+        };
+
+        // Alias de compatibilidad con el editor de bloques y el formulario antiguo.
+        window.openMediaLibraryModal = function (event) {
+            if (event) event.preventDefault();
+            open();
+        };
+
+        window.openMediaLibraryModalForInline = function (callback) {
+            open({ inlineCallback: callback, confirmLabel: 'Insertar en el Artículo' });
+        };
+
+        window.selectExistingCover = function (id, url) {
+            var coverIdInput = document.getElementById('coverImageIdInput');
+            var coverUrlInput = document.getElementById('coverImageUrlInput');
+            if (coverIdInput) coverIdInput.value = id || '';
+            if (coverUrlInput) coverUrlInput.value = url || '';
+            if (typeof window.updateCoverPreview === 'function') window.updateCoverPreview(url || '');
+        };
+
+        window.checkCurrentCoverUsage = function () {
+            var coverIdInput = document.getElementById('coverImageIdInput');
+            var coverUrlInput = document.getElementById('coverImageUrlInput');
+            var notice = document.getElementById('coverDuplicityNotice');
+            var title = document.getElementById('coverDuplicityArticleTitle');
+            if (!notice) return;
+
+            var currentId = coverIdInput ? coverIdInput.value : '';
+            var currentUrl = coverUrlInput ? coverUrlInput.value : '';
+            if (!currentId && !currentUrl) {
+                notice.classList.add('hidden');
+                return;
+            }
+
+            var matched = images.find(function (img) {
+                return (currentId && img.id === currentId) ||
+                    (currentUrl && (img.url === currentUrl || img.thumbnailUrl === currentUrl));
+            });
+
+            if (matched && matched.isUsed && !matched.isCurrentArticle && matched.usedInArticleTitle) {
+                if (title) title.textContent = '"' + matched.usedInArticleTitle + '"';
+                notice.classList.remove('hidden');
+            } else {
+                notice.classList.add('hidden');
+            }
+        };
+    })();
+</script>

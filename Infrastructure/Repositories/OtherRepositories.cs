@@ -105,6 +105,10 @@ public class ImageMetadataRepository : IImageMetadataRepository
         await _col.UpdateOneAsync(i => i.Id == id,
             Builders<ImageMetadata>.Update.Set(i => i.Alt, alt));
 
+    public async Task UpdateFileNameAsync(string id, string fileName) =>
+        await _col.UpdateOneAsync(i => i.Id == id,
+            Builders<ImageMetadata>.Update.Set(i => i.OriginalFileName, fileName));
+
     public async Task DeleteAsync(string id) => await _col.DeleteOneAsync(i => i.Id == id);
 
     private static FilterDefinition<ImageMetadata> BuildFilter(string? search, string? storage, string? articleId)
