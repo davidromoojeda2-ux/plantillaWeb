@@ -1,3 +1,4 @@
+using Aplication.DTOs;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
@@ -34,15 +35,8 @@ public class ImagenesController : Controller
         const int pageSize = 24;
         var (images, totalCount) = await _imageService.GetPagedAsync(page, pageSize, search, storage, articleId);
         var articles = await _articleService.GetAllAdminAsync(1, 100);
-        var articlesDict = articles.ToDictionary(a => a.Id, a => a.Title);
 
-        foreach (var img in images)
-        {
-            if (!string.IsNullOrEmpty(img.ArticleId) && articlesDict.TryGetValue(img.ArticleId, out var title))
-            {
-                img.ArticleTitle = title;
-            }
-        }
+        ApplyArticleUsage(images, articles);
 
         var storageStatus = await _imageService.GetStorageStatusAsync();
 
@@ -60,6 +54,34 @@ public class ImagenesController : Controller
         };
 
         return View(viewModel);
+    }
+
+    /// <summary>
+    /// Catálogo JSON consumido por el gestor de imágenes (modal reutilizable).
+    /// </summary>
+    [HttpGet("listado")]
+    public async Task<IActionResult> List(string? currentArticleId = null)
+    {
+        var images = await GetImagesWithArticleUsageAsync();
+
+        var result = images.Select(img => new
+        {
+            id = img.Id,
+            fileName = img.OriginalFileName,
+            alt = img.Alt,
+            width = img.OriginalWidth,
+            height = img.OriginalHeight,
+            uploadedAt = img.UploadedAt.ToString("dd/MM/yyyy"),
+            url = ImageMapper.GetBestUrl(img) ?? img.Variants.FirstOrDefault()?.PublicUrl,
+            thumbnailUrl = ImageMapper.GetThumbnailUrl(img) ?? ImageMapper.GetBestUrl(img),
+            storage = img.Storage,
+            isUsed = !string.IsNullOrEmpty(img.ArticleId),
+            usedInArticleId = img.ArticleId,
+            usedInArticleTitle = img.ArticleTitle,
+            isCurrentArticle = !string.IsNullOrEmpty(currentArticleId) && img.ArticleId == currentArticleId
+        });
+
+        return Json(result);
     }
 
     [HttpGet("verificar-nombre")]
@@ -96,26 +118,7 @@ public class ImagenesController : Controller
 
         try
         {
-            var fileName = !string.IsNullOrWhiteSpace(customName) ? customName.Trim() : file.FileName.Trim();
-
-            // Si el nombre personalizado no tiene extensión, conservar la del archivo subido
-            if (!Path.HasExtension(fileName) && Path.HasExtension(file.FileName))
-            {
-                fileName += Path.GetExtension(file.FileName);
-            }
-
-            using var stream = file.OpenReadStream();
-            var metadata = await _imageService.ProcessAndStoreDtoAsync(
-                file.FileName,
-                stream,
-                alt ?? Path.GetFileNameWithoutExtension(fileName),
-                articleId,
-                fileName);
-
-            if (!string.IsNullOrEmpty(articleId))
-            {
-                await LinkImageToArticleAsync(articleId, metadata.Id, ImageMapper.GetBestUrl(metadata), setAsCover);
-            }
+            var metadata = await ProcessUploadAsync(file, customName, alt, articleId, setAsCover);
 
             var storageProviderName = metadata.Storage.Equals("r2", StringComparison.OrdinalIgnoreCase) ||
                                       metadata.Storage.Equals("s3", StringComparison.OrdinalIgnoreCase)
@@ -157,6 +160,65 @@ public class ImagenesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    /// <summary>
+    /// Subida desde el modal gestor de imágenes. Devuelve JSON para refrescar la galería sin recargar la página.
+    /// </summary>
+    [HttpPost("subir-ajax")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadAjax(
+        IFormFile file,
+        string? customName,
+        string? alt,
+        string? articleId,
+        bool setAsCover = false)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { success = false, message = "Selecciona un archivo de imagen válido." });
+        }
+
+        try
+        {
+            var metadata = await ProcessUploadAsync(file, customName, alt, articleId, setAsCover);
+            var url = ImageMapper.GetBestUrl(metadata) ?? metadata.Variants.FirstOrDefault()?.PublicUrl;
+
+            return Json(new
+            {
+                success = true,
+                image = new
+                {
+                    id = metadata.Id,
+                    fileName = metadata.OriginalFileName,
+                    alt = metadata.Alt,
+                    width = metadata.OriginalWidth,
+                    height = metadata.OriginalHeight,
+                    url,
+                    thumbnailUrl = ImageMapper.GetThumbnailUrl(metadata) ?? url,
+                    storage = metadata.Storage
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ResolveImageErrorMessage(ex) });
+        }
+    }
+
+    [HttpPost("renombrar")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Rename(string id, string fileName)
+    {
+        try
+        {
+            var updated = await _imageService.RenameAsync(id, fileName);
+            return Json(new { success = true, fileName = updated.OriginalFileName });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+
     [HttpPost("actualizar-alt")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateAlt(string id, string alt)
@@ -164,6 +226,21 @@ public class ImagenesController : Controller
         await _imageService.UpdateAltAsync(id, alt ?? "");
         TempData["Success"] = "Texto alternativo actualizado.";
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost("actualizar-alt-ajax")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateAltAjax(string id, string alt)
+    {
+        try
+        {
+            await _imageService.UpdateAltAsync(id, alt ?? "");
+            return Json(new { success = true, alt = alt ?? string.Empty });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
     }
 
     [HttpPost("eliminar/{id}")]
@@ -186,6 +263,124 @@ public class ImagenesController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost("eliminar-ajax/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAjax(string id)
+    {
+        try
+        {
+            await _imageService.DeleteByIdAsync(id);
+            return Json(new { success = true });
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = "Error al eliminar la imagen: " + ex.Message });
+        }
+    }
+
+    private async Task<ImageMetadataResponseDto> ProcessUploadAsync(
+        IFormFile file,
+        string? customName,
+        string? alt,
+        string? articleId,
+        bool setAsCover)
+    {
+        var fileName = !string.IsNullOrWhiteSpace(customName) ? customName.Trim() : file.FileName.Trim();
+
+        // Si el nombre personalizado no tiene extensión, conservar la del archivo subido.
+        if (!Path.HasExtension(fileName) && Path.HasExtension(file.FileName))
+        {
+            fileName += Path.GetExtension(file.FileName);
+        }
+
+        using var stream = file.OpenReadStream();
+        var metadata = await _imageService.ProcessAndStoreDtoAsync(
+            file.FileName,
+            stream,
+            alt ?? Path.GetFileNameWithoutExtension(fileName),
+            articleId,
+            fileName);
+
+        if (!string.IsNullOrEmpty(articleId))
+        {
+            var url = ImageMapper.GetBestUrl(metadata) ?? metadata.Variants.FirstOrDefault()?.PublicUrl;
+            await LinkImageToArticleAsync(articleId, metadata.Id, url, setAsCover);
+        }
+
+        return metadata;
+    }
+
+    private async Task<List<ImageMetadataResponseDto>> GetImagesWithArticleUsageAsync()
+    {
+        var images = await _imageService.GetAllAsync(0, 500);
+        var allArticles = await _articleService.GetAllAdminAsync(1, 500);
+
+        ApplyArticleUsage(images, allArticles);
+        return images;
+    }
+
+    /// <summary>
+    /// Completa cada imagen con el artículo que la usa, ya sea como portada o en su galería.
+    /// </summary>
+    private static void ApplyArticleUsage(
+        IReadOnlyList<ImageMetadataResponseDto> images,
+        IReadOnlyList<ArticleResponseDto> articles)
+    {
+        var usageMap = new Dictionary<string, (string ArticleId, string ArticleTitle)>();
+        var articlesDict = new Dictionary<string, string>();
+
+        foreach (var article in articles)
+        {
+            articlesDict[article.Id] = article.Title;
+
+            if (!string.IsNullOrEmpty(article.CoverImageId))
+            {
+                usageMap.TryAdd(article.CoverImageId, (article.Id, article.Title));
+            }
+
+            if (article.ImageIds is null) continue;
+
+            foreach (var imageId in article.ImageIds)
+            {
+                if (!string.IsNullOrEmpty(imageId))
+                {
+                    usageMap.TryAdd(imageId, (article.Id, article.Title));
+                }
+            }
+        }
+
+        foreach (var image in images)
+        {
+            if (usageMap.TryGetValue(image.Id, out var usage))
+            {
+                image.ArticleId = usage.ArticleId;
+                image.ArticleTitle = usage.ArticleTitle;
+            }
+            else if (!string.IsNullOrEmpty(image.ArticleId) &&
+                     articlesDict.TryGetValue(image.ArticleId, out var title))
+            {
+                image.ArticleTitle = title;
+            }
+        }
+    }
+
+    private static string ResolveImageErrorMessage(Exception ex) => ex switch
+    {
+        ConflictException => ex.Message,
+        DomainValidationException => ex.Message,
+        NotFoundException => ex.Message,
+        ArgumentException => "Error en el archivo de imagen: " + ex.Message,
+        SixLabors.ImageSharp.UnknownImageFormatException =>
+            "El archivo proporcionado no es un formato de imagen soportado (use JPEG, PNG, WEBP, AVIF, etc.).",
+        SixLabors.ImageSharp.InvalidImageContentException =>
+            "El archivo de imagen está dañado o su contenido no es válido.",
+        _ => "Error inesperado al procesar la imagen: " + ex.Message
+    };
 
     private async Task<bool> LinkImageToArticleAsync(string? articleId, string imageId, string? coverUrl, bool setAsCover)
     {
