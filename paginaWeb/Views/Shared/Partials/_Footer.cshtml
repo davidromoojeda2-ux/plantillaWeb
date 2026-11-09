@@ -1,15 +1,29 @@
-@model (List<PageResponseDto> Pages, List<SocialProfileDto> SocialProfiles)
+@model (List<CategoryResponseDto> Sections, List<PageResponseDto> Pages, List<SocialProfileDto> SocialProfiles)
 @using Domine.Entities
 @{
+    var footerSections = Model.Sections ?? new();
     var footerPages = Model.Pages ?? new();
     var socialProfiles = Model.SocialProfiles ?? new();
+
+    var hasSections = footerSections.Count > 0;
+    var hasPages = footerPages.Count > 0;
+    var secondaryColumns = (hasSections ? 1 : 0) + (hasPages ? 1 : 0);
+
+    // Ajusta la grilla según las columnas que realmente se van a mostrar.
+    var gridCols = secondaryColumns switch
+    {
+        0 => "lg:grid-cols-1",
+        1 => "lg:grid-cols-3",
+        _ => "lg:grid-cols-4"
+    };
+    var brandSpan = secondaryColumns > 0 ? "lg:col-span-2" : "lg:col-span-1";
 }
 
 <footer class="bg-[#00296B] text-white pt-16 pb-12 mt-20 border-t border-white/10" id="acerca-de">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-white/10">
-            <!-- Columna Marca (ancho 2) -->
-            <div class="lg:col-span-2 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 @gridCols gap-10 pb-12 border-b border-white/10">
+            <!-- Columna Marca -->
+            <div class="@brandSpan space-y-4">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 rounded-xl bg-[#FDC500] text-[#00296B] font-bold text-2xl flex items-center justify-center shadow-lg">
@@ -38,54 +52,44 @@
                 }
             </div>
 
-            <!-- Columna Secciones -->
-            <div>
-                <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Secciones</h4>
-                <ul class="space-y-2.5 text-sm text-blue-100/90">
-                    <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="tecnologia"
-                               class="text-blue-200/70 hover:text-white transition">Tecnología</a></li>
-                        <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="economia"
-                                   class="text-blue-200/70 hover:text-white transition">Economía</a></li>
-                            <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="cultura"
-                                       class="text-blue-200/70 hover:text-white transition">Cultura</a></li>
-                                <li><a asp-controller="Category" asp-action="Categoria" asp-route-slug="inteligencia-artificial"
-                                           class="text-blue-200/70 hover:text-white transition">Inteligencia Artificial</a></li>
-                                </ul>
-                            </div>
+            <!-- Columna Secciones (dinámica: más vistas y con mayor contenido) -->
+            @if (hasSections)
+            {
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Secciones</h4>
+                    <ul class="space-y-2.5 text-sm text-blue-100/90">
+                        @foreach (var footerSection in footerSections)
+                        {
+                            <li>
+                                <a asp-controller="Category" asp-action="Categoria" asp-route-slug="@footerSection.Slug"
+                                   class="text-blue-200/70 hover:text-white transition">@footerSection.Name</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
 
-                            <!-- Columna Contacto / Redacción -->
-                            <div>
-                                <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Redacción</h4>
-                                <ul class="space-y-2.5 text-sm text-blue-100/90">
-                                    <li><a asp-area="Admin" asp-controller="Auth" asp-action="Login"
-                                           class="text-blue-200 hover:text-white transition flex items-center gap-1.5 font-medium"><span>Acceso
-                                        a Redacción</span> →</a></li>
-                                        <li><span class="text-xs text-blue-200/70">contacto@portalnoticias.com</span></li>
-                                    </ul>
-                                </div>
-                            </div>
+            <!-- Columna Institucional (solo si existen páginas configuradas) -->
+            @if (hasPages)
+            {
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#FDC500] mb-4">Institucional</h4>
+                    <ul class="space-y-2.5 text-sm text-blue-100/90">
+                        @foreach (var pageItem in footerPages)
+                        {
+                            <li>
+                                <a asp-controller="Home" asp-action="Info" asp-route-slug="@pageItem.Slug"
+                                   class="text-blue-200/70 hover:text-white transition">@pageItem.Title</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
 
-                            <!-- Fila Inferior: Copyright ← → Institucional -->
-                            <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-200/70">
-                                <p>© @DateTime.UtcNow.Year Portal Noticias. Todos los derechos reservados.</p>
-
-                                <!-- Links Institucionales dinámicos al extremo derecho -->
-                                @if (footerPages.Any())
-                                {
-                                    <nav aria-label="Páginas institucionales"
-                                         class="flex items-center flex-wrap gap-x-6 gap-y-2 justify-center">
-                                        @foreach (var pageItem in footerPages)
-                                        {
-                                            <a asp-controller="Home" asp-action="Info" asp-route-slug="@pageItem.Slug"
-                                               class="text-blue-200/70 hover:text-white transition">@pageItem.Title</a>
-                                            @if (pageItem.Slug != footerPages.Last().Slug)
-                                            {
-                                                <span class="text-blue-200/40 px-2">|</span>
-                                            }
-                                        }
-                                    </nav>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </footer>
+        <!-- Fila Inferior -->
+        <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-200/70">
+            <p>© @DateTime.UtcNow.Year Portal Noticias. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</footer>

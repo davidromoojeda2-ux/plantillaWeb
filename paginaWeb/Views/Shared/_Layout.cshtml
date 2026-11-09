@@ -1,6 +1,8 @@
 @inject Aplication.Services.IPageService PageService
+@inject Aplication.Services.ICategoryService CategoryService
 @inject Aplication.Services.ISiteSettingsService SiteSettingsService
 @{
+    var footerSections = await CategoryService.GetFooterSectionsAsync();
     var footerPages = await PageService.GetFooterPagesAsync();
     var siteSettings = await SiteSettingsService.GetAsync();
     var socialProfiles = siteSettings.SocialProfiles
@@ -37,7 +39,7 @@
     </main>
 
     <!-- ─── Pie de Página Dinámico de 5 Columnas Unificado ───────────────────── -->
-    <partial name="Partials/_Footer" model="(Pages: footerPages, SocialProfiles: socialProfiles)" />
+    <partial name="Partials/_Footer" model="(Sections: footerSections, Pages: footerPages, SocialProfiles: socialProfiles)" />
 
     <!-- ─── Botón flotante de WhatsApp (solo pantallas chicas) ────────────────── -->
     <div id="whatsAppFloat" class="min-[900px]:hidden fixed bottom-24 right-5 z-40 flex items-center gap-1.5">

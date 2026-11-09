@@ -1,4 +1,5 @@
-﻿using Aplication.Interfaces;
+﻿using Aplication.DTOs;
+using Aplication.Interfaces;
 using Domine.Entities;
 using Infrastructure.Persistence;
 using MongoDB.Bson;
@@ -151,6 +152,36 @@ public class ArticleRepository : IArticleRepository
         }
 
         return set;
+    }
+
+    public async Task<List<CategoryArticleSignalDto>> GetPublishedCategorySignalsAsync()
+    {
+        var filter = Builders<Article>.Filter.Eq(a => a.Status, ArticleStatus.Publicado);
+        var projection = Builders<Article>.Projection
+            .Include(a => a.CategoryId)
+            .Include(a => a.SubcategoryId)
+            .Include(a => a.ViewCount);
+
+        var docs = await _col.Find(filter).Project(projection).ToListAsync();
+
+        return docs.Select(doc => new CategoryArticleSignalDto
+        {
+            CategoryId = ReadReferenceId(doc, "CategoryId"),
+            SubcategoryId = ReadReferenceId(doc, "SubcategoryId"),
+            ViewCount = doc.TryGetValue("ViewCount", out var views) && views.IsNumeric ? views.ToInt64() : 0
+        }).ToList();
+    }
+
+    private static string? ReadReferenceId(BsonDocument doc, string field)
+    {
+        if (!doc.TryGetValue(field, out var value) || value.IsBsonNull)
+            return null;
+
+        var id = value.BsonType == BsonType.ObjectId
+            ? value.AsObjectId.ToString()
+            : value.IsString ? value.AsString : string.Empty;
+
+        return string.IsNullOrWhiteSpace(id) ? null : id;
     }
 
     public async Task<(Article? Previous, Article? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt)
