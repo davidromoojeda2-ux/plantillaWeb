@@ -175,24 +175,15 @@
         var onSelectCallback = null;
 
         function token() {
-            var input = modal.querySelector('input[name="__RequestVerificationToken"]');
-            return input ? input.value : '';
+            return window.cmsModals.token(modal);
         }
 
         function escapeHtml(text) {
-            if (text === null || text === undefined) return '';
-            return String(text)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+            return window.cmsModals.escapeHtml(text);
         }
 
         function toast(message, type) {
-            if (typeof window.showToast === 'function') {
-                window.showToast(message, type || 'success');
-            }
+            window.cmsModals.toast(message, type);
         }
 
         function setLoading(loading) {
@@ -337,19 +328,6 @@
             els.noticeBox.className = 'p-3 rounded-xl text-xs flex items-start gap-2.5 bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-xs';
             if (els.noticeTitle) els.noticeTitle.textContent = 'Imagen disponible (sin duplicidad)';
             if (els.noticeDesc) els.noticeDesc.textContent = 'Esta imagen no está en uso en otro artículo. Es una opción limpia para tu publicación.';
-        }
-
-        function updateCoverDuplicityNotice() {
-            var notice = document.getElementById('coverDuplicityNotice');
-            var title = document.getElementById('coverDuplicityArticleTitle');
-            if (!notice || !selected) return;
-
-            if (selected.isUsed && !selected.isCurrentArticle && selected.usedInArticleTitle) {
-                if (title) title.textContent = '"' + selected.usedInArticleTitle + '"';
-                notice.classList.remove('hidden');
-            } else {
-                notice.classList.add('hidden');
-            }
         }
 
         function selectImage(img) {
@@ -581,7 +559,6 @@
                 window.updateCoverPreview(selected.url || '');
             }
 
-            updateCoverDuplicityNotice();
             close();
         }
 
@@ -673,9 +650,7 @@
         window.imageManager = {
             open: open,
             close: close,
-            refresh: loadImages,
-            getSelected: function () { return selected; },
-            getImages: function () { return images.slice(); }
+            refresh: loadImages
         };
 
         // Alias de compatibilidad con el editor de bloques y el formulario antiguo.

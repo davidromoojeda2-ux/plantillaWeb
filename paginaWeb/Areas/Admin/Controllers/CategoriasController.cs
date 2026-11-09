@@ -2,7 +2,6 @@ using Aplication.DTOs;
 using Aplication.Exceptions;
 using Aplication.Mappers;
 using Aplication.Services;
-using Domine.Entities;
 using Domine.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -139,17 +138,10 @@ public class CategoriasController : Controller
         try
         {
             var all = await _categoryService.GetAllAsync();
-            var subs = all.Where(s => s.ParentId == id).ToList();
-            foreach (var sub in subs)
-            {
-                await _categoryService.DeleteAsync(sub.Id);
-            }
+            var childCount = await DeleteCategoryWithChildrenAsync(id, all);
 
-            await _categoryService.DeleteAsync(id);
-            _menuService.InvalidateMenu();
-
-            TempData["Success"] = subs.Count > 0
-                ? $"Categoría principal y sus {subs.Count} subcategorías asociadas fueron eliminadas con éxito."
+            TempData["Success"] = childCount > 0
+                ? $"Categoría principal y sus {childCount} subcategorías asociadas fueron eliminadas con éxito."
                 : "Categoría eliminada con éxito.";
             return RedirectToAction(nameof(Index));
         }
@@ -157,6 +149,22 @@ public class CategoriasController : Controller
         {
             return NotFound();
         }
+    }
+
+    /// <summary>
+    /// Elimina una categoría y sus subcategorías, e invalida la caché del menú.
+    /// </summary>
+    private async Task<int> DeleteCategoryWithChildrenAsync(string id, IReadOnlyList<CategoryResponseDto> all)
+    {
+        var children = all.Where(c => c.ParentId == id).ToList();
+        foreach (var child in children)
+        {
+            await _categoryService.DeleteAsync(child.Id);
+        }
+
+        await _categoryService.DeleteAsync(id);
+        _menuService.InvalidateMenu();
+        return children.Count;
     }
 
     private async Task<string> GenerateUniqueSlugAsync(string name, string? excludeId = null)
@@ -301,8 +309,8 @@ public class CategoriasController : Controller
                 return NotFound(new { success = false, message = "La categoría no existe." });
             }
 
-            var children = all.Where(c => c.ParentId == id).ToList();
-            if (children.Count > 0 && !deleteChildren)
+            var childrenCount = all.Count(c => c.ParentId == id);
+            if (childrenCount > 0 && !deleteChildren)
             {
                 return BadRequest(new
                 {
@@ -311,82 +319,14 @@ public class CategoriasController : Controller
                 });
             }
 
-            foreach (var child in children)
-            {
-                await _categoryService.DeleteAsync(child.Id);
-            }
-
-            await _categoryService.DeleteAsync(id);
-            _menuService.InvalidateMenu();
-
-            return Ok(new { success = true, deletedChildren = children.Count });
+            var deletedChildren = await DeleteCategoryWithChildrenAsync(id, all);
+            return Ok(new { success = true, deletedChildren });
         }
         catch (Exception ex)
         {
             return BadRequest(new { success = false, message = ex.Message });
         }
     }
-
-    [HttpPost("crear-rapida")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> QuickCreate([FromBody] QuickCategoryRequest request)
-    {
-        if (request is null || string.IsNullOrWhiteSpace(request.Name))
-            return BadRequest(new { success = false, message = "El nombre de la categoría es obligatorio." });
-
-        var trimmedName = request.Name.Trim();
-        var slug = trimmedName.ToLowerInvariant()
-            .Normalize(System.Text.NormalizationForm.FormD)
-            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
-            .Aggregate(new System.Text.StringBuilder(), (sb, c) => sb.Append(c))
-            .ToString();
-        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9]+", "-").Trim('-');
-        var baseSlug = string.IsNullOrEmpty(slug) ? "categoria" : slug;
-
-        var finalSlug = baseSlug;
-        var count = 1;
-        while (await _categoryService.SlugExistsAsync(finalSlug))
-        {
-            finalSlug = $"{baseSlug}-{count++}";
-        }
-
-        var dto = new CategoryDto
-        {
-            Name = trimmedName,
-            Slug = finalSlug,
-            ParentId = string.IsNullOrWhiteSpace(request.ParentId) ? null : request.ParentId.Trim(),
-            Description = request.Description?.Trim(),
-            Order = 99,
-            ShowInMenu = true,
-            IsActive = true
-        };
-
-        try
-        {
-            var created = await _categoryService.CreateAsync(dto);
-            _menuService.InvalidateMenu();
-
-            return Ok(new
-            {
-                success = true,
-                id = created.Id,
-                name = created.Name,
-                slug = created.Slug,
-                parentId = created.ParentId
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { success = false, message = ex.Message });
-        }
-    }
-}
-
-public class QuickCategoryRequest
-{
-    public string Name { get; set; } = string.Empty;
-    public string? ParentId { get; set; }
-    public string? Description { get; set; }
 }
 
 public class CategorySaveRequest

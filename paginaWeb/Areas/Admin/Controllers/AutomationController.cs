@@ -1,4 +1,3 @@
-using Aplication.DTOs;
 using Aplication.Interfaces;
 using Aplication.Services;
 using Domine.Entities;
@@ -155,36 +154,6 @@ public class AutomationController : Controller
 
         TempData["Success"] = exit ? "Configuración validada correctamente." : "Configuración guardada.";
         return exit ? RedirectToAction(nameof(Index)) : RedirectToAction(nameof(Configuracion));
-    }
-
-    [HttpPost("crear-categoria")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CrearCategoria(string name, string? parentId)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            TempData["Error"] = "El nombre de la categoría es obligatorio.";
-            return RedirectToAction(nameof(Configuracion));
-        }
-
-        try
-        {
-            await _categoryService.CreateAsync(new CategoryDto
-            {
-                Name = name.Trim(),
-                Slug = Aplication.Services.SlugGenerator.Slugify(name),
-                ParentId = parentId,
-                ShowInMenu = true,
-                IsActive = true
-            });
-            TempData["Success"] = "Categoría creada correctamente.";
-        }
-        catch (Exception ex)
-        {
-            TempData["Error"] = ex.Message;
-        }
-
-        return RedirectToAction(nameof(Configuracion));
     }
 
     [HttpPost("decision/{runId}/{decisionId}")]

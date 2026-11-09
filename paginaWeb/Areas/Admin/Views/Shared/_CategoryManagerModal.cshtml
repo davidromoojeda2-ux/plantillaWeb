@@ -172,27 +172,17 @@
         };
 
         var categories = [];
-        var editingChildren = false;
 
         function token() {
-            var input = modal.querySelector('input[name="__RequestVerificationToken"]');
-            return input ? input.value : '';
+            return window.cmsModals.token(modal);
         }
 
         function escapeHtml(text) {
-            if (text === null || text === undefined) return '';
-            return String(text)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+            return window.cmsModals.escapeHtml(text);
         }
 
         function toast(message, type) {
-            if (typeof window.showToast === 'function') {
-                window.showToast(message, type || 'success');
-            }
+            window.cmsModals.toast(message, type);
         }
 
         function showAlert(message, type) {
@@ -389,11 +379,10 @@
 
             showAlert('');
             els.editor.classList.remove('hidden');
-            editingChildren = false;
 
             if (category) {
                 var childCount = categories.filter(function (c) { return c.parentId === category.id; }).length;
-                editingChildren = childCount > 0;
+                var hasChildren = childCount > 0;
 
                 if (els.id) els.id.value = category.id;
                 if (els.name) els.name.value = category.name || '';
@@ -407,10 +396,10 @@
                     els.editorTitle.textContent = category.parentId ? 'Editar subcategoría' : 'Editar categoría principal';
                 }
 
-                if (els.parent) els.parent.disabled = editingChildren;
+                if (els.parent) els.parent.disabled = hasChildren;
                 if (els.parentHint) {
-                    els.parentHint.classList.toggle('hidden', !editingChildren);
-                    els.parentHint.textContent = editingChildren
+                    els.parentHint.classList.toggle('hidden', !hasChildren);
+                    els.parentHint.textContent = hasChildren
                         ? 'No puedes convertir en subcategoría una categoría que ya tiene subcategorías.'
                         : '';
                 }
@@ -598,8 +587,7 @@
         window.categoryManager = {
             open: open,
             close: close,
-            refresh: loadCategories,
-            getCategories: function () { return categories.slice(); }
+            refresh: loadCategories
         };
 
         // Cualquier botón con data-open-category-manager abre el modal.

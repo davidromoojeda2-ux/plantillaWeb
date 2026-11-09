@@ -1,3 +1,4 @@
+using Aplication.DTOs;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
@@ -34,15 +35,8 @@ public class ImagenesController : Controller
         const int pageSize = 24;
         var (images, totalCount) = await _imageService.GetPagedAsync(page, pageSize, search, storage, articleId);
         var articles = await _articleService.GetAllAdminAsync(1, 100);
-        var articlesDict = articles.ToDictionary(a => a.Id, a => a.Title);
 
-        foreach (var img in images)
-        {
-            if (!string.IsNullOrEmpty(img.ArticleId) && articlesDict.TryGetValue(img.ArticleId, out var title))
-            {
-                img.ArticleTitle = title;
-            }
-        }
+        ApplyArticleUsage(images, articles);
 
         var storageStatus = await _imageService.GetStorageStatusAsync();
 
@@ -66,20 +60,9 @@ public class ImagenesController : Controller
     /// Catálogo JSON consumido por el gestor de imágenes (modal reutilizable).
     /// </summary>
     [HttpGet("listado")]
-    public async Task<IActionResult> List(string? search = null, string? currentArticleId = null)
+    public async Task<IActionResult> List(string? currentArticleId = null)
     {
         var images = await GetImagesWithArticleUsageAsync();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var term = search.Trim();
-            images = images
-                .Where(img =>
-                    img.OriginalFileName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                    (img.Alt ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                    (img.ArticleTitle ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
 
         var result = images.Select(img => new
         {
@@ -135,26 +118,7 @@ public class ImagenesController : Controller
 
         try
         {
-            var fileName = !string.IsNullOrWhiteSpace(customName) ? customName.Trim() : file.FileName.Trim();
-
-            // Si el nombre personalizado no tiene extensión, conservar la del archivo subido
-            if (!Path.HasExtension(fileName) && Path.HasExtension(file.FileName))
-            {
-                fileName += Path.GetExtension(file.FileName);
-            }
-
-            using var stream = file.OpenReadStream();
-            var metadata = await _imageService.ProcessAndStoreDtoAsync(
-                file.FileName,
-                stream,
-                alt ?? Path.GetFileNameWithoutExtension(fileName),
-                articleId,
-                fileName);
-
-            if (!string.IsNullOrEmpty(articleId))
-            {
-                await LinkImageToArticleAsync(articleId, metadata.Id, ImageMapper.GetBestUrl(metadata), setAsCover);
-            }
+            var metadata = await ProcessUploadAsync(file, customName, alt, articleId, setAsCover);
 
             var storageProviderName = metadata.Storage.Equals("r2", StringComparison.OrdinalIgnoreCase) ||
                                       metadata.Storage.Equals("s3", StringComparison.OrdinalIgnoreCase)
@@ -215,27 +179,8 @@ public class ImagenesController : Controller
 
         try
         {
-            var fileName = !string.IsNullOrWhiteSpace(customName) ? customName.Trim() : file.FileName.Trim();
-
-            if (!Path.HasExtension(fileName) && Path.HasExtension(file.FileName))
-            {
-                fileName += Path.GetExtension(file.FileName);
-            }
-
-            using var stream = file.OpenReadStream();
-            var metadata = await _imageService.ProcessAndStoreDtoAsync(
-                file.FileName,
-                stream,
-                alt ?? Path.GetFileNameWithoutExtension(fileName),
-                articleId,
-                fileName);
-
+            var metadata = await ProcessUploadAsync(file, customName, alt, articleId, setAsCover);
             var url = ImageMapper.GetBestUrl(metadata) ?? metadata.Variants.FirstOrDefault()?.PublicUrl;
-
-            if (!string.IsNullOrEmpty(articleId))
-            {
-                await LinkImageToArticleAsync(articleId, metadata.Id, url, setAsCover);
-            }
 
             return Json(new
             {
@@ -338,48 +283,90 @@ public class ImagenesController : Controller
         }
     }
 
-    private async Task<List<Aplication.DTOs.ImageMetadataResponseDto>> GetImagesWithArticleUsageAsync()
+    private async Task<ImageMetadataResponseDto> ProcessUploadAsync(
+        IFormFile file,
+        string? customName,
+        string? alt,
+        string? articleId,
+        bool setAsCover)
+    {
+        var fileName = !string.IsNullOrWhiteSpace(customName) ? customName.Trim() : file.FileName.Trim();
+
+        // Si el nombre personalizado no tiene extensión, conservar la del archivo subido.
+        if (!Path.HasExtension(fileName) && Path.HasExtension(file.FileName))
+        {
+            fileName += Path.GetExtension(file.FileName);
+        }
+
+        using var stream = file.OpenReadStream();
+        var metadata = await _imageService.ProcessAndStoreDtoAsync(
+            file.FileName,
+            stream,
+            alt ?? Path.GetFileNameWithoutExtension(fileName),
+            articleId,
+            fileName);
+
+        if (!string.IsNullOrEmpty(articleId))
+        {
+            var url = ImageMapper.GetBestUrl(metadata) ?? metadata.Variants.FirstOrDefault()?.PublicUrl;
+            await LinkImageToArticleAsync(articleId, metadata.Id, url, setAsCover);
+        }
+
+        return metadata;
+    }
+
+    private async Task<List<ImageMetadataResponseDto>> GetImagesWithArticleUsageAsync()
     {
         var images = await _imageService.GetAllAsync(0, 500);
         var allArticles = await _articleService.GetAllAdminAsync(1, 500);
 
-        var usageMap = new Dictionary<string, (string ArticleId, string ArticleTitle)>();
+        ApplyArticleUsage(images, allArticles);
+        return images;
+    }
 
-        foreach (var art in allArticles)
+    /// <summary>
+    /// Completa cada imagen con el artículo que la usa, ya sea como portada o en su galería.
+    /// </summary>
+    private static void ApplyArticleUsage(
+        IReadOnlyList<ImageMetadataResponseDto> images,
+        IReadOnlyList<ArticleResponseDto> articles)
+    {
+        var usageMap = new Dictionary<string, (string ArticleId, string ArticleTitle)>();
+        var articlesDict = new Dictionary<string, string>();
+
+        foreach (var article in articles)
         {
-            if (!string.IsNullOrEmpty(art.CoverImageId) && !usageMap.ContainsKey(art.CoverImageId))
+            articlesDict[article.Id] = article.Title;
+
+            if (!string.IsNullOrEmpty(article.CoverImageId))
             {
-                usageMap[art.CoverImageId] = (art.Id, art.Title);
+                usageMap.TryAdd(article.CoverImageId, (article.Id, article.Title));
             }
 
-            if (art.ImageIds is not null)
+            if (article.ImageIds is null) continue;
+
+            foreach (var imageId in article.ImageIds)
             {
-                foreach (var imgId in art.ImageIds)
+                if (!string.IsNullOrEmpty(imageId))
                 {
-                    if (!string.IsNullOrEmpty(imgId) && !usageMap.ContainsKey(imgId))
-                    {
-                        usageMap[imgId] = (art.Id, art.Title);
-                    }
+                    usageMap.TryAdd(imageId, (article.Id, article.Title));
                 }
             }
         }
 
-        var articlesDict = allArticles.ToDictionary(a => a.Id, a => a.Title);
-
-        foreach (var img in images)
+        foreach (var image in images)
         {
-            if (usageMap.TryGetValue(img.Id, out var usage))
+            if (usageMap.TryGetValue(image.Id, out var usage))
             {
-                img.ArticleId = usage.ArticleId;
-                img.ArticleTitle = usage.ArticleTitle;
+                image.ArticleId = usage.ArticleId;
+                image.ArticleTitle = usage.ArticleTitle;
             }
-            else if (!string.IsNullOrEmpty(img.ArticleId) && articlesDict.TryGetValue(img.ArticleId, out var title))
+            else if (!string.IsNullOrEmpty(image.ArticleId) &&
+                     articlesDict.TryGetValue(image.ArticleId, out var title))
             {
-                img.ArticleTitle = title;
+                image.ArticleTitle = title;
             }
         }
-
-        return images;
     }
 
     private static string ResolveImageErrorMessage(Exception ex) => ex switch
