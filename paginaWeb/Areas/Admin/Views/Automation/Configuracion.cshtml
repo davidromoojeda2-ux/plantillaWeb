@@ -15,7 +15,6 @@
                 wordTolerancePercent = s.WordTolerancePercent
             };
         }));
-    var rootCategories = Model.Categories.Where(c => c.ParentId is null).OrderBy(c => c.Order).ToList();
 }
 
 <div class="space-y-6 max-w-5xl">
@@ -423,26 +422,29 @@
 
                                                                                                         <!-- ─── 6. Categorías habilitadas ──────────────────────────────────── -->
                                                                                                         <section class="bg-white rounded-2xl border border-slate-200/80 p-6">
-                                                                                                            <h3 class="font-bold text-slate-800 text-lg mb-4">Categorías habilitadas</h3>
-                                                                                                            @if (!Model.Categories.Any())
-                                                                                                            {
-                                                                                                                <p class="text-xs text-slate-400">No hay categorías configuradas. Crea una abajo.</p>
-                                                                                                            }
-                                                                                                            else
-                                                                                                            {
-                                                                                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                                                                    @foreach (var cat in Model.Categories.OrderBy(c => c.Order))
-                                                                                                                    {
-                                                                                                                        var isSub = cat.ParentId is not null;
-                                                                                                                        <label class="flex items-center gap-2 text-sm text-slate-700 @(isSub ? "pl-4" : "")">
-                                                                                                                            <input type="checkbox" name="CategoryIds" value="@cat.Id"
-                                                                                                                                   checked="@Model.CategoryIds.Contains(cat.Id)"
-                                                                                                                                   class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
-                                                                                                                            @cat.Name
-                                                                                                                        </label>
-                                                                                                                    }
-                                                                                                                </div>
-                                                                                                            }
+                                                                                                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                                                                                                <h3 class="font-bold text-slate-800 text-lg">Categorías habilitadas</h3>
+                                                                                                                <button type="button" data-open-category-manager
+                                                                                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#003F88] font-bold text-[11px] transition">
+                                                                                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                                                                                                    </svg>
+                                                                                                                    Gestionar categorías
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                            <p id="automationCategoryEmpty" class="text-xs text-slate-400 @(Model.Categories.Any() ? "hidden" : "")">No hay categorías configuradas. Usa «Gestionar categorías» para crear una.</p>
+                                                                                                            <div id="automationCategoryChecklist" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                                                                @foreach (var cat in Model.Categories.OrderBy(c => c.Order))
+                                                                                                                {
+                                                                                                                    var isSub = cat.ParentId is not null;
+                                                                                                                    <label class="flex items-center gap-2 text-sm text-slate-700 @(isSub ? "pl-4" : "")">
+                                                                                                                        <input type="checkbox" name="CategoryIds" value="@cat.Id"
+                                                                                                                               checked="@Model.CategoryIds.Contains(cat.Id)"
+                                                                                                                               class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />
+                                                                                                                        @cat.Name
+                                                                                                                    </label>
+                                                                                                                }
+                                                                                                            </div>
                                                                                                         </section>
 
                                                                                                         <div class="flex flex-wrap items-center gap-3">
@@ -453,37 +455,23 @@
                                                                                                         </div>
                                                                                                     </form>
 
-                                                                                                    <!-- ─── Crear categoría / subcategoría (inline) ───────────────────────── -->
-                                                                                                    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
-                                                                                                        <h3 class="font-bold text-slate-800 text-lg mb-4">Crear categoría o subcategoría</h3>
-                                                                                                        <form method="post" asp-area="Admin" asp-controller="Automation" asp-action="CrearCategoria"
-                                                                                                              class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                                                                                                            @Html.AntiForgeryToken()
-                                                                                                            <div>
-                                                                                                                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nombre</label>
-                                                                                                                <input name="name" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required />
-                                                                                                            </div>
-                                                                                                            <div>
-                                                                                                                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Categoría padre
-                                                                                                                    (opcional)</label>
-                                                                                                                    <select name="parentId" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
-                                                                                                                        <option value="">— Sin padre (categoría raíz) —</option>
-                                                                                                                        @foreach (var c in rootCategories)
-                                                                                                                        {
-                                                                                                                            <option value="@c.Id">@c.Name</option>
-                                                                                                                        }
-                                                                                                                    </select>
-                                                                                                                </div>
-                                                                                                                <button type="submit"
-                                                                                                                        class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition-all">
-                                                                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                                                                                                    </svg>
-                                                                                                                    Categoría
-                                                                                                                </button>
-                                                                                                            </form>
-                                                                                                        </div>
-                                                                                                    </div>
+                <!-- ─── Gestión de categorías (modal reutilizable) ────────────────────── -->
+                <div class="bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">Gestión de categorías</h3>
+                        <p class="text-xs text-slate-400 mt-1">Crea, renombra, reorganiza o elimina categorías principales y subcategorías desde un único modal.</p>
+                    </div>
+                    <button type="button" data-open-category-manager
+                            class="self-start sm:self-center inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition-all flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Gestionar categorías
+                    </button>
+                </div>
+            </div>
+
+            <partial name="_CategoryManagerModal" />
 
                                                                                                     @section Scripts {
                                                                                                         <script>
@@ -576,6 +564,43 @@
                                                                                                                         }
                                                                                                                         if (view) view.classList.add('hidden');
                                                                                                                     });
+                                                                                                                });
+
+                                                                                                                // Refrescar las categorías habilitadas cuando cambian desde el modal.
+                                                                                                                window.addEventListener('category-manager:changed', function (event) {
+                                                                                                                    var checklist = document.getElementById('automationCategoryChecklist');
+                                                                                                                    var emptyMessage = document.getElementById('automationCategoryEmpty');
+                                                                                                                    if (!checklist) return;
+
+                                                                                                                    var categories = Array.isArray(event.detail && event.detail.categories)
+                                                                                                                        ? event.detail.categories
+                                                                                                                        : [];
+
+                                                                                                                    var checkedIds = new Set();
+                                                                                                                    checklist.querySelectorAll('input[name="CategoryIds"]:checked').forEach(function (input) {
+                                                                                                                        checkedIds.add(input.value);
+                                                                                                                    });
+
+                                                                                                                    categories.sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+
+                                                                                                                    checklist.innerHTML = '';
+                                                                                                                    categories.forEach(function (cat) {
+                                                                                                                        var label = document.createElement('label');
+                                                                                                                        label.className = 'flex items-center gap-2 text-sm text-slate-700' + (cat.parentId ? ' pl-4' : '');
+
+                                                                                                                        var input = document.createElement('input');
+                                                                                                                        input.type = 'checkbox';
+                                                                                                                        input.name = 'CategoryIds';
+                                                                                                                        input.value = cat.id;
+                                                                                                                        input.checked = checkedIds.has(cat.id);
+                                                                                                                        input.className = 'h-4 w-4 rounded border-slate-300 text-[#00509D]';
+
+                                                                                                                        label.appendChild(input);
+                                                                                                                        label.appendChild(document.createTextNode(cat.name));
+                                                                                                                        checklist.appendChild(label);
+                                                                                                                    });
+
+                                                                                                                    if (emptyMessage) emptyMessage.classList.toggle('hidden', categories.length > 0);
                                                                                                                 });
                                                                                                             })();
                                                                                                         </script>

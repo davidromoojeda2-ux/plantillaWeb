@@ -138,17 +138,10 @@ public class CategoriasController : Controller
         try
         {
             var all = await _categoryService.GetAllAsync();
-            var subs = all.Where(s => s.ParentId == id).ToList();
-            foreach (var sub in subs)
-            {
-                await _categoryService.DeleteAsync(sub.Id);
-            }
+            var childCount = await DeleteCategoryWithChildrenAsync(id, all);
 
-            await _categoryService.DeleteAsync(id);
-            _menuService.InvalidateMenu();
-
-            TempData["Success"] = subs.Count > 0
-                ? $"Categoría principal y sus {subs.Count} subcategorías asociadas fueron eliminadas con éxito."
+            TempData["Success"] = childCount > 0
+                ? $"Categoría principal y sus {childCount} subcategorías asociadas fueron eliminadas con éxito."
                 : "Categoría eliminada con éxito.";
             return RedirectToAction(nameof(Index));
         }
@@ -157,6 +150,49 @@ public class CategoriasController : Controller
             return NotFound();
         }
     }
+
+    /// <summary>
+    /// Elimina una categoría y sus subcategorías, e invalida la caché del menú.
+    /// </summary>
+    private async Task<int> DeleteCategoryWithChildrenAsync(string id, IReadOnlyList<CategoryResponseDto> all)
+    {
+        var children = all.Where(c => c.ParentId == id).ToList();
+        foreach (var child in children)
+        {
+            await _categoryService.DeleteAsync(child.Id);
+        }
+
+        await _categoryService.DeleteAsync(id);
+        _menuService.InvalidateMenu();
+        return children.Count;
+    }
+
+    private async Task<string> GenerateUniqueSlugAsync(string name, string? excludeId = null)
+    {
+        var baseSlug = SlugGenerator.Slugify(name);
+        if (string.IsNullOrWhiteSpace(baseSlug)) baseSlug = "categoria";
+
+        var slug = baseSlug;
+        var count = 1;
+        while (await _categoryService.SlugExistsAsync(slug, excludeId))
+        {
+            slug = $"{baseSlug}-{count++}";
+        }
+
+        return slug;
+    }
+
+    private static object ToJson(CategoryResponseDto category) => new
+    {
+        id = category.Id,
+        parentId = category.ParentId,
+        name = category.Name,
+        slug = category.Slug,
+        description = category.Description,
+        order = category.Order,
+        showInMenu = category.ShowInMenu,
+        isActive = category.IsActive
+    };
 
     private async Task<List<CategoryResponseDto>> GetParentsAsync(string? excludeId = null)
     {
@@ -167,53 +203,124 @@ public class CategoriasController : Controller
             .ToList();
     }
 
-    [HttpPost("crear-rapida")]
+    /// <summary>
+    /// Árbol completo de categorías consumido por el modal reutilizable de gestión.
+    /// </summary>
+    [HttpGet("listado")]
+    public async Task<IActionResult> List()
+    {
+        var categories = await _categoryService.GetAllAsync();
+        return Json(categories.Select(ToJson));
+    }
+
+    /// <summary>
+    /// Crea o actualiza una categoría desde el modal de gestión.
+    /// </summary>
+    [HttpPost("guardar")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> QuickCreate([FromBody] QuickCategoryRequest request)
+    public async Task<IActionResult> Save([FromBody] CategorySaveRequest request)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.Name))
-            return BadRequest(new { success = false, message = "El nombre de la categoría es obligatorio." });
-
-        var trimmedName = request.Name.Trim();
-        var slug = trimmedName.ToLowerInvariant()
-            .Normalize(System.Text.NormalizationForm.FormD)
-            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
-            .Aggregate(new System.Text.StringBuilder(), (sb, c) => sb.Append(c))
-            .ToString();
-        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9]+", "-").Trim('-');
-        var baseSlug = string.IsNullOrEmpty(slug) ? "categoria" : slug;
-
-        var finalSlug = baseSlug;
-        var count = 1;
-        while (await _categoryService.SlugExistsAsync(finalSlug))
         {
-            finalSlug = $"{baseSlug}-{count++}";
+            return BadRequest(new { success = false, message = "El nombre de la categoría es obligatorio." });
         }
 
-        var dto = new CategoryDto
-        {
-            Name = trimmedName,
-            Slug = finalSlug,
-            ParentId = string.IsNullOrWhiteSpace(request.ParentId) ? null : request.ParentId.Trim(),
-            Description = request.Description?.Trim(),
-            Order = 99,
-            ShowInMenu = true,
-            IsActive = true
-        };
+        var name = request.Name.Trim();
+        var parentId = string.IsNullOrWhiteSpace(request.ParentId) ? null : request.ParentId.Trim();
 
         try
         {
-            var created = await _categoryService.CreateAsync(dto);
-            _menuService.InvalidateMenu();
-
-            return Ok(new
+            if (string.IsNullOrWhiteSpace(request.Id))
             {
-                success = true,
-                id = created.Id,
-                name = created.Name,
-                slug = created.Slug,
-                parentId = created.ParentId
+                var slug = await GenerateUniqueSlugAsync(name);
+                var created = await _categoryService.CreateAsync(new CategoryDto
+                {
+                    Name = name,
+                    Slug = slug,
+                    ParentId = parentId,
+                    Description = request.Description?.Trim(),
+                    Order = request.Order,
+                    ShowInMenu = request.ShowInMenu,
+                    IsActive = request.IsActive
+                });
+
+                _menuService.InvalidateMenu();
+                return Ok(new { success = true, category = ToJson(created) });
+            }
+
+            var all = await _categoryService.GetAllAsync();
+            var existing = all.FirstOrDefault(c => c.Id == request.Id);
+            if (existing is null)
+            {
+                return NotFound(new { success = false, message = "La categoría no existe." });
+            }
+
+            if (!string.IsNullOrEmpty(parentId))
+            {
+                if (string.Equals(parentId, request.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new { success = false, message = "Una categoría no puede ser padre de sí misma." });
+                }
+
+                if (all.Any(c => c.ParentId == request.Id))
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "No puedes convertir en subcategoría una categoría que ya tiene subcategorías."
+                    });
+                }
+            }
+
+            var slugUpdated = await GenerateUniqueSlugAsync(name, request.Id);
+            var updated = await _categoryService.UpdateAsync(request.Id, new CategoryDto
+            {
+                Name = name,
+                Slug = slugUpdated,
+                ParentId = parentId,
+                Description = request.Description?.Trim(),
+                Order = request.Order,
+                ShowInMenu = request.ShowInMenu,
+                IsActive = request.IsActive
             });
+
+            _menuService.InvalidateMenu();
+            return Ok(new { success = true, category = ToJson(updated) });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Elimina una categoría (y opcionalmente sus subcategorías) desde el modal de gestión.
+    /// </summary>
+    [HttpPost("eliminar-ajax/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAjax(string id, bool deleteChildren = true)
+    {
+        try
+        {
+            var all = await _categoryService.GetAllAsync();
+            var category = all.FirstOrDefault(c => c.Id == id);
+            if (category is null)
+            {
+                return NotFound(new { success = false, message = "La categoría no existe." });
+            }
+
+            var childrenCount = all.Count(c => c.ParentId == id);
+            if (childrenCount > 0 && !deleteChildren)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "La categoría tiene subcategorías asociadas. Elimínalas primero."
+                });
+            }
+
+            var deletedChildren = await DeleteCategoryWithChildrenAsync(id, all);
+            return Ok(new { success = true, deletedChildren });
         }
         catch (Exception ex)
         {
@@ -222,9 +329,13 @@ public class CategoriasController : Controller
     }
 }
 
-public class QuickCategoryRequest
+public class CategorySaveRequest
 {
+    public string? Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? ParentId { get; set; }
     public string? Description { get; set; }
+    public int Order { get; set; }
+    public bool ShowInMenu { get; set; } = true;
+    public bool IsActive { get; set; } = true;
 }

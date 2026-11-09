@@ -221,22 +221,19 @@
 
             <!-- Categoría y Taxonomía -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
                     <h4 class="font-bold text-slate-800 text-sm">Taxonomía</h4>
-                    <span class="text-[11px] text-slate-400 font-medium">Clasificación</span>
+                    <button type="button" data-open-category-manager
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#003F88] font-bold text-[11px] transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        Gestionar categorías
+                    </button>
                 </div>
 
                 <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <label asp-for="CategoryId" class="block text-xs font-semibold text-slate-600">Categoría Principal</label>
-                        <button type="button" id="btnOpenNewCategoryModal"
-                                class="text-[11px] font-bold text-[#00509D] hover:underline flex items-center gap-1 transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                            + Nueva Categoría
-                        </button>
-                    </div>
+                    <label asp-for="CategoryId" class="block text-xs font-semibold text-slate-600 mb-1">Categoría Principal</label>
                     <select asp-for="CategoryId" id="categorySelect"
                             class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D]/30 focus:border-[#00509D] transition">
                         <option value="">-- Seleccionar Categoría --</option>
@@ -248,16 +245,7 @@
                 </div>
 
                 <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <label asp-for="SubcategoryId" class="block text-xs font-semibold text-slate-600">Subcategoría (Opcional)</label>
-                        <button type="button" id="btnOpenNewSubcategoryModal"
-                                class="text-[11px] font-bold text-[#00509D] hover:underline flex items-center gap-1 transition">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                            + Nueva Subcategoría
-                        </button>
-                    </div>
+                    <label asp-for="SubcategoryId" class="block text-xs font-semibold text-slate-600 mb-1">Subcategoría (Opcional)</label>
                     <select asp-for="SubcategoryId" id="subcategorySelect"
                             class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D]/30 focus:border-[#00509D] transition">
                         <option value="">-- Ninguna --</option>
@@ -342,17 +330,6 @@
                     <span class="text-[11px] text-slate-400 mt-1 block">Puedes escribir o modificar directamente la ruta de la portada.</span>
                 </div>
 
-                <!-- Subir / Cambiar archivo -->
-                <div id="coverUploadBox"
-                     class="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:bg-slate-50 hover:border-[#00509D]/40 transition cursor-pointer">
-                    <svg class="w-7 h-7 text-slate-400 mx-auto mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span class="text-xs font-semibold text-[#00509D]">@(isEdit ? "Subir o cambiar archivo local" : "Subir archivo local")</span>
-                    <p class="text-[10px] text-slate-400 mt-0.5">Se optimizará a WebP automáticamente</p>
-                    <input type="file" id="coverFileInput" accept="image/*" class="hidden" />
-                </div>
-
                 @if (isEdit && Model.LinkedImages.Any())
                 {
                     <div class="pt-2 border-t border-slate-100">
@@ -372,7 +349,7 @@
                 }
 
                 <div class="pt-2 border-t border-slate-100 space-y-2">
-                    <label class="block text-[11px] font-semibold text-slate-600">O seleccionar de la Biblioteca</label>
+                    <label class="block text-[11px] font-semibold text-slate-600">Gestión de la Biblioteca de Imágenes</label>
                     <button type="button" id="btnOpenMediaLibraryModal" onclick="window.openMediaLibraryModal(event)"
                             class="w-full py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#00296B] font-bold text-xs flex items-center justify-center gap-2 transition shadow-2xs group">
                         <svg class="w-4 h-4 text-[#00509D] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,6 +357,9 @@
                         </svg>
                         <span>Explorar Biblioteca de Imágenes</span>
                     </button>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">
+                        Desde este modal puedes cargar archivos locales, renombrar, editar el texto alt, eliminar y elegir la portada.
+                    </p>
 
                     <!-- Aviso no bloqueante si la portada seleccionada está en uso por otro artículo -->
                     <div id="coverDuplicityNotice" class="hidden p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-start gap-2 shadow-2xs">
@@ -417,5 +397,5 @@
     </form>
 }
 
-<partial name="_QuickCategoryModal" />
-<partial name="_MediaLibraryModal" model="Model" />
+<partial name="_CategoryManagerModal" />
+<partial name="_ImageManagerModal" model="@(new ImageManagerModalViewModel { CurrentArticleId = Model.Id })" />
