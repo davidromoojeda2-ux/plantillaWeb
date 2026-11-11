@@ -43,8 +43,8 @@ ImageMapper.GetBestUrl(coverImage);
     <!-- ─── Cabecera Editorial ──────────────────────────────────────────────── -->
     <header class="max-w-5xl mx-auto space-y-6 sm:space-y-8 text-center">
         <!-- Breadcrumbs y Navegabilidad Rápida -->
-        <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-medium text-slate-500">
-            <nav aria-label="Ruta de navegación" class="flex items-center gap-1.5 flex-wrap">
+        <div class="flex flex-col gap-3 text-xs font-medium text-slate-500 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+            <nav aria-label="Ruta de navegación" class="flex flex-wrap items-center justify-center gap-1.5 lg:justify-start">
                 <a asp-controller="Home" asp-action="Index"
                    class="inline-flex items-center gap-1 hover:text-[#00296B] transition-colors">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,37 +77,38 @@ ImageMapper.GetBestUrl(coverImage);
 
             @if (previousArticle != null || nextArticle != null)
             {
-                <div class="flex items-center gap-1 ml-auto p-1 rounded-full bg-white border border-slate-200 shadow-xs">
+                <nav aria-label="Navegación rápida entre artículos"
+                     class="flex w-full items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-xs lg:ml-auto lg:w-auto lg:rounded-full">
                     @if (previousArticle != null)
                     {
                         <a id="nav-prev-quick" asp-controller="Home" asp-action="Articulo"
                            asp-route-slug="@previousArticle.Slug" title="Artículo anterior: @previousArticle.Title"
-                           aria-label="Artículo anterior: @previousArticle.Title"
-                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-600 hover:bg-[#00296B] hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-[#FDC500] transition-all text-xs font-bold group">
+                           aria-label="Artículo anterior: @previousArticle.Title" rel="prev"
+                           class="group inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 transition-all hover:bg-[#00296B] hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FDC500] lg:flex-none lg:rounded-full lg:py-1.5">
                             <svg class="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" fill="none"
                                  stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span class="hidden sm:inline">Anterior</span>
+                            <span>Anterior</span>
                         </a>
                     }
                     @if (previousArticle != null && nextArticle != null)
                     {
-                        <span class="w-px h-4 bg-slate-200" aria-hidden="true"></span>
+                        <span class="w-px h-4 shrink-0 bg-slate-200" aria-hidden="true"></span>
                     }
                     @if (nextArticle != null)
                     {
                         <a id="nav-next-quick" asp-controller="Home" asp-action="Articulo" asp-route-slug="@nextArticle.Slug"
-                           title="Artículo siguiente: @nextArticle.Title" aria-label="Artículo siguiente: @nextArticle.Title"
-                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-600 hover:bg-[#00296B] hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-[#FDC500] transition-all text-xs font-bold group">
-                            <span class="hidden sm:inline">Siguiente</span>
+                           title="Artículo siguiente: @nextArticle.Title" aria-label="Artículo siguiente: @nextArticle.Title" rel="next"
+                           class="group inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 transition-all hover:bg-[#00296B] hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FDC500] lg:flex-none lg:rounded-full lg:py-1.5">
+                            <span>Siguiente</span>
                             <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none"
                                  stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                         </a>
                     }
-                </div>
+                </nav>
             }
         </div>
 

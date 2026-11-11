@@ -249,7 +249,9 @@
     function initKeyboardNav() {
         document.addEventListener('keydown', function (e) {
             var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
-            if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) {
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+                e.ctrlKey || e.metaKey || e.altKey ||
+                (e.target && e.target.isContentEditable)) {
                 return;
             }
             if (e.key === 'ArrowLeft') {
