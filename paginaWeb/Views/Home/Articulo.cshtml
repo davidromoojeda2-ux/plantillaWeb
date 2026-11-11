@@ -189,7 +189,7 @@ ImageMapper.GetBestUrl(coverImage);
                 <img src="@coverUrl" srcset="@coverSrcSet"
                      sizes="(min-width: 1024px) 1200px, 100vw"
                      alt="@(!string.IsNullOrWhiteSpace(coverImage?.Alt) ? coverImage.Alt : Model.Title)"
-                     class="w-full h-[320px] min-[480px]:h-[380px] sm:h-[480px] md:h-[560px] lg:h-[660px] xl:h-[740px] 2xl:h-[800px] object-cover" />
+                     class="block h-auto w-full" />
             </div>
         </figure>
     }

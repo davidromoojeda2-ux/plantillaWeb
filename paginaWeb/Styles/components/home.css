@@ -1663,6 +1663,9 @@
 
     @media (max-width: 639.98px) {
         .entries-panel--featured .entries-list {
+            /* Filas de igual altura: todas las tarjetas comparten la altura de la más alta */
+            display: grid;
+            grid-auto-rows: 1fr;
             gap: 1rem;
         }
 
