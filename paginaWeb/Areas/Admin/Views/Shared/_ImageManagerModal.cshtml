@@ -51,42 +51,16 @@
                 <button type="button" data-image-filter="used" class="image-manager-tab px-3 py-1.5 rounded-lg font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
                     En artículos (<span id="imageManagerCountUsed">0</span>)
                 </button>
+                <input type="file" id="imageManagerFileInput" accept="image/*" class="sr-only" tabindex="-1" />
                 <button type="button" id="imageManagerToggleUpload"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold transition shadow-2xs">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Subir imagen
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold transition shadow-2xs disabled:opacity-60 disabled:cursor-wait">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span id="imageManagerUploadLabel">Subir imagen</span>
                 </button>
             </div>
         </div>
 
-        <!-- Panel de carga -->
-        <div id="imageManagerUploadPanel" class="hidden p-4 border-b border-slate-200 bg-slate-50">
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                <div class="md:col-span-4">
-                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Archivo de imagen <span class="text-rose-500">*</span></label>
-                    <input type="file" id="imageManagerFileInput" accept="image/*"
-                           class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#003F88] hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl p-1 bg-white" />
-                </div>
-                <div class="md:col-span-4">
-                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Nombre del archivo</label>
-                    <input type="text" id="imageManagerCustomName" placeholder="Se completa al elegir el archivo..."
-                           class="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Texto alternativo</label>
-                    <input type="text" id="imageManagerAlt"
-                           class="w-full text-xs rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
-                </div>
-                <div class="md:col-span-1">
-                    <button type="button" id="imageManagerUploadBtn"
-                            class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white text-xs font-bold transition">
-                        <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    </button>
-                </div>
-            </div>
-            <p id="imageManagerUploadError" class="hidden mt-2 text-[11px] font-semibold text-rose-600"></p>
-            <p class="mt-2 text-[11px] text-slate-400">La imagen se optimizará a WebP automáticamente y quedará disponible en la biblioteca.</p>
-        </div>
+        <p id="imageManagerUploadError" class="hidden px-4 pb-2 text-[11px] font-semibold text-rose-600"></p>
 
         <!-- Galería -->
         <div class="flex-1 overflow-y-auto p-4 bg-slate-50/50 min-h-[280px]">
@@ -149,11 +123,8 @@
             countFree: document.getElementById('imageManagerCountFree'),
             countUsed: document.getElementById('imageManagerCountUsed'),
             toggleUpload: document.getElementById('imageManagerToggleUpload'),
-            uploadPanel: document.getElementById('imageManagerUploadPanel'),
+            uploadLabel: document.getElementById('imageManagerUploadLabel'),
             fileInput: document.getElementById('imageManagerFileInput'),
-            customName: document.getElementById('imageManagerCustomName'),
-            alt: document.getElementById('imageManagerAlt'),
-            uploadBtn: document.getElementById('imageManagerUploadBtn'),
             uploadError: document.getElementById('imageManagerUploadError'),
             noticeBox: document.getElementById('imageManagerNoticeBox'),
             noticeTitle: document.getElementById('imageManagerNoticeTitle'),
@@ -173,6 +144,11 @@
         var filter = 'all';
         var inlineCallback = null;
         var onSelectCallback = null;
+        var autoSelectLinked = false;
+        var pendingInitialSelection = false;
+        var uploading = false;
+        var currentCoverId = '';
+        var currentCoverUrl = '';
 
         function token() {
             return window.cmsModals.token(modal);
@@ -211,6 +187,15 @@
                 return (img.fileName || '').toLowerCase().indexOf(term) !== -1 ||
                     (img.alt || '').toLowerCase().indexOf(term) !== -1 ||
                     (img.usedInArticleTitle || '').toLowerCase().indexOf(term) !== -1;
+            });
+        }
+
+        function setFilter(name) {
+            filter = name || 'all';
+            document.querySelectorAll('.image-manager-tab').forEach(function (tab) {
+                var isActive = tab.getAttribute('data-image-filter') === filter;
+                tab.className = 'image-manager-tab px-3 py-1.5 rounded-lg font-semibold transition ' +
+                    (isActive ? 'bg-[#00296B] text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700');
             });
         }
 
@@ -330,11 +315,41 @@
             if (els.noticeDesc) els.noticeDesc.textContent = 'Esta imagen no está en uso en otro artículo. Es una opción limpia para tu publicación.';
         }
 
-        function selectImage(img) {
+        function findLinkedImage() {
+            if (currentCoverId) {
+                var byId = images.find(function (img) { return img.id === currentCoverId; });
+                if (byId) return byId;
+            }
+
+            if (currentCoverUrl) {
+                var byUrl = images.find(function (img) {
+                    return img.url === currentCoverUrl || img.thumbnailUrl === currentCoverUrl;
+                });
+                if (byUrl) return byUrl;
+            }
+
+            return images.find(function (img) { return img.isCurrentArticle; }) || null;
+        }
+
+        function scrollToCard(img) {
+            requestAnimationFrame(function () {
+                if (!els.grid) return;
+                var cards = els.grid.querySelectorAll('[data-image-id]');
+                for (var i = 0; i < cards.length; i++) {
+                    if (cards[i].getAttribute('data-image-id') === img.id) {
+                        cards[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        break;
+                    }
+                }
+            });
+        }
+
+        function selectImage(img, scrollToSelected) {
             selected = img;
             if (els.confirm) els.confirm.disabled = !allowSelection;
             updateNotice();
             render();
+            if (scrollToSelected) scrollToCard(img);
         }
 
         function clearSelection() {
@@ -362,6 +377,18 @@
                     }
 
                     updateCounts();
+
+                    if (pendingInitialSelection) {
+                        pendingInitialSelection = false;
+                        if (autoSelectLinked) {
+                            var linked = findLinkedImage();
+                            if (linked) {
+                                selectImage(linked, true);
+                                return;
+                            }
+                        }
+                    }
+
                     render();
                 })
                 .catch(function (error) {
@@ -478,22 +505,33 @@
             });
         }
 
-        function submitUpload() {
-            var file = els.fileInput?.files && els.fileInput.files[0];
+        function setUploading(value) {
+            uploading = value;
+            if (els.toggleUpload) {
+                els.toggleUpload.disabled = value;
+                els.toggleUpload.setAttribute('aria-busy', value ? 'true' : 'false');
+            }
+            if (els.uploadLabel) {
+                els.uploadLabel.textContent = value ? 'Subiendo…' : 'Subir imagen';
+            }
+        }
+
+        function submitUpload(file) {
             if (!file) {
                 showUploadError('Selecciona un archivo de imagen.');
                 return;
             }
+            if (uploading) return;
 
+            var baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
             var formData = new FormData();
             formData.append('file', file);
-            formData.append('customName', els.customName?.value || file.name);
-            formData.append('alt', els.alt?.value || '');
+            formData.append('customName', file.name);
+            formData.append('alt', baseName.replace(/[-_]+/g, ' '));
             if (currentArticleId) formData.append('articleId', currentArticleId);
 
-            els.uploadBtn.disabled = true;
-            els.uploadBtn.classList.add('opacity-60', 'cursor-not-allowed');
             showUploadError('');
+            setUploading(true);
 
             fetch('/admin/imagenes/subir-ajax', {
                 method: 'POST',
@@ -507,12 +545,11 @@
                     }
 
                     if (els.fileInput) els.fileInput.value = '';
-                    if (els.customName) els.customName.value = '';
-                    if (els.alt) els.alt.value = '';
+                    setFilter('all');
 
                     return loadImages().then(function () {
                         var uploaded = images.find(function (img) { return img.id === result.data.image.id; });
-                        if (uploaded) selectImage(uploaded);
+                        if (uploaded) selectImage(uploaded, true);
                         toast('Imagen subida y optimizada correctamente.', 'success');
                     });
                 })
@@ -520,8 +557,7 @@
                     showUploadError(error.message || 'No se pudo subir la imagen.');
                 })
                 .finally(function () {
-                    els.uploadBtn.disabled = false;
-                    els.uploadBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                    setUploading(false);
                 });
         }
 
@@ -569,9 +605,21 @@
             allowSelection = options.allowSelection !== undefined
                 ? !!options.allowSelection
                 : modal.getAttribute('data-allow-selection') !== 'false';
+            autoSelectLinked = options.autoSelectLinked !== undefined
+                ? !!options.autoSelectLinked
+                : !inlineCallback;
 
             if (options.articleId !== undefined) currentArticleId = options.articleId || '';
             if (options.currentArticleId !== undefined) currentArticleId = options.currentArticleId || '';
+
+            var coverIdInput = document.getElementById('coverImageIdInput');
+            var coverUrlInput = document.getElementById('coverImageUrlInput');
+            currentCoverId = options.coverImageId !== undefined
+                ? (options.coverImageId || '')
+                : (coverIdInput ? coverIdInput.value : '');
+            currentCoverUrl = options.coverImageUrl !== undefined
+                ? (options.coverImageUrl || '')
+                : (coverUrlInput ? coverUrlInput.value : '');
 
             var confirmLabel = options.confirmLabel || defaultConfirmLabel;
             if (els.confirmLabel) els.confirmLabel.textContent = confirmLabel;
@@ -580,15 +628,11 @@
                 els.confirm.classList.toggle('hidden', !allowSelection);
             }
 
-            els.uploadPanel?.classList.add('hidden');
+            selected = null;
+            pendingInitialSelection = autoSelectLinked;
             showUploadError('');
             if (els.search) els.search.value = '';
-            filter = 'all';
-            document.querySelectorAll('.image-manager-tab').forEach(function (tab) {
-                var isActive = tab.getAttribute('data-image-filter') === 'all';
-                tab.className = 'image-manager-tab px-3 py-1.5 rounded-lg font-semibold transition ' +
-                    (isActive ? 'bg-[#00296B] text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700');
-            });
+            setFilter('all');
 
             modal.classList.remove('hidden');
             modal.style.display = 'flex';
@@ -608,21 +652,19 @@
         }
 
         els.toggleUpload?.addEventListener('click', function () {
-            els.uploadPanel?.classList.toggle('hidden');
+            if (uploading) return;
+            showUploadError('');
+            if (els.fileInput) {
+                els.fileInput.value = '';
+                els.fileInput.click();
+            }
         });
 
         els.fileInput?.addEventListener('change', function () {
             if (!this.files || !this.files[0]) return;
-            var file = this.files[0];
-            if (els.customName) els.customName.value = file.name;
-            if (els.alt && !els.alt.value.trim()) {
-                var base = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                els.alt.value = base.replace(/[-_]+/g, ' ');
-            }
-            showUploadError('');
+            submitUpload(this.files[0]);
         });
 
-        els.uploadBtn?.addEventListener('click', submitUpload);
         els.search?.addEventListener('input', render);
         els.close?.addEventListener('click', close);
         els.cancel?.addEventListener('click', close);
@@ -630,12 +672,7 @@
 
         document.querySelectorAll('.image-manager-tab').forEach(function (tab) {
             tab.addEventListener('click', function () {
-                filter = tab.getAttribute('data-image-filter') || 'all';
-                document.querySelectorAll('.image-manager-tab').forEach(function (other) {
-                    var isActive = other === tab;
-                    other.className = 'image-manager-tab px-3 py-1.5 rounded-lg font-semibold transition ' +
-                        (isActive ? 'bg-[#00296B] text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700');
-                });
+                setFilter(tab.getAttribute('data-image-filter') || 'all');
                 render();
             });
         });
@@ -660,7 +697,7 @@
         };
 
         window.openMediaLibraryModalForInline = function (callback) {
-            open({ inlineCallback: callback, confirmLabel: 'Insertar en el Artículo' });
+            open({ inlineCallback: callback, confirmLabel: 'Insertar en el Artículo', autoSelectLinked: false });
         };
 
         window.selectExistingCover = function (id, url) {
