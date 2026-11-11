@@ -22,13 +22,16 @@
         out var ri) ? ri : null;
                 var recUrl = !string.IsNullOrWhiteSpace(rec.CoverImageUrl) ? rec.CoverImageUrl :
         ImageMapper.GetBestUrl(recImage);
+                var recSrcSet = ImageMapper.GetSrcSetForUrl(recImage, recUrl);
                 <a asp-controller="Home" asp-action="Articulo" asp-route-slug="@rec.Slug"
                    class="group block bg-white rounded-xl border border-slate-200/90 shadow-xs hover:shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col">
                     <!-- Imagen -->
                     <div class="aspect-video bg-slate-100 overflow-hidden">
                         @if (!string.IsNullOrEmpty(recUrl))
                         {
-                            <img src="@recUrl" alt="@rec.Title"
+                            <img src="@recUrl" srcset="@recSrcSet"
+                                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                                 alt="@rec.Title"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         }
                         else

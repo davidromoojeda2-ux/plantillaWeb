@@ -9,6 +9,7 @@
     var coverImage = (ImageMetadataResponseDto?)ViewBag.CoverImage;
     var coverUrl = !string.IsNullOrWhiteSpace(Model.CoverImageUrl) ? Model.CoverImageUrl :
 ImageMapper.GetBestUrl(coverImage);
+    var coverSrcSet = ImageMapper.GetSrcSetForUrl(coverImage, coverUrl);
     var recommended = (List<ArticleResponseDto>?)ViewBag.RecommendedArticles ?? new();
     var recommendedImages = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.RecommendedImages ?? new();
     var previousArticle = (ArticleResponseDto?)ViewBag.PreviousArticle;
@@ -184,7 +185,9 @@ ImageMapper.GetBestUrl(coverImage);
         <figure class="relative w-full">
             <div class="absolute inset-x-6 -bottom-3 top-10 rounded-3xl bg-gradient-to-br from-[#00296B]/10 to-[#FDC500]/20 blur-2xl -z-10" aria-hidden="true"></div>
             <div class="overflow-hidden rounded-2xl sm:rounded-3xl shadow-2xl shadow-[#00296B]/15 ring-1 ring-slate-900/5 bg-slate-100">
-                <img src="@coverUrl" alt="@(!string.IsNullOrWhiteSpace(coverImage?.Alt) ? coverImage.Alt : Model.Title)"
+                <img src="@coverUrl" srcset="@coverSrcSet"
+                     sizes="(min-width: 1024px) 1200px, 100vw"
+                     alt="@(!string.IsNullOrWhiteSpace(coverImage?.Alt) ? coverImage.Alt : Model.Title)"
                      class="w-full h-[320px] min-[480px]:h-[380px] sm:h-[480px] md:h-[560px] lg:h-[660px] xl:h-[740px] 2xl:h-[800px] object-cover" />
             </div>
         </figure>

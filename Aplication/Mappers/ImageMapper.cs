@@ -49,6 +49,40 @@ public static class ImageMapper
               .FirstOrDefault()?.PublicUrl;
 
     /// <summary>
+    /// Construye el atributo <c>srcset</c> con todas las variantes WebP disponibles,
+    /// ordenadas de menor a mayor ancho. Devuelve <c>null</c> si no hay variantes utilizables.
+    /// </summary>
+    public static string? GetSrcSet(ImageMetadataResponseDto? image)
+    {
+        if (image?.Variants is null || image.Variants.Count == 0) return null;
+
+        var sources = image.Variants
+            .Where(v => !string.IsNullOrWhiteSpace(v.PublicUrl))
+            .OrderBy(v => v.Width)
+            .Select(v => $"{v.PublicUrl} {v.Width}w")
+            .ToList();
+
+        return sources.Count > 0 ? string.Join(", ", sources) : null;
+    }
+
+    /// <summary>
+    /// Construye el <c>srcset</c> solo cuando la URL preferida pertenece a una de las
+    /// variantes registradas (o no se ha indicado URL). Si la URL es externa, devuelve
+    /// <c>null</c> para no mezclar orígenes distintos en el mismo atributo.
+    /// </summary>
+    public static string? GetSrcSetForUrl(ImageMetadataResponseDto? image, string? preferredUrl)
+    {
+        if (image is null) return null;
+        if (string.IsNullOrWhiteSpace(preferredUrl)) return GetSrcSet(image);
+
+        var isRegisteredVariant = image.Variants.Any(v =>
+            !string.IsNullOrWhiteSpace(v.PublicUrl) &&
+            string.Equals(v.PublicUrl, preferredUrl, StringComparison.OrdinalIgnoreCase));
+
+        return isRegisteredVariant ? GetSrcSet(image) : null;
+    }
+
+    /// <summary>
     /// Resuelve la URL de una tarjeta priorizando la portada explícita del artículo
     /// y, si no existe, la variante optimizada de la imagen asociada.
     /// </summary>

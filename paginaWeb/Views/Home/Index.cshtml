@@ -71,7 +71,10 @@
                             <div class="card-h__media">
                                 @if (entry.Image.HasUrl)
                                 {
-                                    <img class="card-h__img" src="@entry.Image.Url" alt="@entry.Image.Alt"
+                                    <img class="card-h__img" src="@entry.Image.Url"
+                                         srcset="@entry.Image.SrcSet"
+                                         sizes="(min-width: 1024px) 22vw, 35vw"
+                                         alt="@entry.Image.Alt"
                                          width="@entry.Image.Width" height="@entry.Image.Height" loading="lazy"
                                          decoding="async" />
                                 }
@@ -255,7 +258,10 @@
                                     @if (!string.IsNullOrEmpty(Model.CategorySection.MainCard!.ImageUrl))
                                     {
                                         <div class="bento-card__bg" aria-hidden="true">
-                                            <img class="bento-card__bg-img" src="@Model.CategorySection.MainCard!.ImageUrl" alt=""
+                                            <img class="bento-card__bg-img" src="@Model.CategorySection.MainCard!.ImageUrl"
+                                                 srcset="@Model.CategorySection.MainCard!.ImageSrcSet"
+                                                 sizes="(min-width: 1024px) 50vw, 100vw"
+                                                 alt=""
                                                  loading="lazy" />
                                             <div class="bento-card__scrim"></div>
                                         </div>
@@ -311,7 +317,10 @@
                                     @if (!string.IsNullOrEmpty(Model.CategorySection.SubCardLeft!.ImageUrl))
                                     {
                                         <div class="bento-card__bg" aria-hidden="true">
-                                            <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardLeft!.ImageUrl" alt=""
+                                            <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardLeft!.ImageUrl"
+                                                 srcset="@Model.CategorySection.SubCardLeft!.ImageSrcSet"
+                                                 sizes="(min-width: 1024px) 50vw, 100vw"
+                                                 alt=""
                                                  loading="lazy" />
                                             <div class="bento-card__scrim"></div>
                                         </div>
@@ -358,6 +367,8 @@
                                     {
                                         <div class="bento-card__bg" aria-hidden="true">
                                             <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightTop!.ImageUrl"
+                                                 srcset="@Model.CategorySection.SubCardRightTop!.ImageSrcSet"
+                                                 sizes="(min-width: 1024px) 50vw, 100vw"
                                                  alt="" loading="lazy" />
                                             <div class="bento-card__scrim"></div>
                                         </div>
@@ -398,6 +409,8 @@
                                     {
                                         <div class="bento-card__bg" aria-hidden="true">
                                             <img class="bento-card__bg-img" src="@Model.CategorySection.SubCardRightBottom!.ImageUrl"
+                                                 srcset="@Model.CategorySection.SubCardRightBottom!.ImageSrcSet"
+                                                 sizes="(min-width: 1024px) 50vw, 100vw"
                                                  alt="" loading="lazy" />
                                             <div class="bento-card__scrim"></div>
                                         </div>
