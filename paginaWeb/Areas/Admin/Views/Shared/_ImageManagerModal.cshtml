@@ -51,8 +51,9 @@
                 <button type="button" data-image-filter="used" class="image-manager-tab px-3 py-1.5 rounded-lg font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
                     En artículos (<span id="imageManagerCountUsed">0</span>)
                 </button>
-                <input type="file" id="imageManagerFileInput" accept="image/*" class="sr-only" tabindex="-1" />
+                <input type="file" id="imageManagerFileInput" accept="image/*" multiple class="sr-only" tabindex="-1" />
                 <button type="button" id="imageManagerToggleUpload"
+                        title="Puedes seleccionar hasta 10 imágenes a la vez"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold transition shadow-2xs disabled:opacity-60 disabled:cursor-wait">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                     <span id="imageManagerUploadLabel">Subir imagen</span>
@@ -505,60 +506,126 @@
             });
         }
 
-        function setUploading(value) {
+        var MAX_UPLOAD_BATCH = 10;
+
+        function setUploading(value, total) {
             uploading = value;
             if (els.toggleUpload) {
                 els.toggleUpload.disabled = value;
                 els.toggleUpload.setAttribute('aria-busy', value ? 'true' : 'false');
             }
             if (els.uploadLabel) {
-                els.uploadLabel.textContent = value ? 'Subiendo…' : 'Subir imagen';
+                els.uploadLabel.textContent = value
+                    ? (total > 1 ? 'Subiendo 1 de ' + total + '…' : 'Subiendo…')
+                    : 'Subir imagen';
             }
         }
 
-        function submitUpload(file) {
-            if (!file) {
-                showUploadError('Selecciona un archivo de imagen.');
+        function setUploadProgress(done, total) {
+            if (!els.uploadLabel) return;
+            els.uploadLabel.textContent = total > 1
+                ? 'Subiendo ' + done + ' de ' + total + '…'
+                : 'Subiendo…';
+        }
+
+        function autoAltFromFileName(fileName) {
+            var baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+            return baseName.replace(/[-_]+/g, ' ');
+        }
+
+        function uploadSingle(file) {
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('customName', file.name);
+            formData.append('alt', autoAltFromFileName(file.name));
+            if (currentArticleId) formData.append('articleId', currentArticleId);
+
+            return fetch('/admin/imagenes/subir-ajax', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': token() },
+                body: formData
+            }).then(function (response) {
+                return response.json().then(function (data) {
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'No se pudo subir la imagen.');
+                    }
+                    return data.image;
+                });
+            });
+        }
+
+        function summarizeFailedUploads(failed) {
+            var names = failed.slice(0, 3).map(function (item) { return '«' + item.name + '»'; });
+            if (failed.length > 3) names.push('y ' + (failed.length - 3) + ' más');
+            var detail = failed.length === 1 ? ' Motivo: ' + failed[0].message : '';
+            return names.join(', ') + '.' + detail;
+        }
+
+        function submitUpload(fileList) {
+            var files = Array.prototype.slice.call(fileList || []);
+            if (!files.length) {
+                showUploadError('Selecciona al menos un archivo de imagen.');
                 return;
             }
             if (uploading) return;
 
-            var baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-            var formData = new FormData();
-            formData.append('file', file);
-            formData.append('customName', file.name);
-            formData.append('alt', baseName.replace(/[-_]+/g, ' '));
-            if (currentArticleId) formData.append('articleId', currentArticleId);
+            var overflow = files.length > MAX_UPLOAD_BATCH;
+            if (overflow) files = files.slice(0, MAX_UPLOAD_BATCH);
 
             showUploadError('');
-            setUploading(true);
+            setUploading(true, files.length);
 
-            fetch('/admin/imagenes/subir-ajax', {
-                method: 'POST',
-                headers: { 'RequestVerificationToken': token() },
-                body: formData
-            })
-                .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
-                .then(function (result) {
-                    if (!result.ok || !result.data.success) {
-                        throw new Error(result.data.message || 'No se pudo subir la imagen.');
+            var uploaded = [];
+            var failed = [];
+            var chain = Promise.resolve();
+
+            files.forEach(function (file, index) {
+                chain = chain.then(function () {
+                    setUploadProgress(index + 1, files.length);
+                    return uploadSingle(file).then(function (image) {
+                        uploaded.push(image);
+                    }).catch(function (error) {
+                        failed.push({ name: file.name, message: error.message });
+                    });
+                });
+            });
+
+            chain.then(function () {
+                if (els.fileInput) els.fileInput.value = '';
+                setFilter('all');
+
+                return loadImages().then(function () {
+                    if (uploaded.length) {
+                        var last = uploaded[uploaded.length - 1];
+                        var card = images.find(function (img) { return img.id === last.id; });
+                        if (card) selectImage(card, true);
                     }
 
-                    if (els.fileInput) els.fileInput.value = '';
-                    setFilter('all');
+                    var summary = '';
+                    if (uploaded.length) {
+                        summary = uploaded.length === 1
+                            ? 'Imagen subida y optimizada correctamente.'
+                            : uploaded.length + ' imágenes subidas y optimizadas correctamente.';
+                    }
+                    if (failed.length) {
+                        summary += (summary ? ' ' : '') + 'No se pudieron subir ' + failed.length + ': ' + summarizeFailedUploads(failed);
+                    }
+                    if (overflow) {
+                        summary += (summary ? ' ' : '') + 'Solo se procesaron las primeras ' + MAX_UPLOAD_BATCH + ' imágenes del lote.';
+                    }
 
-                    return loadImages().then(function () {
-                        var uploaded = images.find(function (img) { return img.id === result.data.image.id; });
-                        if (uploaded) selectImage(uploaded, true);
-                        toast('Imagen subida y optimizada correctamente.', 'success');
-                    });
-                })
-                .catch(function (error) {
-                    showUploadError(error.message || 'No se pudo subir la imagen.');
-                })
-                .finally(function () {
-                    setUploading(false);
+                    if (failed.length) {
+                        showUploadError(summary);
+                        toast(uploaded.length
+                            ? 'Algunas imágenes no se pudieron subir.'
+                            : 'No se pudo subir ninguna imagen.', 'error');
+                    } else {
+                        toast(summary, 'success');
+                    }
                 });
+            }).finally(function () {
+                setUploading(false);
+            });
         }
 
         function showUploadError(message) {
@@ -661,8 +728,8 @@
         });
 
         els.fileInput?.addEventListener('change', function () {
-            if (!this.files || !this.files[0]) return;
-            submitUpload(this.files[0]);
+            if (!this.files || !this.files.length) return;
+            submitUpload(this.files);
         });
 
         els.search?.addEventListener('input', render);
