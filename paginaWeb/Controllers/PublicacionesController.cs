@@ -43,11 +43,12 @@ public class PublicacionesController : Controller
         {
             var artCover = art.CoverImageId != null && images.TryGetValue(art.CoverImageId, out var img) ? img : null;
             var artImgUrl = ImageMapper.GetCardUrl(art, artCover);
+            var artImgSrcSet = ImageMapper.GetSrcSetForUrl(artCover, artImgUrl);
             var artCat = art.CategoryId != null && categories.TryGetValue(art.CategoryId, out var catName)
                 ? catName
                 : "General";
 
-            return new ArticleCardViewModel(art, artImgUrl, artCat);
+            return new ArticleCardViewModel(art, artImgUrl, artCat, artImgSrcSet);
         }).ToList();
 
         var totalPages = (int)Math.Ceiling((double)total / 9);

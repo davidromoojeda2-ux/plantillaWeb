@@ -98,8 +98,9 @@
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                         Archivo de Imagen <span class="text-rose-500">*</span>
                     </label>
-                    <input type="file" id="fileInput" name="file" accept="image/*" required
+                    <input type="file" id="fileInput" name="file" accept="image/*" required multiple
                            class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#003F88] hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl p-1 bg-slate-50" />
+                    <p id="batchHint" class="text-[11px] mt-1 text-slate-500">Puedes seleccionar hasta 10 imágenes a la vez. Con varias, el nombre y el alt se generan desde cada archivo.</p>
                 </div>
 
                 <!-- Nombre de archivo con verificación de no repetición -->
@@ -147,7 +148,7 @@
                             }
                         </select>
                         <label class="flex items-center gap-2 cursor-pointer shrink-0">
-                            <input type="checkbox" name="setAsCover" value="true" class="rounded border-slate-300 text-[#00296B] focus:ring-[#00296B]" />
+                            <input type="checkbox" id="setAsCoverInput" name="setAsCover" value="true" class="rounded border-slate-300 text-[#00296B] focus:ring-[#00296B]" />
                             <span class="text-xs text-slate-700 font-medium">Asignar como portada</span>
                         </label>
                     </div>
@@ -462,9 +463,13 @@
     // Datos en memoria para el visor modal
     const imagesCatalog = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Images));
 
+    const MAX_UPLOAD_BATCH = 10;
+    const uploadForm = document.getElementById('uploadForm');
     const fileInput = document.getElementById('fileInput');
     const customNameInput = document.getElementById('customNameInput');
     const altInput = document.getElementById('altInput');
+    const setAsCoverInput = document.getElementById('setAsCoverInput');
+    const batchHint = document.getElementById('batchHint');
     const nameCheckBadge = document.getElementById('nameCheckBadge');
     const nameSpinner = document.getElementById('nameSpinner');
     const nameFeedbackText = document.getElementById('nameFeedbackText');
@@ -472,20 +477,159 @@
 
     let debounceTimer = null;
     let isNameValid = false;
+    let batchUploading = false;
+
+    function autoAltFromFileName(fileName) {
+        const baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+        return baseName.replace(/[-_]+/g, ' ');
+    }
+
+    function getSelectedFiles() {
+        return Array.prototype.slice.call(fileInput.files || []);
+    }
+
+    function updateBatchMode() {
+        const count = getSelectedFiles().length;
+        const isBatch = count > 1;
+
+        customNameInput.disabled = isBatch;
+        altInput.disabled = isBatch;
+        setAsCoverInput.disabled = isBatch;
+
+        if (isBatch) {
+            customNameInput.value = '';
+            altInput.value = '';
+            setAsCoverInput.checked = false;
+            resetNameBadge();
+            batchHint.textContent = count + ' imágenes seleccionadas: se subirán una a una usando el nombre de cada archivo. El artículo elegido se vincula a todas y la portada no se asigna automáticamente.';
+        } else {
+            batchHint.textContent = 'Puedes seleccionar hasta 10 imágenes a la vez. Con varias, el nombre y el alt se generan desde cada archivo.';
+        }
+    }
+
+    function setBatchBusy(busy, done, total) {
+        batchUploading = busy;
+        btnSubmitUpload.disabled = busy;
+        btnSubmitUpload.classList.toggle('opacity-50', busy);
+        btnSubmitUpload.classList.toggle('cursor-not-allowed', busy);
+
+        const label = btnSubmitUpload.querySelector('span');
+        if (!label) return;
+
+        label.textContent = busy
+            ? (total > 1 ? 'Subiendo ' + Math.min(done + 1, total) + ' de ' + total + '…' : 'Subiendo…')
+            : 'Optimizar WebP y Guardar';
+    }
+
+    async function uploadBatch(files, overflow) {
+        const tokenInput = uploadForm.querySelector('input[name="__RequestVerificationToken"]');
+        const articleSelect = uploadForm.querySelector('select[name="articleId"]');
+        const token = tokenInput ? tokenInput.value : '';
+        const articleId = articleSelect ? articleSelect.value : '';
+        const successes = [];
+        const failures = [];
+
+        setBatchBusy(true, 0, files.length);
+
+        for (let i = 0; i < files.length; i++) {
+            setBatchBusy(true, i, files.length);
+            const file = files[i];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('customName', file.name);
+            formData.append('alt', autoAltFromFileName(file.name));
+            if (articleId) formData.append('articleId', articleId);
+
+            try {
+                const response = await fetch('/admin/imagenes/subir-ajax', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token },
+                    body: formData
+                });
+                const data = await response.json().catch(function () { return {}; });
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'No se pudo subir la imagen.');
+                }
+
+                successes.push(file.name);
+            } catch (error) {
+                failures.push({ name: file.name, message: error.message });
+            }
+        }
+
+        sessionStorage.setItem('imageBatchUploadSummary', JSON.stringify({
+            success: successes.length,
+            failed: failures,
+            overflow: overflow
+        }));
+
+        window.location.reload();
+    }
+
+    // Resume del lote anterior tras recargar la página
+    (function showBatchSummary() {
+        const raw = sessionStorage.getItem('imageBatchUploadSummary');
+        if (!raw) return;
+        sessionStorage.removeItem('imageBatchUploadSummary');
+
+        try {
+            const summary = JSON.parse(raw);
+            if (typeof window.showToast !== 'function') return;
+
+            if (summary.success) {
+                window.showToast(
+                    summary.success === 1
+                        ? 'Imagen subida y optimizada correctamente.'
+                        : summary.success + ' imágenes subidas y optimizadas correctamente.',
+                    'success');
+            }
+
+            if (summary.failed && summary.failed.length) {
+                const names = summary.failed.slice(0, 3).map(function (item) { return '«' + item.name + '»'; });
+                if (summary.failed.length > 3) names.push('y ' + (summary.failed.length - 3) + ' más');
+                const detail = summary.failed.length === 1 ? ' Motivo: ' + summary.failed[0].message : '';
+                window.showToast('No se pudieron subir ' + summary.failed.length + ': ' + names.join(', ') + '.' + detail, 'error');
+            }
+
+            if (summary.overflow) {
+                window.showToast('Solo se procesaron las primeras ' + MAX_UPLOAD_BATCH + ' imágenes del lote.', 'info');
+            }
+        } catch (error) {
+            console.error('No se pudo mostrar el resumen de subida:', error);
+        }
+    })();
 
     // Al seleccionar archivo: rellenar nombre y texto alt si están vacíos
-    fileInput.addEventListener('change', function(e) {
-        if (this.files && this.files[0]) {
-            const fileName = this.files[0].name;
+    fileInput.addEventListener('change', function () {
+        const files = getSelectedFiles();
+        updateBatchMode();
+
+        if (files.length === 1) {
+            const fileName = files[0].name;
             customNameInput.value = fileName;
 
             if (!altInput.value.trim()) {
-                const baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-                altInput.value = baseName.replace(/[-_]+/g, ' ');
+                altInput.value = autoAltFromFileName(fileName);
             }
 
             verifyFileName(fileName);
+        } else if (files.length > 1) {
+            resetNameBadge();
         }
+    });
+
+    uploadForm.addEventListener('submit', function (event) {
+        const files = getSelectedFiles();
+        if (files.length <= 1) return;
+        if (batchUploading) {
+            event.preventDefault();
+            return;
+        }
+
+        event.preventDefault();
+        const overflow = files.length > MAX_UPLOAD_BATCH;
+        uploadBatch(overflow ? files.slice(0, MAX_UPLOAD_BATCH) : files, overflow);
     });
 
     // Al editar nombre manualmente con debounce

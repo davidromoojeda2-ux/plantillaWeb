@@ -35,6 +35,8 @@
                 {
                     <img class="card-mosaic__img"
                          src="@card.Image.Url"
+                         srcset="@card.Image.SrcSet"
+                         sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                          alt="@card.Image.Alt"
                          width="@card.Image.Width"
                          height="@card.Image.Height"
@@ -107,6 +109,8 @@ else
             {
                 <img class="card-mosaic__img"
                      src="@card.Image.Url"
+                     srcset="@card.Image.SrcSet"
+                     sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                      alt="@card.Image.Alt"
                      width="@card.Image.Width"
                      height="@card.Image.Height"

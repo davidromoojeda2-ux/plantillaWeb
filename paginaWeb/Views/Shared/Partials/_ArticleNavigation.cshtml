@@ -27,6 +27,7 @@
         {
             var prevImg = Model.Previous.CoverImageId != null && Model.Images != null && Model.Images.TryGetValue(Model.Previous.CoverImageId, out var pi) ? pi : null;
             var prevUrl = !string.IsNullOrWhiteSpace(Model.Previous.CoverImageUrl) ? Model.Previous.CoverImageUrl : ImageMapper.GetBestUrl(prevImg);
+            var prevSrcSet = ImageMapper.GetSrcSetForUrl(prevImg, prevUrl);
 
             <a id="nav-prev-article"
                asp-controller="Home"
@@ -59,7 +60,7 @@
                 @if (!string.IsNullOrWhiteSpace(prevUrl))
                 {
                     <div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-200/60 hidden sm:block">
-                        <img src="@prevUrl" alt="@Model.Previous.Title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        <img src="@prevUrl" srcset="@prevSrcSet" sizes="56px" alt="@Model.Previous.Title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     </div>
                 }
             </a>
@@ -84,6 +85,7 @@
         {
             var nextImg = Model.Next.CoverImageId != null && Model.Images != null && Model.Images.TryGetValue(Model.Next.CoverImageId, out var ni) ? ni : null;
             var nextUrl = !string.IsNullOrWhiteSpace(Model.Next.CoverImageUrl) ? Model.Next.CoverImageUrl : ImageMapper.GetBestUrl(nextImg);
+            var nextSrcSet = ImageMapper.GetSrcSetForUrl(nextImg, nextUrl);
 
             <a id="nav-next-article"
                asp-controller="Home"
@@ -95,7 +97,7 @@
                 @if (!string.IsNullOrWhiteSpace(nextUrl))
                 {
                     <div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-200/60 hidden sm:block order-first">
-                        <img src="@nextUrl" alt="@Model.Next.Title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        <img src="@nextUrl" srcset="@nextSrcSet" sizes="56px" alt="@Model.Next.Title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     </div>
                 }
                 <div class="flex-1 min-w-0">

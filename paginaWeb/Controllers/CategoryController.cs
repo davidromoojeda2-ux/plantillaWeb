@@ -63,12 +63,13 @@ public class CategoryController : Controller
         {
             var artCover = art.CoverImageId != null && images.TryGetValue(art.CoverImageId, out var img) ? img : null;
             var artImgUrl = ImageMapper.GetCardUrl(art, artCover);
+            var artImgSrcSet = ImageMapper.GetSrcSetForUrl(artCover, artImgUrl);
 
             var catName = parentCategory != null
                 ? $"{parentCategory.Name} • {category.Name}"
                 : category.Name;
 
-            return new ArticleCardViewModel(art, artImgUrl, catName);
+            return new ArticleCardViewModel(art, artImgUrl, catName, artImgSrcSet);
         }).ToList();
 
         var totalPages = (int)Math.Ceiling((double)total / 9);

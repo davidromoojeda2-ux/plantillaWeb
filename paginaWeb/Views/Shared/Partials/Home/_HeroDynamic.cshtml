@@ -20,7 +20,10 @@
                         <div class="hero-dynamic__media">
                             @if (item.Image.HasUrl)
                             {
-                                <img class="hero-dynamic__img" src="@item.Image.Url" alt="@item.Image.Alt"
+                                <img class="hero-dynamic__img" src="@item.Image.Url"
+                                     srcset="@item.Image.SrcSet"
+                                     sizes="(min-width: 1600px) 1600px, 100vw"
+                                     alt="@item.Image.Alt"
                                      loading="@(i == 0 ? "eager" : "lazy")" decoding="async" />
                             }
                             else

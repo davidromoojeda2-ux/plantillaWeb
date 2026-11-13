@@ -23,6 +23,8 @@
 
 <figure class="article-figure">
     <img src="@url"
+         srcset="@ImageMapper.GetSrcSet(metadata)"
+         sizes="(min-width: 1024px) 800px, 100vw"
          alt="@alt"
          loading="lazy"
          decoding="async"

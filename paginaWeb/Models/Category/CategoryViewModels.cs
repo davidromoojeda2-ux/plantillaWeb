@@ -9,7 +9,8 @@ namespace paginaWeb.Models.Category;
 public sealed record ArticleCardViewModel(
     ArticleResponseDto Article,
     string? ImageUrl,
-    string CategoryName)
+    string CategoryName,
+    string? ImageSrcSet = null)
 {
     public static implicit operator (ArticleResponseDto Article, string? ImageUrl, string? CategoryName)(ArticleCardViewModel vm)
         => (vm.Article, vm.ImageUrl, vm.CategoryName);

@@ -7,7 +7,7 @@ namespace paginaWeb.Models.Home;
 // Son exclusivos de la capa de vista: no alteran DTOs, servicios ni la API.
 
 /// <summary>Imagen de tarjeta con dimensiones explícitas para evitar saltos de layout (CLS).</summary>
-public sealed record CardImage(string? Url, string Alt, int Width, int Height)
+public sealed record CardImage(string? Url, string Alt, int Width, int Height, string? SrcSet = null)
 {
     public bool HasUrl => !string.IsNullOrWhiteSpace(Url);
 }
@@ -58,7 +58,8 @@ public sealed record PostCardViewModel(
                 Url: imageUrl,
                 Alt: title,
                 Width: 800,
-                Height: 500),
+                Height: 500,
+                SrcSet: item.ImageSrcSet),
             AsGridItem: asGridItem
         );
     }
@@ -68,7 +69,8 @@ public sealed record PostCardViewModel(
         string? categoryName = null,
         string? imageUrl = null,
         string? href = null,
-        bool asGridItem = true)
+        bool asGridItem = true,
+        string? imageSrcSet = null)
     {
         var slug = article?.Slug ?? string.Empty;
         var finalHref = !string.IsNullOrWhiteSpace(href) ? href : $"/articulos/{slug}";
@@ -87,7 +89,8 @@ public sealed record PostCardViewModel(
                 Url: finalImageUrl,
                 Alt: title,
                 Width: 800,
-                Height: 500),
+                Height: 500,
+                SrcSet: imageSrcSet),
             AsGridItem: asGridItem,
             ViewCount: article?.ViewCount ?? 0
         );
@@ -117,7 +120,8 @@ public sealed record CategoryBentoCardViewModel(
     string? ParentName,
     string? ParentSlug,
     IReadOnlyList<CategoryResponseDto> Subcategories,
-    string? ImageUrl = null);
+    string? ImageUrl = null,
+    string? ImageSrcSet = null);
 
 /// <summary>Sección 'Encuentra el tema de tu interés' estructurada en formato Bento de 2 columnas.</summary>
 public sealed record CategorySectionViewModel(
@@ -262,6 +266,7 @@ public static class HomePageViewModelFactory
         {
             if (cat == null || string.IsNullOrEmpty(cat.Id)) return null;
             if (!usedCategoryIds.Add(cat.Id)) return null; // ya usado → no mostrar
+            var image = GetRandomImageForCategory(cat, allArticles, images, allCategories);
             return new CategoryBentoCardViewModel(
                 Name: cat.Name,
                 Slug: cat.Slug,
@@ -270,7 +275,8 @@ public static class HomePageViewModelFactory
                 ParentName: isMain ? null : allCategories.FirstOrDefault(p => p.Id == cat.ParentId)?.Name,
                 ParentSlug: isMain ? null : allCategories.FirstOrDefault(p => p.Id == cat.ParentId)?.Slug,
                 Subcategories: subs,
-                ImageUrl: GetRandomImageForCategory(cat, allArticles, images, allCategories));
+                ImageUrl: image.Url,
+                ImageSrcSet: image.SrcSet);
         }
 
         var allSubs = allCategories
@@ -356,13 +362,13 @@ public static class HomePageViewModelFactory
 
     }
 
-    private static string? GetRandomImageForCategory(
+    private static (string? Url, string? SrcSet) GetRandomImageForCategory(
         CategoryResponseDto? category,
         IReadOnlyList<ArticleResponseDto> articles,
         IReadOnlyDictionary<string, ImageMetadataResponseDto> images,
         IReadOnlyList<CategoryResponseDto>? allCategories = null)
     {
-        if (category is null) return FallbackImageForSlug(null);
+        if (category is null) return (FallbackImageForSlug(null), null);
 
         // Subcategorías de esta categoría si es padre
         var childCatIds = allCategories != null
@@ -385,34 +391,45 @@ public static class HomePageViewModelFactory
             ).ToList();
         }
 
-        var candidateUrls = candidateArticles
-            .Select(a => ResolveArticleImageUrl(a, images))
-            .Where(url => !string.IsNullOrWhiteSpace(url))
-            .Distinct()
+        var candidateImages = candidateArticles
+            .Select(a => ResolveArticleImage(a, images))
+            .Where(i => !string.IsNullOrWhiteSpace(i.Url))
+            .DistinctBy(i => i.Url)
             .ToList();
 
-        if (candidateUrls.Count > 0)
+        if (candidateImages.Count > 0)
         {
-            var idx = Random.Shared.Next(candidateUrls.Count);
-            return candidateUrls[idx];
+            var idx = Random.Shared.Next(candidateImages.Count);
+            return candidateImages[idx];
         }
 
-        return FallbackImageForSlug(category.Slug);
+        return (FallbackImageForSlug(category.Slug), null);
     }
 
-    private static string? ResolveArticleImageUrl(
+    private static (string? Url, string? SrcSet) ResolveArticleImage(
         ArticleResponseDto article,
         IReadOnlyDictionary<string, ImageMetadataResponseDto> images)
     {
-        if (!string.IsNullOrWhiteSpace(article.CoverImageUrl))
-            return article.CoverImageUrl;
-
-        if (article.CoverImageId != null && images.TryGetValue(article.CoverImageId, out var cover))
+        ImageMetadataResponseDto? cover = null;
+        if (article.CoverImageId != null &&
+            images.TryGetValue(article.CoverImageId, out var resolvedCover))
         {
-            return ImageMapper.GetUrlForWidth(cover, 1200) ?? ImageMapper.GetBestUrl(cover);
+            cover = resolvedCover;
         }
 
-        return null;
+        if (!string.IsNullOrWhiteSpace(article.CoverImageUrl))
+        {
+            return (article.CoverImageUrl, ImageMapper.GetSrcSetForUrl(cover, article.CoverImageUrl));
+        }
+
+        if (cover is not null)
+        {
+            return (
+                ImageMapper.GetUrlForWidth(cover, 1200) ?? ImageMapper.GetBestUrl(cover),
+                ImageMapper.GetSrcSet(cover));
+        }
+
+        return (null, null);
     }
 
     private static string FallbackImageForSlug(string? slug)
@@ -461,9 +478,12 @@ public static class HomePageViewModelFactory
             ? article.CoverImageUrl
             : ImageMapper.GetUrlForWidth(cover, CardImageWidth) ?? ImageMapper.GetBestUrl(cover);
 
+        // Solo se adjunta srcset si la URL mostrada pertenece a las variantes registradas.
+        var srcSet = ImageMapper.GetSrcSetForUrl(cover, url);
+
         var alt = !string.IsNullOrWhiteSpace(cover?.Alt) ? cover!.Alt : article.Title;
 
-        return new CardImage(url, alt, CardImageWidth, CardImageHeight);
+        return new CardImage(url, alt, CardImageWidth, CardImageHeight, srcSet);
     }
 
     private static int EstimateReadingMinutes(string? text)
