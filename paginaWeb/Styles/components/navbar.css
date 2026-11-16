@@ -148,6 +148,8 @@
       place-items: center;
       width: 48px;
       height: 48px;
+      border-radius: 10px;
+      overflow: hidden;
   }
 
   .site-nav__logo img {
