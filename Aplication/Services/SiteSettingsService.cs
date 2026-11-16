@@ -11,6 +11,8 @@ public interface ISiteSettingsService
     Task SaveWhatsAppGroupsAsync(IEnumerable<WhatsAppGroupDto>? groups);
     Task SaveSocialProfilesAsync(IEnumerable<SocialProfileDto>? profiles);
     Task SaveShareNetworksAsync(IEnumerable<string>? networks);
+    Task<ImageQualitySettingsDto> GetImageQualityAsync();
+    Task SaveImageQualityAsync(ImageQualitySettingsDto? settings);
 }
 
 /// <summary>
@@ -42,6 +44,9 @@ public class SiteSettingsService : ISiteSettingsService
         _cache.Set(CacheKey, dto, CacheDuration);
         return dto;
     }
+
+    public async Task<ImageQualitySettingsDto> GetImageQualityAsync() =>
+        (await GetAsync()).ImageQuality;
 
     public async Task SaveWhatsAppGroupsAsync(IEnumerable<WhatsAppGroupDto>? groups)
     {
@@ -76,6 +81,37 @@ public class SiteSettingsService : ISiteSettingsService
         await _repository.SaveAsync(settings);
         _cache.Remove(CacheKey);
     }
+
+    public async Task SaveImageQualityAsync(ImageQualitySettingsDto? settings)
+    {
+        settings ??= new ImageQualitySettingsDto();
+
+        var stored = await _repository.GetAsync();
+        stored.ImageQuality = new ImageQualitySettings
+        {
+            Quality = ValidateQuality(settings.Quality, "La calidad global"),
+            QualitySmall = ValidateOptionalQuality(settings.QualitySmall, "La calidad para 400 px"),
+            QualityMedium = ValidateOptionalQuality(settings.QualityMedium, "La calidad para 800 px"),
+            QualityLarge = ValidateOptionalQuality(settings.QualityLarge, "La calidad para 1600 px")
+        };
+
+        await _repository.SaveAsync(stored);
+        _cache.Remove(CacheKey);
+    }
+
+    private static int ValidateQuality(int value, string label)
+    {
+        if (value < ImageQualitySettings.MinQuality || value > ImageQualitySettings.MaxQuality)
+        {
+            throw new InvalidOperationException(
+                $"{label} debe estar entre {ImageQualitySettings.MinQuality} y {ImageQualitySettings.MaxQuality}.");
+        }
+
+        return value;
+    }
+
+    private static int? ValidateOptionalQuality(int? value, string label) =>
+        value.HasValue ? ValidateQuality(value.Value, label) : null;
 
     private static List<WhatsAppGroupLink> NormalizeWhatsAppGroups(IEnumerable<WhatsAppGroupDto>? groups)
     {
@@ -189,6 +225,13 @@ public class SiteSettingsService : ISiteSettingsService
         EnabledShareNetworks = settings.EnabledShareNetworks
             .Where(SocialNetworks.IsShare)
             .Distinct(StringComparer.Ordinal)
-            .ToList()
+            .ToList(),
+        ImageQuality = new ImageQualitySettingsDto
+        {
+            Quality = settings.ImageQuality.Quality,
+            QualitySmall = settings.ImageQuality.QualitySmall,
+            QualityMedium = settings.ImageQuality.QualityMedium,
+            QualityLarge = settings.ImageQuality.QualityLarge
+        }
     };
 }
