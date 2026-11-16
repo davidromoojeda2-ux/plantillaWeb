@@ -149,9 +149,17 @@
       width: 40px;
       height: 40px;
       border-radius: var(--nav-radius-md);
-      background: var(--nav-navy-900);
-      color: var(--nav-accent);
-      font: 800 1.375rem / 1 var(--nav-font-display);
+      background: #FFFFFF;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgb(0 41 107 / 0.12);
+  }
+
+  .site-nav__logo img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 3px;
+      object-fit: contain;
   }
 
   .site-nav__name {
