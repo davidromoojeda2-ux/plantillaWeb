@@ -25,17 +25,14 @@
             <!-- Columna Marca -->
             <div class="@brandSpan space-y-4">
                 <div class="flex items-center gap-3">
-                    <div
-                        class="w-10 h-10 rounded-xl bg-[#FDC500] text-[#00296B] font-bold text-2xl flex items-center justify-center shadow-lg">
-                        N
-                    </div>
+                    <img src="~/img/logos/logo-dark.svg" alt="" width="48" height="48"
+                         loading="lazy" decoding="async" class="w-12 h-12 object-contain" />
                     <div>
-                        <span class="text-xl font-serif font-black tracking-tight text-white">LOGO</span>
-                        <span class="text-xl font-serif font-bold tracking-tight text-[#FFD500]">WEB</span>
+                        <span class="text-2xl font-heading font-extrabold uppercase tracking-tight text-white">@SiteBrand.Name</span>
                     </div>
                 </div>
                 <p class="text-sm text-blue-100/80 leading-relaxed max-w-sm">
-                    Slogan para la paginaWeb.
+                    Noticias verificadas, análisis en profundidad y coberturas especiales de actualidad.
                 </p>
                 @if (socialProfiles.Count > 0)
                 {
@@ -89,7 +86,7 @@
 
         <!-- Fila Inferior -->
         <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-blue-200/70">
-            <p>© @DateTime.UtcNow.Year Portal Noticias. Todos los derechos reservados.</p>
+            <p>© @DateTime.UtcNow.Year @SiteBrand.Name. Todos los derechos reservados.</p>
         </div>
     </div>
 </footer>

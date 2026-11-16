@@ -24,16 +24,18 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - Portal Noticias" : "Portal Noticias - Periodismo Independiente y Análisis Profundo")</title>
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - {SiteBrand.Name}" : $"{SiteBrand.Name} - Periodismo Independiente y Análisis Profundo")</title>
     <meta name="description" content="@(ViewData["MetaDescription"] ?? "Portal informativo con las últimas noticias, cobertura en profundidad, reportajes y análisis sobre tecnología, economía y cultura.")" />
+    <link rel="icon" type="image/svg+xml" href="~/img/logos/logo.svg" />
 
-    <meta property="og:title" content="@(ViewData["Title"] ?? "Portal Noticias")" />
+    <meta property="og:title" content="@(ViewData["Title"] ?? SiteBrand.Name)" />
     <meta property="og:description" content="@(ViewData["MetaDescription"] ?? "Noticias rigurosas y actualizadas.")" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="@SiteBrand.Name" />
     @if (!string.IsNullOrWhiteSpace(ogImage))
     {
         <meta property="og:image" content="@ogImage" />
-        <meta property="og:image:alt" content="@(ViewData["Title"] ?? "Portal Noticias")" />
+        <meta property="og:image:alt" content="@(ViewData["Title"] ?? SiteBrand.Name)" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content="@ogImage" />
     }
