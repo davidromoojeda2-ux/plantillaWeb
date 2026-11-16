@@ -18,11 +18,16 @@ public class ImagenesController : Controller
 {
     private readonly ImageService _imageService;
     private readonly IArticleService _articleService;
+    private readonly ISiteSettingsService _siteSettingsService;
 
-    public ImagenesController(ImageService imageService, IArticleService articleService)
+    public ImagenesController(
+        ImageService imageService,
+        IArticleService articleService,
+        ISiteSettingsService siteSettingsService)
     {
         _imageService = imageService;
         _articleService = articleService;
+        _siteSettingsService = siteSettingsService;
     }
 
     [HttpGet("")]
@@ -39,12 +44,14 @@ public class ImagenesController : Controller
         ApplyArticleUsage(images, articles);
 
         var storageStatus = await _imageService.GetStorageStatusAsync();
+        var imageQuality = await _siteSettingsService.GetImageQualityAsync();
 
         var viewModel = new ImageLibraryViewModel
         {
             Images = images,
             Articles = articles,
             StorageStatus = storageStatus,
+            ImageQuality = imageQuality,
             CurrentPage = page,
             PageSize = pageSize,
             TotalCount = totalCount,

@@ -10,6 +10,7 @@ public class ImageLibraryViewModel
     public List<ImageMetadataResponseDto> Images { get; set; } = [];
     public List<ArticleResponseDto> Articles { get; set; } = [];
     public StorageStatusDto StorageStatus { get; set; } = new();
+    public ImageQualitySettingsDto ImageQuality { get; set; } = new();
 
     public int CurrentPage { get; set; } = 1;
     public int PageSize { get; set; } = 24;

@@ -78,6 +78,47 @@
         </div>
     </div>
 
+    <!-- ─── Calidad de Optimización WebP (Configurable) ──────────────────────── -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 text-[#00296B]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h4 class="font-bold text-slate-800 text-sm">Calidad de optimización WebP</h4>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                            Sin metadatos
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Afecta solo a las nuevas imágenes. Se eliminan EXIF, XMP, IPTC y perfil ICC de todas las variantes.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+                <span id="imageQualitySummary"
+                      class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-mono text-[11px] text-slate-600">
+                    Global @Model.ImageQuality.Quality% · 400 @Model.ImageQuality.ForWidth(400)% ·
+                    800 @Model.ImageQuality.ForWidth(800)% · 1600 @Model.ImageQuality.ForWidth(1600)%
+                </span>
+                <button type="button" id="btnOpenImageQualityModal"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00296B] hover:bg-[#00509D] text-white text-xs font-bold shadow-xs transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    Configurar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ─── Subida de Nuevas Imágenes con Verificación de Nombre ──────────────── -->
     <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <div class="flex items-center justify-between mb-4">
@@ -456,6 +497,8 @@
         </div>
     </div>
 </div>
+
+<partial name="_ImageQualityModal" model="Model.ImageQuality" />
 
 <!-- ─── Scripts de Validación en Tiempo Real e Interacción ───────────────────── -->
 @section Scripts {
