@@ -236,7 +236,7 @@
                 card.innerHTML =
                     '<div>' +
                         '<div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-100 relative mb-2">' +
-                            '<img src="' + escapeHtml(img.thumbnailUrl || img.url || '') + '" alt="' + escapeHtml(img.alt || img.fileName) + '" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" />' +
+                            '<img src="' + escapeHtml(img.thumbnailUrl || img.url || '') + '" alt="' + escapeHtml(img.alt || img.fileName) + '" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" />' +
                             '<span class="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-mono px-1.5 py-0.5 rounded backdrop-blur-xs">' +
                                 (img.width || 0) + '×' + (img.height || 0) +
                             '</span>' +

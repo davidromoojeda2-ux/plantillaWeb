@@ -6,8 +6,7 @@
 @layer components {
 
     /* Las anclas del menú no quedan ocultas bajo el navbar sticky */
-    .home [id],
-    .site-footer[id] {
+    .home [id] {
         scroll-margin-top: var(--nav-h);
     }
 
@@ -31,7 +30,7 @@
     }
 
     /* ─── 3. Foco visible (anillo con transición suave) ─────────────────────── */
-    :where(.site-nav, .home, .site-footer) :where(a, button, input) {
+    :where(.site-nav, .home) :where(a, button, input) {
         outline: 3px solid transparent;
         outline-offset: 0;
         transition-property: outline-offset, outline-color, transform, opacity;
@@ -39,7 +38,7 @@
         transition-timing-function: var(--ease-out);
     }
 
-    :where(.site-nav, .home, .site-footer) :where(a, button, input):focus-visible {
+    :where(.site-nav, .home) :where(a, button, input):focus-visible {
         outline-color: var(--c-focus);
         outline-offset: 3px;
     }
@@ -77,19 +76,9 @@
         color: var(--c-navy-900);
     }
 
-    .btn--primary {
-        background: var(--c-navy-900);
-        color: var(--c-on-dark);
-    }
-
     .btn--accent:hover,
     .btn--accent:focus-visible {
         color: var(--c-navy-900);
-    }
-
-    .btn--primary:hover,
-    .btn--primary:focus-visible {
-        color: var(--c-on-dark);
     }
 
     .btn:active {
@@ -109,8 +98,7 @@
         color: var(--c-on-dark);
     }
 
-    .hero:has(.hero-dynamic),
-    .hero:has(.card-grid--hero) {
+    .hero:has(.hero-dynamic) {
         --hero-curve-h: clamp(75px, 8vw, 120px);
         padding-bottom: clamp(18px, 3vw, 28px);
     }
@@ -197,12 +185,6 @@
 
     .hero__search-input::placeholder {
         color: var(--c-ink-muted);
-    }
-
-    .card-grid--hero {
-        width: 100%;
-        max-width: var(--hero-cards-max);
-        margin: var(--space-6) auto 0;
     }
 
     /* ─── 7. Hero Dinámico y Moderno (Showcase Slider) ───────────────────────── */
@@ -507,8 +489,7 @@
             padding-bottom: calc(var(--hero-curve-h) + var(--space-4));
         }
 
-        .hero:has(.hero-dynamic),
-        .hero:has(.card-grid--hero) {
+        .hero:has(.hero-dynamic) {
             --hero-curve-h: clamp(160px, 22vw, 300px);
             padding-bottom: clamp(50px, 6vw, 80px);
         }
@@ -530,10 +511,6 @@
 
         .hero__search-input {
             padding: 0 var(--space-4);
-        }
-
-        .card-grid--hero {
-            margin-top: var(--space-8);
         }
     }
 
@@ -671,16 +648,6 @@
         list-style: none;
     }
 
-    .card-grid--hero {
-        grid-template-columns: 1fr;
-    }
-
-    @media (min-width: 480px) {
-        .card-grid--hero {
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-        }
-    }
-
     /* Base móvil: 1 sola columna fluida */
     .card-grid--posts {
         display: grid;
@@ -699,23 +666,6 @@
     @media (min-width: 1024px) {
         .card-grid--posts {
             grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    /* Base móvil para bloques destacados */
-    .card-grid--featured {
-        grid-template-columns: 1fr;
-    }
-
-    @media (min-width: 640px) {
-        .card-grid--featured {
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .card-grid--featured {
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
         }
     }
 
@@ -750,66 +700,6 @@
         transition: opacity var(--dur-hover) var(--ease-out);
     }
 
-    .card-media {
-        overflow: hidden;
-        aspect-ratio: 16 / 10;
-        border-radius: var(--radius-card) var(--radius-card) 0 0;
-        background: linear-gradient(135deg, var(--c-line), var(--c-page));
-    }
-
-    .card-media__img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform var(--dur-hover) var(--ease-out);
-    }
-
-    .card-media__fallback {
-        display: grid;
-        place-items: center;
-        width: 100%;
-        height: 100%;
-        color: var(--c-ink-muted);
-        background: linear-gradient(135deg, rgb(0 80 157 / 0.12), rgb(253 197 0 / 0.18));
-    }
-
-    .card__body {
-        display: flex;
-        flex: 1;
-        flex-direction: column;
-        gap: var(--space-3);
-        padding: var(--space-5);
-    }
-
-    .card__meta {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-2);
-        margin: 0;
-        color: var(--c-ink-muted);
-        font-size: var(--fs-xs);
-    }
-
-    .card__eyebrow {
-        color: var(--c-navy-500);
-        font: 700 var(--fs-xs) / 1.2 var(--font-ui);
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-
-    .card__title {
-        display: -webkit-box;
-        overflow: hidden;
-        margin: 0;
-        color: var(--c-ink);
-        font: 700 var(--fs-h3) / 1.35 var(--font-ui);
-        letter-spacing: -0.01em;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-    }
-
     .card__link {
         color: inherit;
         text-decoration: none;
@@ -826,23 +716,6 @@
         inset: 0;
         z-index: 1;
         border-radius: inherit;
-    }
-
-    .card__text {
-        display: -webkit-box;
-        overflow: hidden;
-        margin: 0;
-        color: var(--c-ink-muted);
-        font-family: var(--font-serif);
-        font-style: italic;
-        font-size: var(--fs-small);
-        line-height: 1.6;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-    }
-
-    .card--feature .card__text {
-        -webkit-line-clamp: 2;
     }
 
     /* ─── Tarjeta Mosaico (PostCard - Mobile First) ─────────────────────────── */
@@ -1070,134 +943,6 @@
         transition: transform var(--dur-link) var(--ease-out);
     }
 
-    .card--featured .card-media {
-        aspect-ratio: 3 / 2;
-    }
-
-    .card__footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--space-3);
-        margin-top: auto;
-        padding-top: var(--space-4);
-        border-top: 1px solid var(--c-line);
-    }
-
-    .card__byline {
-        color: var(--c-ink-muted);
-        font-size: var(--fs-xs);
-        font-weight: 500;
-    }
-
-    /* El CTA queda por encima del enlace estirado */
-    .card__cta {
-        position: relative;
-        z-index: 2;
-    }
-
-    /* ─── 11. Estado vacío ──────────────────────────────────────────────────── */
-    .empty-state {
-        padding: var(--space-9) var(--space-5);
-        border: 1px dashed var(--c-line);
-        border-radius: var(--radius-card);
-        background: var(--c-surface);
-        text-align: center;
-    }
-
-    .empty-state__title {
-        margin: 0;
-        color: var(--c-ink);
-        font-weight: 600;
-    }
-
-    .empty-state__text {
-        margin: var(--space-2) 0 0;
-        color: var(--c-ink-muted);
-        font-size: var(--fs-small);
-    }
-
-    /* ─── 12. Footer (Mobile First) ─────────────────────────────────────────── */
-    .site-footer {
-        margin-top: var(--space-8);
-        padding-block: var(--space-7);
-        background: var(--c-navy-900);
-        color: var(--c-on-dark);
-    }
-
-    .site-footer__inner {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-5);
-    }
-
-    .site-footer__name {
-        margin: 0;
-        font: 800 1.25rem / 1 var(--font-display);
-    }
-
-    .site-footer__name strong {
-        margin-left: var(--space-1);
-        color: var(--c-accent);
-    }
-
-    .site-footer__tagline {
-        max-width: 340px;
-        margin: var(--space-2) 0 0;
-        color: var(--c-on-dark-muted);
-        font-size: var(--fs-small);
-    }
-
-    .site-footer__links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-1) var(--space-4);
-        margin: 0;
-        padding: 0;
-        list-style: none;
-    }
-
-    .site-footer__link {
-        display: inline-flex;
-        align-items: center;
-        min-height: var(--tap-min);
-        padding: 0 var(--space-2);
-        border-radius: var(--space-2);
-        color: var(--c-on-dark-muted);
-        font-size: var(--fs-small);
-        font-weight: 500;
-        text-decoration: none;
-    }
-
-    .site-footer__link:hover {
-        color: var(--c-on-dark);
-    }
-
-    .site-footer__copy {
-        width: 100%;
-        margin: 0;
-        padding-top: var(--space-5);
-        border-top: 1px solid rgb(255 255 255 / 0.12);
-        color: var(--c-on-dark-muted);
-        font-size: var(--fs-xs);
-    }
-
-    @media (min-width: 768px) {
-        .site-footer {
-            margin-top: var(--space-10);
-            padding-block: var(--space-8);
-        }
-
-        .site-footer__inner {
-            flex-direction: row;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: var(--space-5) var(--space-7);
-        }
-    }
-
     /* ─── 13. Aparición al hacer scroll (Reveal) ────────────────────────────── */
     /* Solo se oculta si JS está activo (.js en <html>): sin JS el contenido es visible. */
     [data-reveal] {
@@ -1220,10 +965,6 @@
 
         .card:hover::after {
             opacity: 1;
-        }
-
-        .card:hover .card-media__img {
-            transform: scale(var(--zoom));
         }
 
         .card--post.card--mosaic:hover {
@@ -1269,10 +1010,6 @@
             opacity: 1;
         }
 
-        .card:active .card-media__img {
-            transform: scale(var(--zoom));
-        }
-
         .link-arrow:active .link-arrow__icon {
             transform: translate(2px, -2px);
         }
@@ -1294,11 +1031,9 @@
         }
 
         .card:is(:hover, :active),
-        .card:is(:hover, :active) .card-media__img,
         .link-arrow:is(:hover, :active) .link-arrow__icon,
         .btn:is(:hover, :active),
-        .btn:hover:active,
-        .marquee__track {
+        .btn:hover:active {
             animation: none;
         }
     }
@@ -1501,14 +1236,20 @@
 
     /* La imagen se adapta al ancho de la tarjeta manteniendo proporción 4:3 */
     .card-h__media {
+        position: relative;
         flex: 0 0 auto;
         width: clamp(96px, 24%, 168px);
         aspect-ratio: 4 / 3;
+        /* Evita que un texto alternativo largo ensanche la tarjeta */
+        min-width: 0;
         border-radius: 8px;
         overflow: hidden;
     }
 
+    /* La imagen se posiciona de forma absoluta para que nunca deforme el contenedor */
     .card-h__img {
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -1521,6 +1262,8 @@
     }
 
     .card-h__fallback {
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
         border-radius: 8px;
@@ -1585,120 +1328,170 @@
         color: #00296B;
     }
 
-    /* Tarjetas del bloque izquierdo (Noticias Principales): Mayor presencia, altura y legibilidad */
+    /* ─── Tarjetas cuadradas tipo mosaico: foto de fondo + texto superpuesto ─── */
+    /* Se aplican en todos los tamaños (2 columnas, relación 1:1)                    */
     .entries-panel--featured .entries-list {
-        gap: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
     }
 
     .entries-panel--featured .card-h {
-        min-height: 210px;
+        position: relative;
+        display: block;
+        aspect-ratio: 1 / 1;
+        min-height: 0;
         padding: 0;
-        gap: 1.5rem;
-        align-items: stretch;
+        gap: 0;
+        border: 0;
         border-radius: var(--radius-card);
-        background: #FFFFFF;
-        box-shadow: 0 2px 8px rgba(0, 41, 107, 0.06);
+        background: #0b1329;
+        box-shadow: 0 4px 14px rgba(0, 41, 107, 0.18);
         overflow: hidden;
     }
 
     .entries-panel--featured .card-h__media {
-        flex: 0 0 35%;
-        width: 35%;
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
         aspect-ratio: auto;
-        min-height: 100%;
+        min-height: 0;
         border-radius: 0;
-        overflow: hidden;
-        align-self: stretch;
+    }
+
+    /* Degradado para que el texto sea legible sobre cualquier foto */
+    .entries-panel--featured .card-h__media::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg,
+                rgba(8, 16, 30, 0.05) 0%,
+                rgba(8, 16, 30, 0.16) 38%,
+                rgba(6, 13, 26, 0.78) 72%,
+                rgba(4, 10, 22, 0.95) 100%);
+        pointer-events: none;
     }
 
     .entries-panel--featured .card-h__img,
     .entries-panel--featured .card-h__fallback {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
         border-radius: 0;
     }
 
     .entries-panel--featured .card-h__body {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 0.6rem;
-        padding: 1.5rem 0;
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        height: 100%;
+        justify-content: flex-end;
+        gap: 0.2rem;
+        padding: 2rem 0.625rem 0.625rem;
+        overflow: hidden;
     }
 
     .entries-panel--featured .card-h__cat {
-        font-size: 0.8125rem;
         font-weight: 800;
-        letter-spacing: 0.06em;
-        color: #00509D;
+        font-size: 0.5625rem;
+        line-height: 1.2;
+        letter-spacing: 0.05em;
+        color: #FDC500;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .entries-panel--featured .card-h__title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        line-height: 1.35;
-        color: #00296B;
-        display: -webkit-box;
+        font-size: 0.8125rem;
+        line-height: 1.3;
+        color: #FFFFFF;
         -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        margin: 0;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+
+    .entries-panel--featured .card-h:hover .card-h__title {
+        color: #FFD500;
     }
 
     .entries-panel--featured .card-h__meta {
-        font-size: 0.875rem;
-        color: #546578;
-        margin-top: 0.35rem;
+        margin-top: 0.125rem;
+        font-size: 0.625rem;
+        color: rgba(255, 255, 255, 0.8);
+        gap: 0.3rem;
     }
 
     .entries-panel--featured .card-h__arrow {
-        align-self: center;
-        margin-left: auto;
-        margin-right: 1.75rem;
-        flex-shrink: 0;
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        z-index: 3;
+        margin: 0;
+        width: 1.75rem;
+        height: 1.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #FFFFFF;
+        background: rgba(0, 41, 107, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 9999px;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
     }
 
-    @media (max-width: 639.98px) {
-        .entries-panel--featured .entries-list {
-            /* Filas de igual altura: todas las tarjetas comparten la altura de la más alta */
-            display: grid;
-            grid-auto-rows: 1fr;
-            gap: 1rem;
-        }
+    .entries-panel--featured .card-h__arrow svg {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
 
-        .entries-panel--featured .card-h {
-            min-height: 160px;
-            padding: 0;
-            gap: 1rem;
-        }
+    .entries-panel--featured .card-h:hover .card-h__arrow {
+        color: #FDC500;
+        transform: none;
+    }
 
-        .entries-panel--featured .card-h__media {
-            flex-basis: 35%;
-            width: 35%;
-            min-height: 100%;
-            border-radius: 0;
-        }
-
-        .entries-panel--featured .card-h__img,
-        .entries-panel--featured .card-h__fallback {
-            border-radius: 0;
-        }
-
+    /* Ajustes de legibilidad del mosaico en tablet y escritorio */
+    @media (min-width: 640px) {
         .entries-panel--featured .card-h__body {
-            gap: 0.45rem;
-            padding: 1.125rem 0;
+            gap: 0.3rem;
+            padding: 2.25rem 0.75rem 0.75rem;
+        }
+
+        .entries-panel--featured .card-h__cat {
+            font-size: 0.625rem;
         }
 
         .entries-panel--featured .card-h__title {
-            font-size: 1rem;
-            -webkit-line-clamp: 3;
+            font-size: 0.9375rem;
+        }
+
+        .entries-panel--featured .card-h__meta {
+            font-size: 0.6875rem;
         }
 
         .entries-panel--featured .card-h__arrow {
-            margin-right: 1rem;
+            top: 0.625rem;
+            right: 0.625rem;
+            width: 2rem;
+            height: 2rem;
+        }
+
+        .entries-panel--featured .card-h__arrow svg {
+            width: 1rem;
+            height: 1rem;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .entries-panel--featured .card-h__title {
+            font-size: 1rem;
+        }
+    }
+
+    /* En pantallas muy estrechas prioriza el título a 2 líneas dentro del cuadrado */
+    @media (max-width: 359.98px) {
+        .entries-panel--featured .card-h__title {
+            -webkit-line-clamp: 2;
         }
     }
 
@@ -1865,14 +1658,15 @@
 
     .bento-grid {
         display: grid;
-        grid-template-columns: 1fr;
+        /* minmax(0, 1fr) permite que las tarjetas se encojan en vez de desbordar */
+        grid-template-columns: minmax(0, 1fr);
         gap: 1.5rem;
         margin-top: 2.25rem;
     }
 
     @media (min-width: 1024px) {
         .bento-grid {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 1.75rem;
         }
     }
@@ -1881,6 +1675,7 @@
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
+        min-width: 0;
     }
 
     .bento-card {
@@ -1894,7 +1689,15 @@
         flex-direction: column;
         position: relative;
         overflow: hidden;
+        /* Evita que el contenido mínimo ensanche la tarjeta */
+        min-width: 0;
         transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+    }
+
+    @media (max-width: 639.98px) {
+        .bento-card {
+            padding: 1.25rem;
+        }
     }
 
     .bento-card:hover {
@@ -1923,6 +1726,12 @@
         justify-content: space-between;
         gap: 1rem;
         margin-bottom: 0.75rem;
+        min-width: 0;
+    }
+
+    /* El bloque del título debe poder encogerse para que el texto fluya */
+    .bento-card__header > div {
+        min-width: 0;
     }
 
     .bento-card__title {
@@ -1932,6 +1741,7 @@
         color: #00296B;
         line-height: 1.2;
         margin: 0;
+        overflow-wrap: anywhere;
     }
 
     .bento-card--compact .bento-card__title {
@@ -1972,11 +1782,25 @@
         color: #FFFFFF;
     }
 
+    /* En móviles muy estrechos el botón baja debajo del título */
+    @media (max-width: 479.98px) {
+        .bento-card__header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .bento-card__link-more {
+            align-self: flex-start;
+        }
+    }
+
     .bento-card__desc {
         font-size: 0.875rem;
         line-height: 1.55;
         color: #546578;
         margin: 0 0 1rem 0;
+        overflow-wrap: anywhere;
     }
 
     .bento-card__tags {
@@ -1986,6 +1810,7 @@
         margin-top: auto;
         padding-top: 0.75rem;
         border-top: 1px solid #E2E5EA;
+        min-width: 0;
     }
 
     .bento-card__tag {
@@ -2000,6 +1825,8 @@
         color: #00296B;
         border: 1px solid #E2E5EA;
         text-decoration: none;
+        max-width: 100%;
+        overflow-wrap: anywhere;
         transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     }
 
@@ -2057,6 +1884,7 @@
         flex-direction: column;
         justify-content: space-between;
         flex: 1;
+        min-width: 0;
     }
 
     /* Modificadores cuando la tarjeta tiene imagen de fondo */
@@ -2184,26 +2012,6 @@
         line-height: 1.15;
         color: #FFFFFF;
         margin: 0;
-    }
-
-    .page-hero__badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.35rem 0.875rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        background: rgba(253, 197, 0, 0.18);
-        color: #FDC500;
-        border: 1px solid rgba(253, 197, 0, 0.35);
-        margin-left: 0.75rem;
-        vertical-align: middle;
-    }
-
-    .page-hero__badge a {
-        color: inherit;
-        text-decoration: underline;
     }
 
     .page-hero__subtitle {
@@ -2412,7 +2220,8 @@
 
     /* ─── 19. Sección de contenido pública de extremo a extremo ───────────────── */
     .page-content-section {
-        padding: 3rem 0 4.5rem;
+        /* Solo padding vertical: el lateral lo aporta .container */
+        padding-block: 3rem 4.5rem;
     }
 
     /* ─── 20. Paginación Estandarizada con esquinas redondeadas ────────────────── */

@@ -10,6 +10,7 @@
     var coverUrl = !string.IsNullOrWhiteSpace(Model.CoverImageUrl) ? Model.CoverImageUrl :
 ImageMapper.GetBestUrl(coverImage);
     var coverSrcSet = ImageMapper.GetSrcSetForUrl(coverImage, coverUrl);
+    ViewData["OgImage"] = coverUrl;
     var recommended = (List<ArticleResponseDto>?)ViewBag.RecommendedArticles ?? new();
     var recommendedImages = (Dictionary<string, ImageMetadataResponseDto>?)ViewBag.RecommendedImages ?? new();
     var previousArticle = (ArticleResponseDto?)ViewBag.PreviousArticle;
@@ -18,6 +19,7 @@ ImageMapper.GetBestUrl(coverImage);
     var pageUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/articulos/{Model.Slug}";
     var badgeCategory = subcategory ?? category;
     var shareNetworks = (await SiteSettingsService.GetAsync()).EnabledShareNetworks;
+    var tocHeader = new CollapsibleMenuHeaderViewModel("En esta página");
 }
 
 
@@ -140,6 +142,7 @@ ImageMapper.GetBestUrl(coverImage);
                 @if (!string.IsNullOrWhiteSpace(Model.AuthorAvatarUrl))
                 {
                     <img src="@Model.AuthorAvatarUrl" alt="@Model.Author"
+                         width="36" height="36" decoding="async"
                          class="w-9 h-9 rounded-full object-cover ring-2 ring-[#FDC500] ring-offset-2 ring-offset-white" />
                 }
                 else
@@ -189,6 +192,11 @@ ImageMapper.GetBestUrl(coverImage);
                 <img src="@coverUrl" srcset="@coverSrcSet"
                      sizes="(min-width: 1024px) 1200px, 100vw"
                      alt="@(!string.IsNullOrWhiteSpace(coverImage?.Alt) ? coverImage.Alt : Model.Title)"
+                     width="@(coverImage?.OriginalWidth > 0 ? coverImage.OriginalWidth : null)"
+                     height="@(coverImage?.OriginalHeight > 0 ? coverImage.OriginalHeight : null)"
+                     loading="eager"
+                     fetchpriority="high"
+                     decoding="async"
                      class="block h-auto w-full" />
             </div>
         </figure>
@@ -205,13 +213,8 @@ ImageMapper.GetBestUrl(coverImage);
         <aside class="hidden lg:block lg:col-span-3 sticky top-28 z-10 overflow-hidden bg-[#00296B] text-white rounded-2xl shadow-xl shadow-[#00296B]/20">
             <div class="h-1 bg-gradient-to-r from-[#FDC500] to-[#FFD500]" aria-hidden="true"></div>
             <div class="p-6 space-y-4">
-                <h4 class="font-extrabold text-[#FDC500] text-xs uppercase tracking-[0.16em] flex items-center gap-2.5 pb-4 border-b border-white/15">
-                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-[#FDC500] text-[#00296B]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h7" />
-                        </svg>
-                    </span>
-                    En esta página
+                <h4 class="flex items-center gap-2.5 pb-4 border-b border-white/15">
+                    <partial name="Partials/_MenuBrand" model="tocHeader.Title" />
                     <span id="tocCounter" class="ml-auto text-[11px] font-bold tracking-normal normal-case text-blue-100 tabular-nums"></span>
                 </h4>
                 <nav id="tableOfContents" aria-label="Índice del artículo"
@@ -224,20 +227,7 @@ ImageMapper.GetBestUrl(coverImage);
         <!-- Índice plegable para móviles y tablets -->
         <details id="mobileTocWrapper"
                  class="lg:hidden group overflow-hidden bg-[#00296B] text-white rounded-2xl shadow-lg shadow-[#00296B]/20">
-            <summary class="flex items-center justify-between gap-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden px-5 py-4 min-h-[56px]">
-                <span class="flex items-center gap-2.5 font-extrabold text-[#FDC500] text-xs uppercase tracking-[0.16em]">
-                    <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-[#FDC500] text-[#00296B]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h7" />
-                        </svg>
-                    </span>
-                    En esta página
-                </span>
-                <svg class="w-5 h-5 text-white transition-transform duration-200 group-open:rotate-180" fill="none"
-                     stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
-                </svg>
-            </summary>
+            <partial name="Partials/_CollapsibleMenuHeader" model="tocHeader" />
             <nav id="tableOfContentsMobile" aria-label="Índice del artículo (móvil)"
                  class="space-y-1 px-3 pb-4 pt-1 border-t border-white/15 max-h-[60vh] overflow-y-auto">
                 <span class="block px-3 text-blue-100 italic text-sm">Cargando secciones...</span>
@@ -310,6 +300,16 @@ ImageMapper.GetBestUrl(coverImage);
         <partial name="Partials/_CommentsSection" model="comments" />
     </section>
 </article>
+
+@section Preloads {
+    @if (!string.IsNullOrEmpty(coverUrl))
+    {
+        <link rel="preload" as="image" href="@coverUrl"
+              imagesrcset="@coverSrcSet"
+              imagesizes="(min-width: 1024px) 1200px, 100vw"
+              fetchpriority="high" />
+    }
+}
 
 @section Scripts {
     <script src="~/js/article.js" asp-append-version="true" defer></script>

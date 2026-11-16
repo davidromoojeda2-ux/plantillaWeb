@@ -1,0 +1,73 @@
+@model PostCardViewModel
+@{
+    var isPriority = ViewData["PostCardPriority"] is true;
+    var fallbackIcon = new SvgIcon("article", "w-11 h-11", StrokeWidth: "1.3");
+}
+
+<article class="card card--post card--mosaic @Model.CustomClass">
+    <!-- Capa visual de fondo: Imagen de portada o fallback elegante -->
+    <div class="card-mosaic__media">
+        @if (Model.Image.HasUrl)
+        {
+            <img class="card-mosaic__img"
+                 src="@Model.Image.Url"
+                 srcset="@Model.Image.SrcSet"
+                 sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                 alt="@Model.Image.Alt"
+                 width="@Model.Image.Width"
+                 height="@Model.Image.Height"
+                 loading="@(isPriority ? "eager" : "lazy")"
+                 fetchpriority="@(isPriority ? "high" : null)"
+                 decoding="async" />
+        }
+        else
+        {
+            <div class="card-mosaic__fallback" role="img" aria-label="@Model.Image.Alt">
+                <partial name="_SvgIcon" model="fallbackIcon" />
+            </div>
+        }
+        <div class="card-mosaic__scrim" aria-hidden="true"></div>
+    </div>
+
+    <!-- Contenido interno: categoría superior, flecha ↗, y título DENTRO del card -->
+    <div class="card-mosaic__inner">
+        <header class="card-mosaic__header">
+            <span class="card-mosaic__category">@Model.Category</span>
+            <span class="card-mosaic__arrow" aria-hidden="true">
+                <partial name="_SvgIcon"
+                         model="@(new SvgIcon("arrow-up-right", Class: "", StrokeWidth: "2", Width: "18", Height: "18"))" />
+            </span>
+        </header>
+
+        <div class="card-mosaic__body">
+            <h3 class="card-mosaic__title">
+                <a class="card__link" href="@Model.Href">@Model.Title</a>
+            </h3>
+
+            @if (!string.IsNullOrWhiteSpace(Model.Excerpt))
+            {
+                <p class="card-mosaic__excerpt">@Model.Excerpt</p>
+            }
+
+            <footer class="card-mosaic__footer">
+                @if (Model.PublishedAt is DateTime date)
+                {
+                    <time class="card-mosaic__date" datetime="@date.ToString("yyyy-MM-dd")">
+                        @date.ToString("dd MMM yyyy")
+                    </time>
+                }
+                else
+                {
+                    <span class="card-mosaic__date">Publicación</span>
+                }
+                <span class="card-mosaic__cta" aria-hidden="true">
+                    <span>Leer</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </span>
+            </footer>
+        </div>
+    </div>
+</article>

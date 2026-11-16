@@ -60,7 +60,9 @@
                 @if (!string.IsNullOrWhiteSpace(prevUrl))
                 {
                     <div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-200/60 hidden sm:block">
-                        <img src="@prevUrl" srcset="@prevSrcSet" sizes="56px" alt="@Model.Previous.Title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        <img src="@prevUrl" srcset="@prevSrcSet" sizes="56px" width="56" height="56"
+                             loading="lazy" decoding="async" alt="@Model.Previous.Title"
+                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     </div>
                 }
             </a>
@@ -97,7 +99,9 @@
                 @if (!string.IsNullOrWhiteSpace(nextUrl))
                 {
                     <div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-slate-200/60 hidden sm:block order-first">
-                        <img src="@nextUrl" srcset="@nextSrcSet" sizes="56px" alt="@Model.Next.Title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        <img src="@nextUrl" srcset="@nextSrcSet" sizes="56px" width="56" height="56"
+                             loading="lazy" decoding="async" alt="@Model.Next.Title"
+                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     </div>
                 }
                 <div class="flex-1 min-w-0">

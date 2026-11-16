@@ -66,8 +66,12 @@
         else
             {
                 <ul class="card-grid card-grid--posts" role="list">
+                    @{
+                        var cardIndex = 0;
+                    }
                     @foreach (var art in Model.Items)
                     {
+                        ViewData["PostCardPriority"] = cardIndex++ == 0;
                         <partial name="Partials/_PostCard" model="art" />
                     }
                 </ul>
