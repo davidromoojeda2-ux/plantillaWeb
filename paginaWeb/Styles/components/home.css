@@ -132,6 +132,13 @@
         text-align: center;
     }
 
+    .hero__logo {
+        display: block;
+        width: clamp(96px, 12vw, 136px);
+        height: auto;
+        margin: 0 auto var(--space-5);
+    }
+
     .hero__kicker {
         margin: 0 0 var(--space-3);
         color: var(--c-accent);

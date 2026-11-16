@@ -184,7 +184,7 @@ public static class HomePageViewModelFactory
         // 1. Hero
         var heroSource = (featured.Count > 0 ? featured : recent).Take(5).ToList();
         var hero = new HeroViewModel(
-            Title: "TITULO DE LA PAGINA WEB",
+            Title: SiteBrand.Name,
             Subtitle: "Noticias verificadas, análisis en profundidad y coberturas especiales de actualidad.",
             Cards: heroSource.Select(a => new FeatureCardViewModel(
                 a.Title,
