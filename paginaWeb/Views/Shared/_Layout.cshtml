@@ -24,12 +24,12 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - {SiteBrand.Name}" : $"{SiteBrand.Name} - Periodismo Independiente y Análisis Profundo")</title>
-    <meta name="description" content="@(ViewData["MetaDescription"] ?? "Portal informativo con las últimas noticias, cobertura en profundidad, reportajes y análisis sobre tecnología, economía y cultura.")" />
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - {SiteBrand.Name}" : $"{SiteBrand.Name} - Energía solar, baterías y autoconsumo")</title>
+    <meta name="description" content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo para producir y aprovechar tu propia energía.")" />
     <link rel="icon" type="image/svg+xml" href="~/img/logos/logo.svg" />
 
     <meta property="og:title" content="@(ViewData["Title"] ?? SiteBrand.Name)" />
-    <meta property="og:description" content="@(ViewData["MetaDescription"] ?? "Noticias rigurosas y actualizadas.")" />
+    <meta property="og:description" content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo.")" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="@SiteBrand.Name" />
     @if (!string.IsNullOrWhiteSpace(ogImage))

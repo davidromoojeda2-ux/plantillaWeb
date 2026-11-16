@@ -1,7 +1,7 @@
 @model HomePageViewModel
 @{
-    ViewData["Title"] = "Noticias Principales y Análisis";
-    ViewData["MetaDescription"] = "Últimas noticias, reportajes y análisis en profundidad sobre tecnología, economía y cultura.";
+    ViewData["Title"] = "Noticias de energía solar, baterías y autoconsumo";
+    ViewData["MetaDescription"] = "Noticias, guías y análisis sobre energía solar, baterías y autoconsumo. Información práctica para ahorrar y ganar autonomía.";
     var heroLeadImage = Model.Hero.Cards is { Count: > 0 } ? Model.Hero.Cards[0].Image : null;
     ViewData["OgImage"] = heroLeadImage?.Url;
 }
@@ -16,7 +16,7 @@
             <div class="hero__intro" data-reveal>
                 <img src="~/img/logos/logo-dark.svg" alt="" class="hero__logo" width="136" height="136"
                      decoding="async" />
-                <p class="hero__kicker">PORTAL DE NOTICIAS</p>
+
                 <h1 id="hero-title" class="hero__title">@Model.Hero.Title</h1>
                 <p class="hero__subtitle">@Model.Hero.Subtitle</p>
 

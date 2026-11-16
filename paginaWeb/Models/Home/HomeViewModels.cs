@@ -185,7 +185,7 @@ public static class HomePageViewModelFactory
         var heroSource = (featured.Count > 0 ? featured : recent).Take(5).ToList();
         var hero = new HeroViewModel(
             Title: SiteBrand.Name,
-            Subtitle: "Noticias verificadas, análisis en profundidad y coberturas especiales de actualidad.",
+            Subtitle: "Noticias, guías y análisis para producir, almacenar y aprovechar tu propia energía.",
             Cards: heroSource.Select(a => new FeatureCardViewModel(
                 a.Title,
                 a.Summary,
