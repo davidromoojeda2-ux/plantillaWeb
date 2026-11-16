@@ -162,7 +162,8 @@ public sealed record HomePageViewModel(
 /// </summary>
 public static class HomePageViewModelFactory
 {
-    public const int ColumnEntryCount = 3;
+    // 4 entradas: se muestran en una cuadrícula 2x2 de tarjetas cuadradas en todos los tamaños
+    public const int ColumnEntryCount = 4;
     public const int TopReadEntryCount = 5;
 
     private const int CardImageWidth = 800;
@@ -195,7 +196,7 @@ public static class HomePageViewModelFactory
                 a.Author,
                 a.ReadingTimeMinutes > 0 ? a.ReadingTimeMinutes : EstimateReadingMinutes(a.Summary))).ToList());
 
-        // 2. Últimas entradas en dos columnas (3 publicaciones recientes con tarjetas grandes a la izquierda y 5 más leídas a la derecha)
+        // 2. Últimas entradas en dos columnas (4 publicaciones recientes a la izquierda y 5 más leídas a la derecha)
         var latestEntriesSource = recent.Concat(featured)
             .DistinctBy(a => a.Id)
             .Take(ColumnEntryCount)

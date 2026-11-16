@@ -1,0 +1,20 @@
+@model InstitutionalNavViewModel
+@{
+    var navClass = Model.IsMobile
+        ? "space-y-1 px-3 pb-4 pt-1 border-t border-white/15 max-h-[60vh] overflow-y-auto"
+        : "space-y-1 text-sm";
+    var ariaLabel = Model.IsMobile
+        ? "Documentos institucionales (móvil)"
+        : "Documentos institucionales";
+}
+
+<nav class="@navClass" aria-label="@ariaLabel">
+    @foreach (var pageItem in Model.Pages)
+    {
+        var isActive = pageItem.Slug == Model.CurrentSlug;
+        <a asp-controller="Home" asp-action="Info" asp-route-slug="@pageItem.Slug"
+           class="block px-3 py-2 rounded-xl text-sm font-medium transition @(isActive ? "bg-[#FDC500] text-[#00296B] font-bold shadow-xs" : "text-blue-50 hover:bg-white/10")">
+            @pageItem.Title
+        </a>
+    }
+</nav>

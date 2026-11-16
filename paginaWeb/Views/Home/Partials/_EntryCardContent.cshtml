@@ -1,0 +1,36 @@
+@model EntryCardContentViewModel
+@{
+    var entry = Model.Entry;
+}
+
+<div class="card-h__body">
+    <span class="card-h__cat">@entry.Category</span>
+    <h3 class="card-h__title">@entry.Title</h3>
+    <div class="card-h__meta">
+        @if (entry.PublishedAt is DateTime date)
+        {
+            <time datetime="@date.ToString("yyyy-MM-dd")">@date.ToString("dd MMM yyyy")</time>
+        }
+        else
+        {
+            <span>@Model.FallbackMeta</span>
+        }
+        @if (Model.ShowViews && entry.ViewCount > 0)
+        {
+            <span class="card-h__meta-sep" aria-hidden="true">•</span>
+            <span class="card-h__views" title="@entry.ViewCount lecturas acumuladas">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span>@entry.ViewCount lecturas</span>
+            </span>
+        }
+    </div>
+</div>
+<span class="card-h__arrow" aria-hidden="true">
+    <partial name="_SvgIcon"
+             model="@(new SvgIcon("arrow-up-right", Class: "", StrokeWidth: "2", Width: "18", Height: "18"))" />
+</span>
