@@ -20,11 +20,27 @@
                         <div class="hero-dynamic__media">
                             @if (item.Image.HasUrl)
                             {
-                                <img class="hero-dynamic__img" src="@item.Image.Url"
-                                     srcset="@item.Image.SrcSet"
-                                     sizes="(min-width: 1600px) 1600px, 100vw"
-                                     alt="@item.Image.Alt"
-                                     loading="@(i == 0 ? "eager" : "lazy")" decoding="async" />
+                                @if (isActive)
+                                {
+                                    <img class="hero-dynamic__img" src="@item.Image.Url"
+                                         srcset="@item.Image.SrcSet"
+                                         sizes="(min-width: 1600px) 1600px, 100vw"
+                                         alt="@item.Image.Alt"
+                                         loading="eager"
+                                         fetchpriority="high"
+                                         decoding="async" />
+                                }
+                                else
+                                {
+                                    <!-- Las diapositivas inactivas cargan su imagen solo al mostrarse -->
+                                    <img class="hero-dynamic__img" data-src="@item.Image.Url"
+                                         data-srcset="@item.Image.SrcSet"
+                                         sizes="(min-width: 1600px) 1600px, 100vw"
+                                         alt="@item.Image.Alt"
+                                         loading="lazy"
+                                         fetchpriority="low"
+                                         decoding="async" />
+                                }
                             }
                             else
                             {

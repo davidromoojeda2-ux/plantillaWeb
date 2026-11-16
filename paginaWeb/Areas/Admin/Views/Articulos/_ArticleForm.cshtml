@@ -271,6 +271,7 @@
                 <div id="coverPreviewContainer" class="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "hidden" : "") space-y-2">
                     <div class="relative w-full aspect-video max-h-60 rounded-xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-md group">
                         <img id="coverPreviewImg" src="@Model.CoverImageUrl" alt="Portada" referrerpolicy="no-referrer"
+                             decoding="async"
                              class="w-full h-full object-cover transition-all duration-300"
                              onerror="this.onerror=null; this.classList.add('opacity-30'); document.getElementById('coverErrorBadge')?.classList.remove('hidden');"
                              onload="this.classList.remove('opacity-30'); document.getElementById('coverErrorBadge')?.classList.add('hidden');" />
@@ -341,7 +342,8 @@
                                 var thumb = ImageMapper.GetThumbnailUrl(img) ?? bestUrl;
                                 <button type="button" onclick="selectExistingCover('@img.Id', '@bestUrl')"
                                         class="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-[#00509D] transition group relative" title="@img.OriginalFileName (Clic para usar de portada)">
-                                    <img src="@thumb" alt="@img.OriginalFileName" class="w-full h-full object-cover" />
+                                    <img src="@thumb" alt="@img.OriginalFileName" width="48" height="48"
+                                         loading="lazy" decoding="async" class="w-full h-full object-cover" />
                                 </button>
                             }
                         </div>

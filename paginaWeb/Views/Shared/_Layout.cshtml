@@ -9,6 +9,15 @@
         .Where(p => p.Active && !string.IsNullOrWhiteSpace(p.Url))
         .OrderBy(p => p.Order)
         .ToList();
+
+    // Imagen para compartir en redes sociales (Open Graph / Twitter Cards)
+    var ogImage = ViewData["OgImage"] as string;
+    if (!string.IsNullOrWhiteSpace(ogImage)
+        && !ogImage.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+        && !ogImage.StartsWith("//", StringComparison.Ordinal))
+    {
+        ogImage = $"{Context.Request.Scheme}://{Context.Request.Host}{(ogImage.StartsWith('/') ? string.Empty : "/")}{ogImage}";
+    }
 }
 <!DOCTYPE html>
 <html lang="es" class="h-full scroll-smooth">
@@ -21,6 +30,15 @@
     <meta property="og:title" content="@(ViewData["Title"] ?? "Portal Noticias")" />
     <meta property="og:description" content="@(ViewData["MetaDescription"] ?? "Noticias rigurosas y actualizadas.")" />
     <meta property="og:type" content="website" />
+    @if (!string.IsNullOrWhiteSpace(ogImage))
+    {
+        <meta property="og:image" content="@ogImage" />
+        <meta property="og:image:alt" content="@(ViewData["Title"] ?? "Portal Noticias")" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="@ogImage" />
+    }
+
+    @await RenderSectionAsync("Preloads", required: false)
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
