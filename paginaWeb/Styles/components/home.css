@@ -153,6 +153,7 @@
         font: 900 var(--fs-h1) / 1.1 var(--font-display);
         letter-spacing: -0.02em;
         text-wrap: balance;
+        text-transform: uppercase;
     }
 
     .hero__subtitle {
