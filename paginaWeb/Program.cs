@@ -12,6 +12,8 @@ using Infrastructure.Serper;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Hosting;
 using paginaWeb.Realtime;
 using paginaWeb.Workers;
@@ -21,6 +23,14 @@ var builder = WebApplication.CreateBuilder(args);
 // ─── Servicios de MVC ────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
+
+// ─── Compresión de respuestas (HTML, CSS, JS, JSON…) ─────────────────────────
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        ["image/svg+xml", "application/manifest+json"]);
+});
 
 // ─── MongoDB ─────────────────────────────────────────────────────────────────
 builder.Services.Configure<MongoDbSettings>(
@@ -129,11 +139,32 @@ using (var scope = app.Services.CreateScope())
 if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
 
-app.UseStaticFiles();
+app.UseResponseCompression();
 
 // Si se configuró una ruta física para LocalStorage en VPS fuera de wwwroot, servirla bajo RequestPath
 var customUploadsPath = app.Configuration["LocalStorage:BasePath"];
 var customUploadsUrl = app.Configuration["LocalStorage:BaseUrl"] ?? "/uploads";
+var uploadsRequestPath = new PathString(customUploadsUrl.StartsWith('/') ? customUploadsUrl : "/" + customUploadsUrl);
+
+// Las imágenes subidas incluyen un identificador único en el nombre, por lo que
+// se pueden cachear de forma agresiva sin riesgo de servir contenido obsoleto.
+void ApplyStaticFileCache(StaticFileResponseContext ctx)
+{
+    var headers = ctx.Context.Response.Headers;
+    if (headers.CacheControl.Count > 0)
+        return;
+
+    if (ctx.Context.Request.Path.StartsWithSegments(uploadsRequestPath))
+        headers.CacheControl = "public, max-age=31536000, immutable";
+    else if (!app.Environment.IsDevelopment())
+        headers.CacheControl = "public, max-age=604800";
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ApplyStaticFileCache
+});
+
 if (!string.IsNullOrWhiteSpace(customUploadsPath))
 {
     var resolvedPath = Path.IsPathRooted(customUploadsPath)
@@ -145,7 +176,8 @@ if (!string.IsNullOrWhiteSpace(customUploadsPath))
     app.UseStaticFiles(new StaticFileOptions
     {
         FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(resolvedPath),
-        RequestPath = new PathString(customUploadsUrl.StartsWith('/') ? customUploadsUrl : "/" + customUploadsUrl)
+        RequestPath = uploadsRequestPath,
+        OnPrepareResponse = ApplyStaticFileCache
     });
 }
 

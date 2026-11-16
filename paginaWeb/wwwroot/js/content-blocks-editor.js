@@ -847,6 +847,7 @@
             const image = document.createElement('img');
             image.alt = 'Vista previa de la imagen';
             image.loading = 'lazy';
+            image.decoding = 'async';
             const empty = element('span', 'cbe-image-empty', 'Sin imagen seleccionada');
             preview.append(image, empty);
 
@@ -1783,7 +1784,7 @@
                     card.type = 'button';
                     card.setAttribute('aria-pressed', 'false');
                     card.innerHTML = `
-                        <span class="cbe-media-thumb"><img src="${escapeHtml(image.thumbnailUrl || image.url || '')}" alt="${escapeHtml(image.alt || image.fileName || '')}" loading="lazy" /></span>
+                        <span class="cbe-media-thumb"><img src="${escapeHtml(image.thumbnailUrl || image.url || '')}" alt="${escapeHtml(image.alt || image.fileName || '')}" loading="lazy" decoding="async" /></span>
                         <span class="cbe-media-name">${escapeHtml(image.fileName || 'Imagen')}</span>
                     `;
                     card.addEventListener('click', () => {

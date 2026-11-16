@@ -41,6 +41,26 @@
             timerBar.style.width = '100%';
         }
 
+        // Carga diferida: las diapositivas no activas guardan su URL en data-src
+        function ensureSlideImage(slide) {
+            if (!slide) return;
+            var img = slide.querySelector('.hero-dynamic__img');
+            if (!img || !img.hasAttribute('data-src')) return;
+
+            var src = img.getAttribute('data-src');
+            var srcset = img.getAttribute('data-srcset');
+
+            img.loading = 'eager';
+            if (srcset) {
+                img.setAttribute('srcset', srcset);
+                img.removeAttribute('data-srcset');
+            }
+            if (src) {
+                img.setAttribute('src', src);
+                img.removeAttribute('data-src');
+            }
+        }
+
         function pauseProgressBar() {
             if (!timerBar) return;
             var computedWidth = window.getComputedStyle(timerBar).width;
@@ -53,6 +73,10 @@
             if (index >= total) index = 0;
 
             currentIndex = index;
+
+            // Carga diferida: pide la imagen de la diapositiva visible y adelanta la siguiente
+            ensureSlideImage(slides[currentIndex]);
+            ensureSlideImage(slides[(currentIndex + 1) % total]);
 
             // Actualizar diapositivas
             slides.forEach(function (slide, i) {
