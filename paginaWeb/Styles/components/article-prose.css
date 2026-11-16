@@ -253,7 +253,6 @@
      Nivel 3 → guion gris (suave).
   */
   .article-prose ul,
-  .article-prose .article-bullet-list,
   .article-prose .article-unordered-list {
     list-style: none;
     padding-left: 0;
@@ -264,7 +263,6 @@
   }
 
   .article-prose ul > li,
-  .article-prose .article-bullet-list > li,
   .article-prose .article-unordered-list > li {
     position: relative;
     padding-left: 1.75rem;
@@ -275,7 +273,6 @@
 
   /* Nivel 1 */
   .article-prose ul > li::before,
-  .article-prose .article-bullet-list > li::before,
   .article-prose .article-unordered-list > li::before {
     content: "";
     position: absolute;

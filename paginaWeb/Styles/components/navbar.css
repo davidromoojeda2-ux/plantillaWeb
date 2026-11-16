@@ -353,10 +353,6 @@
       background: #00296B;
   }
 
-  .mega-menu__footer {
-      display: none;
-  }
-
   /* El menú móvil usa el amarillo corporativo del mega-menú de escritorio */
   @media (max-width: 899.98px) {
       .site-nav__menu {
@@ -408,11 +404,6 @@
       display: none;
   }
 
-  .site-nav__cta--mobile {
-      display: inline-flex;
-      width: 100%;
-  }
-
   .site-nav__toggle {
       position: relative;
       display: inline-flex;
@@ -459,8 +450,7 @@
 
   /* ─── Media Queries Progresivas (Mobile First) ────────────────────────── */
   @media (min-width: 900px) {
-      .site-nav__toggle,
-      .site-nav__cta--mobile {
+      .site-nav__toggle {
           display: none;
       }
 
@@ -650,49 +640,6 @@
       .dropdown.mega-menu .mega-menu__sublink:hover .mega-menu__bullet {
           background: #00509D;
           transform: scale(1.4);
-      }
-
-      /* Barra inferior estilo Shopify */
-      .dropdown.mega-menu .mega-menu__footer {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 20px;
-          background: #F8FAFC;
-          border-top: 1px solid #E2E8F0;
-          padding: 18px 32px;
-          margin: 0 -32px;
-          border-bottom-left-radius: 16px;
-          border-bottom-right-radius: 16px;
-      }
-
-      .dropdown.mega-menu .mega-menu__footer-item {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-      }
-
-      .dropdown.mega-menu .mega-menu__footer-tag {
-          font-size: 0.6875rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #64748B;
-      }
-
-      .dropdown.mega-menu .mega-menu__footer-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #00296B;
-          text-decoration: none;
-          transition: color 0.18s ease, transform 0.18s ease;
-      }
-
-      .dropdown.mega-menu .mega-menu__footer-link:hover {
-          color: #00509D;
-          transform: translateX(3px);
       }
 
       /* Popover flotante estándar para otros dropdowns */
