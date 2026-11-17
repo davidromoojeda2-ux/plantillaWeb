@@ -131,7 +131,7 @@
     font-weight: 700;
     line-height: 1;
     font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-    cursor: help;
+    cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
     vertical-align: middle;
     user-select: none;
