@@ -61,4 +61,19 @@ public class SiteSettingsController : Controller
             return BadRequest(new { success = false, message = ex.Message });
         }
     }
+
+    [HttpPost("calidad-imagenes")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveImageQuality([FromBody] ImageQualitySettingsDto? settings)
+    {
+        try
+        {
+            await _settingsService.SaveImageQualityAsync(settings);
+            return Json(new { success = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+    }
 }

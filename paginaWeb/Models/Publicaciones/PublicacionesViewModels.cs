@@ -25,7 +25,7 @@ public sealed record SearchBarViewModel(
     string? Query = null,
     long? TotalCount = null,
     bool ShowCount = false,
-    string Placeholder = "Buscar noticias, temas o autores…",
+    string Placeholder = "¿Qué necesitas saber?",
     string Action = "Index",
     string Controller = "Publicaciones",
     string? FormClass = null,

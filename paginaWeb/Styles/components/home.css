@@ -109,8 +109,9 @@
         z-index: -2;
         pointer-events: none;
         background:
-            radial-gradient(40% 50% at 85% 10%, rgb(253 197 0 / 0.22), transparent 70%),
-            radial-gradient(35% 45% at 8% 30%, rgb(21 101 192 / 0.45), transparent 70%);
+            radial-gradient(40% 50% at 85% 10%,  rgb(253 197 0 / 0.25), transparent 70%),
+            radial-gradient(35% 45% at 8% 30%,   rgb(21 101 192 / 0.45), transparent 70%),
+            radial-gradient(28% 40% at 50% 60%,  rgb(253 197 0 / 0.08), transparent 65%);
     }
 
     .hero__curve {
@@ -132,6 +133,44 @@
         text-align: center;
     }
 
+    /* ─── Animaciones de entrada del Hero ───────────────────────────────────── */
+    @keyframes heroFadeUp {
+        from { opacity: 0; transform: translateY(22px); }
+        to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    @keyframes heroLogoIn {
+        from { opacity: 0; transform: scale(0.85) translateY(-10px); }
+        to   { opacity: 1; transform: scale(1)    translateY(0);     }
+    }
+
+    /* Cada hijo directo de .hero__intro entra en cascada */
+    .hero__intro > * {
+        animation: heroFadeUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .hero__logo {
+        display: block;
+        width: clamp(96px, 12vw, 136px);
+        height: auto;
+        margin: 0 auto var(--space-5);
+        animation: heroLogoIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
+    }
+
+    .hero__title    { animation-delay: 0.3s;  }
+    .hero__subtitle { animation-delay: 0.55s; }
+    .hero__search   { animation-delay: 0.75s; }
+
+    /* Respeto por usuarios con movimiento reducido */
+    @media (prefers-reduced-motion: reduce) {
+        .hero__intro > *,
+        .hero__logo {
+            animation: none;
+            opacity: 1;
+            transform: none;
+        }
+    }
+
     .hero__kicker {
         margin: 0 0 var(--space-3);
         color: var(--c-accent);
@@ -143,18 +182,26 @@
     .hero__title {
         margin: 0;
         color: var(--c-on-dark);
-        font: 900 var(--fs-h1) / 1.1 var(--font-display);
-        letter-spacing: -0.02em;
+        font: 900 clamp(2.5rem, 7vw + 0.5rem, 6rem) / 1.0 var(--font-display);
+        letter-spacing: -0.03em;
         text-wrap: balance;
+        text-transform: uppercase;
     }
 
     .hero__subtitle {
         max-width: 100%;
         margin: var(--space-4) auto 0;
-        color: var(--c-on-dark-muted);
-        font-size: clamp(0.9375rem, 1.2vw + 0.6rem, 1.125rem);
+        color: rgba(255, 255, 255, 0.82);
+        font-size: clamp(1rem, 1.4vw + 0.55rem, 1.25rem);
+        font-weight: 400;
         line-height: 1.6;
         text-wrap: pretty;
+    }
+
+    /* Fragmento de acento dorado dentro del subtítulo */
+    .hero__subtitle--accent {
+        color: #fdc500;
+        font-weight: 700;
     }
 
     .hero__search {

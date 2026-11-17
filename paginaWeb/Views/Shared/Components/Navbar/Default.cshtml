@@ -4,9 +4,11 @@
     <div class="site-nav__inner">
         <!-- ─── Logotipo de Marca ──────────────────────────────────────────────── -->
         <a class="site-nav__brand" asp-controller="Home" asp-action="Index" id="nav-brand"
-           aria-label="Portal Noticias, ir al inicio">
-            <span class="site-nav__logo" aria-hidden="true">L</span>
-            <span class="site-nav__name">LOGO<strong>WEB</strong></span>
+           aria-label="@SiteBrand.Name, ir al inicio">
+            <span class="site-nav__logo" aria-hidden="true">
+                <img src="~/img/logos/logo.svg" alt="" width="48" height="48" decoding="async" />
+            </span>
+            <span class="site-nav__name">@SiteBrand.Name</span>
         </a>
 
         <!-- ─── Menú Principal Central ─────────────────────────────────────────── -->

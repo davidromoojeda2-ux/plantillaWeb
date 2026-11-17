@@ -30,7 +30,41 @@ public class SiteSettings
         SocialNetworks.WhatsApp
     ];
 
+    /// <summary>Calidad de compresión WebP aplicada a las nuevas imágenes.</summary>
+    public ImageQualitySettings ImageQuality { get; set; } = new();
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Calidad de codificación WebP para las variantes generadas al subir una imagen.
+/// Un valor nulo en un tamaño concreto indica que se usa la calidad global.
+/// </summary>
+[BsonIgnoreExtraElements]
+public class ImageQualitySettings
+{
+    public const int DefaultQuality = 80;
+    public const int MinQuality = 1;
+    public const int MaxQuality = 100;
+
+    public int Quality { get; set; } = DefaultQuality;
+
+    /// <summary>Calidad específica para la variante de 400 px (miniatura).</summary>
+    public int? QualitySmall { get; set; }
+
+    /// <summary>Calidad específica para la variante de 800 px.</summary>
+    public int? QualityMedium { get; set; }
+
+    /// <summary>Calidad específica para la variante de 1600 px.</summary>
+    public int? QualityLarge { get; set; }
+
+    /// <summary>Resuelve la calidad efectiva para un ancho de variante.</summary>
+    public int ForWidth(int width) => width switch
+    {
+        <= 400 => QualitySmall ?? Quality,
+        <= 800 => QualityMedium ?? Quality,
+        _ => QualityLarge ?? Quality
+    };
 }
 
 [BsonIgnoreExtraElements]

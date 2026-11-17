@@ -2,6 +2,7 @@ using Aplication.DTOs;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
+using Aplication.Services;
 using Domine.Entities;
 using Domine.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -23,6 +24,7 @@ public class ImageService
     private readonly LocalStorage _localStorage;
     private readonly IImageMetadataRepository _metadataRepo;
     private readonly IArticleRepository? _articleRepo;
+    private readonly ISiteSettingsService? _siteSettings;
     private readonly ILogger<ImageService> _logger;
 
     public ImageService(
@@ -30,13 +32,15 @@ public class ImageService
         LocalStorage localStorage,
         IImageMetadataRepository metadataRepo,
         ILogger<ImageService> logger,
-        IArticleRepository? articleRepo = null)
+        IArticleRepository? articleRepo = null,
+        ISiteSettingsService? siteSettings = null)
     {
         _s3Storage = s3Storage;
         _localStorage = localStorage;
         _metadataRepo = metadataRepo;
         _logger = logger;
         _articleRepo = articleRepo;
+        _siteSettings = siteSettings;
     }
 
     /// <summary>
@@ -117,11 +121,13 @@ public class ImageService
         // 3. Procesamiento y compresión con ImageSharp
         using var image = await Image.LoadAsync(inputStream, ct);
 
-        // Corregir orientación EXIF y limpiar metadatos para privacidad
+        // Corregir orientación EXIF antes de eliminar cualquier metadato
         image.Mutate(x => x.AutoOrient());
         int originalWidth = image.Width;
         int originalHeight = image.Height;
-        image.Metadata.ExifProfile = null;
+
+        // Privacidad: quita EXIF, XMP, IPTC e ICC del lienzo y de cada fotograma
+        ImageMetadataCleaner.Strip(image);
 
         var variants = new List<ImageVariant>();
         var dateFolder = DateTime.UtcNow.ToString("yyyy/MM");
@@ -131,7 +137,23 @@ public class ImageService
         if (string.IsNullOrWhiteSpace(cleanName)) cleanName = "img";
 
         var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
-        var encoder = new WebpEncoder { Quality = 80 };
+
+        // Calidad configurable desde el panel; si no hay ajustes, se usa 80 (valor histórico)
+        var quality = _siteSettings is null
+            ? new ImageQualitySettingsDto()
+            : await _siteSettings.GetImageQualityAsync();
+
+        var encoders = TargetWidths.ToDictionary(
+            width => width,
+            width => new WebpEncoder { Quality = quality.ForWidth(width) });
+
+        _logger.LogInformation(
+            "Calidad WebP aplicada a '{FileName}': global {Global}, 400px {Small}, 800px {Medium}, 1600px {Large}.",
+            effectiveName,
+            quality.Quality,
+            quality.ForWidth(400),
+            quality.ForWidth(800),
+            quality.ForWidth(1600));
 
         // 4. Generación y subida de variantes WebP (400, 800, 1600 px)
         foreach (var width in TargetWidths)
@@ -150,7 +172,7 @@ public class ImageService
 
             var key = $"images/{dateFolder}/{cleanName}-{uniqueSuffix}-{width}.webp";
             using var ms = new MemoryStream();
-            await variant.SaveAsync(ms, encoder, ct);
+            await variant.SaveAsync(ms, encoders[width], ct);
             var sizeBytes = ms.Length;
             ms.Position = 0;
 
