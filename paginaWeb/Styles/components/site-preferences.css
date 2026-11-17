@@ -6,7 +6,7 @@
      Lenguaje visual: tarjeta navy del sitio, acento amarillo y controles
      nativos accesibles. En móvil se comporta como una hoja inferior.
   */
-  .cookie-banner {
+  .site-notice {
     position: fixed;
     right: 0.85rem;
     bottom: 0.85rem;
@@ -29,17 +29,17 @@
     transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease;
   }
 
-  .cookie-banner.is-visible {
+  .site-notice.is-visible {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
   }
 
-  .cookie-banner[hidden] {
+  .site-notice[hidden] {
     display: none !important;
   }
 
-  .cookie-banner__icon {
+  .site-notice__icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -51,16 +51,16 @@
     color: var(--color-brand-900, #00296b);
   }
 
-  .cookie-banner__icon svg {
+  .site-notice__icon svg {
     width: 1.25rem;
     height: 1.25rem;
   }
 
-  .cookie-banner__body {
+  .site-notice__body {
     min-width: 0;
   }
 
-  .cookie-banner__title {
+  .site-notice__title {
     margin: 0;
     font-family: var(--font-heading);
     font-size: 0.98rem;
@@ -69,14 +69,14 @@
     color: #ffffff;
   }
 
-  .cookie-banner__text {
+  .site-notice__text {
     margin: 0.35rem 0 0;
     font-size: 0.79rem;
     line-height: 1.6;
     color: #c8d3e6;
   }
 
-  .cookie-banner__policy {
+  .site-notice__policy {
     display: inline-block;
     margin-top: 0.45rem;
     color: #fdc500;
@@ -86,11 +86,11 @@
     text-underline-offset: 3px;
   }
 
-  .cookie-banner__policy:hover {
+  .site-notice__policy:hover {
     color: #ffe066;
   }
 
-  .cookie-actions {
+  .site-notice__actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -98,7 +98,7 @@
     margin-top: 0.9rem;
   }
 
-  .cookie-btn {
+  .pref-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -115,32 +115,32 @@
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
 
-  .cookie-btn:focus-visible {
+  .pref-btn:focus-visible {
     outline: 2px solid #fdc500;
     outline-offset: 2px;
   }
 
-  .cookie-btn--primary {
+  .pref-btn--primary {
     background: var(--color-accent, #fdc500);
     color: var(--color-brand-900, #00296b);
   }
 
-  .cookie-btn--primary:hover {
+  .pref-btn--primary:hover {
     background: #ffd500;
   }
 
-  .cookie-btn--ghost {
+  .pref-btn--ghost {
     border-color: rgb(255 255 255 / 0.22);
     background: rgb(255 255 255 / 0.06);
     color: #ffffff;
   }
 
-  .cookie-btn--ghost:hover {
+  .pref-btn--ghost:hover {
     border-color: rgb(255 255 255 / 0.38);
     background: rgb(255 255 255 / 0.12);
   }
 
-  .cookie-btn--link {
+  .pref-btn--link {
     padding-right: 0.35rem;
     padding-left: 0.35rem;
     background: transparent;
@@ -149,20 +149,20 @@
     text-underline-offset: 3px;
   }
 
-  .cookie-btn--link:hover {
+  .pref-btn--link:hover {
     color: #ffffff;
   }
 
-  .cookie-banner .cookie-actions .cookie-btn {
+  .site-notice .site-notice__actions .pref-btn {
     flex: 1 1 9rem;
   }
 
-  .cookie-banner .cookie-actions .cookie-btn--link {
+  .site-notice .site-notice__actions .pref-btn--link {
     flex-basis: 100%;
   }
 
   /* ── Panel de preferencias ───────────────────────────────────────────── */
-  .cookie-settings {
+  .site-preferences {
     position: fixed;
     inset: 0;
     z-index: 130;
@@ -174,11 +174,11 @@
     backdrop-filter: blur(4px);
   }
 
-  .cookie-settings[hidden] {
+  .site-preferences[hidden] {
     display: none !important;
   }
 
-  .cookie-settings__dialog {
+  .site-preferences__dialog {
     width: 100%;
     max-width: 34rem;
     max-height: 92vh;
@@ -191,14 +191,14 @@
     box-shadow: 0 30px 70px -20px rgb(2 6 23 / 0.5);
   }
 
-  .cookie-settings__header {
+  .site-preferences__header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
   }
 
-  .cookie-settings__title {
+  .site-preferences__title {
     margin: 0;
     font-family: var(--font-heading);
     font-size: 1.15rem;
@@ -207,14 +207,14 @@
     color: var(--color-brand-900, #00296b);
   }
 
-  .cookie-settings__intro {
+  .site-preferences__intro {
     margin: 0.45rem 0 1rem;
     font-size: 0.8rem;
     line-height: 1.6;
     color: #64748b;
   }
 
-  .cookie-settings__close {
+  .site-preferences__close {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -228,12 +228,12 @@
     cursor: pointer;
   }
 
-  .cookie-settings__close:hover {
+  .site-preferences__close:hover {
     background: #e2e8f0;
     color: #0f172a;
   }
 
-  .cookie-category {
+  .pref-category {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -242,25 +242,25 @@
     border-top: 1px solid #eef2f7;
   }
 
-  .cookie-category:first-of-type {
+  .pref-category:first-of-type {
     border-top: 0;
   }
 
-  .cookie-category__title {
+  .pref-category__title {
     margin: 0;
     font-size: 0.85rem;
     font-weight: 700;
     color: #0f172a;
   }
 
-  .cookie-category__text {
+  .pref-category__text {
     margin: 0.2rem 0 0;
     font-size: 0.75rem;
     line-height: 1.55;
     color: #64748b;
   }
 
-  .cookie-category__always {
+  .pref-category__always {
     flex-shrink: 0;
     padding-top: 0.15rem;
     font-size: 0.68rem;
@@ -271,7 +271,7 @@
   }
 
   /* Interruptor accesible basado en checkbox nativo */
-  .cookie-toggle {
+  .pref-toggle {
     position: relative;
     display: inline-flex;
     flex-shrink: 0;
@@ -280,7 +280,7 @@
     cursor: pointer;
   }
 
-  .cookie-toggle input {
+  .pref-toggle input {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -288,7 +288,7 @@
     opacity: 0;
   }
 
-  .cookie-toggle__track {
+  .pref-toggle__track {
     position: relative;
     display: block;
     width: 2.75rem;
@@ -298,7 +298,7 @@
     transition: background-color 0.18s ease;
   }
 
-  .cookie-toggle__track::after {
+  .pref-toggle__track::after {
     content: "";
     position: absolute;
     top: 0.2rem;
@@ -311,20 +311,20 @@
     transition: transform 0.18s ease;
   }
 
-  .cookie-toggle input:checked + .cookie-toggle__track {
+  .pref-toggle input:checked + .pref-toggle__track {
     background: var(--color-brand-500, #00509d);
   }
 
-  .cookie-toggle input:checked + .cookie-toggle__track::after {
+  .pref-toggle input:checked + .pref-toggle__track::after {
     transform: translateX(1.15rem);
   }
 
-  .cookie-toggle input:focus-visible + .cookie-toggle__track {
+  .pref-toggle input:focus-visible + .pref-toggle__track {
     outline: 3px solid rgb(0 80 157 / 0.25);
     outline-offset: 3px;
   }
 
-  .cookie-settings__note {
+  .site-preferences__note {
     margin: 0.75rem 0 0;
     padding-top: 0.9rem;
     border-top: 1px solid #eef2f7;
@@ -333,7 +333,7 @@
     color: #64748b;
   }
 
-  .cookie-settings__actions {
+  .site-preferences__actions {
     position: sticky;
     bottom: 0;
     z-index: 2;
@@ -347,11 +347,11 @@
     background: #ffffff;
   }
 
-  .cookie-settings__actions .cookie-btn {
+  .site-preferences__actions .pref-btn {
     width: 100%;
   }
 
-  .cookie-settings__actions .cookie-btn--primary {
+  .site-preferences__actions .pref-btn--primary {
     grid-column: 1 / -1;
     order: -1;
     border-color: var(--color-brand-900, #00296b);
@@ -359,28 +359,28 @@
     color: #ffffff;
   }
 
-  .cookie-settings__actions .cookie-btn--primary:hover {
+  .site-preferences__actions .pref-btn--primary:hover {
     background: var(--color-brand-500, #00509d);
   }
 
-  .cookie-settings__actions .cookie-btn--ghost {
+  .site-preferences__actions .pref-btn--ghost {
     border-color: #d8dee9;
     background: #ffffff;
     color: #334155;
   }
 
-  .cookie-settings__actions .cookie-btn--ghost:hover {
+  .site-preferences__actions .pref-btn--ghost:hover {
     border-color: #b9c4d6;
     background: #f8fafc;
   }
 
   /* La tarjeta flotante de WhatsApp deja paso al aviso en móvil */
-  html.cookie-consent-open #whatsAppFloat {
+  html.site-notice-open #whatsAppFloat {
     display: none !important;
   }
 
   @media (min-width: 640px) {
-    .cookie-banner {
+    .site-notice {
       right: auto;
       bottom: 1.5rem;
       left: 1.5rem;
@@ -388,19 +388,19 @@
       padding: 1.25rem 1.35rem;
     }
 
-    .cookie-settings {
+    .site-preferences {
       align-items: center;
       padding: 1.5rem;
     }
 
-    .cookie-settings__dialog {
+    .site-preferences__dialog {
       border-radius: 1.15rem;
       padding: 1.5rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cookie-banner {
+    .site-notice {
       transition: none;
     }
   }
