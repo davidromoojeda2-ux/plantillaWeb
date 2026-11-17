@@ -1,16 +1,16 @@
 @model paginaWeb.Areas.Admin.Models.ImageLibraryViewModel
 @{
-    ViewData["Title"] = "Biblioteca de Imágenes";
+    ViewData["Title"] = "Biblioteca de ImÃ¡genes";
 }
 
-<div class="space-y-8">
+<div class="space-y-4">
     <!-- --- Alertas del Sistema -------------------------------------------------- -->
     @if (TempData["Success"] != null)
     {
         <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-start gap-3 shadow-xs">
             <svg class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <div>
-                <p class="font-semibold">Operación exitosa</p>
+                <p class="font-semibold">OperaciÃ³n exitosa</p>
                 <p class="text-xs text-emerald-700 mt-0.5">@TempData["Success"]</p>
             </div>
         </div>
@@ -27,133 +27,92 @@
         </div>
     }
 
-    <!-- --- Estado del Servicio de Almacenamiento (S3 Prioritario vs Local) ----- -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center @(Model.StorageStatus.IsS3Available ? "bg-indigo-50 text-indigo-600" : "bg-amber-50 text-amber-600")">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" />
-                    </svg>
+    <!-- â”€â”€â”€ Estado, calidad y subida â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 flex flex-col justify-between gap-3">
+            <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 @(Model.StorageStatus.IsS3Available ? "bg-indigo-50 text-indigo-600" : "bg-amber-50 text-amber-600")">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
                 </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h4 class="font-bold text-slate-800 text-sm">Disponibilidad del Almacenamiento</h4>
-                        @if (Model.StorageStatus.IsS3Available)
-                        {
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                S3 Conectado (Prioridad Activa)
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
-                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                                S3 No Disponible - Modo Fallback Local
-                            </span>
-                        }
-                    </div>
-                    <p class="text-xs text-slate-500 mt-0.5">
-                        @if (Model.StorageStatus.IsS3Available)
-                        {
-                            <span>Las nuevas imágenes se optimizan y envían automáticamente al bucket S3 <strong>@Model.StorageStatus.S3Bucket</strong>.</span>
-                        }
-                        else
-                        {
-                            <span>El servicio S3 no responde o no tiene credenciales configuradas. Las imágenes se guardan de forma segura en almacenamiento local.</span>
-                        }
-                    </p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2 text-xs">
-                <span class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-mono text-slate-600">
-                    S3 Bucket: @(string.IsNullOrEmpty(Model.StorageStatus.S3Bucket) ? "No config" : Model.StorageStatus.S3Bucket)
-                </span>
-                <span class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-mono text-slate-600">
-                    Almacenamiento Local: @(Model.StorageStatus.IsLocalAvailable ? "Activo (/uploads)" : "Inaccesible")
-                </span>
-            </div>
-        </div>
-    </div>
-
-    <!-- --- Calidad de Optimización WebP (Configurable) ------------------------ -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 text-[#00296B]">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                    </svg>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <h4 class="font-bold text-slate-800 text-sm">Calidad de optimización WebP</h4>
-                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                            Sin metadatos
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-slate-800">Almacenamiento</p>
+                    @if (Model.StorageStatus.IsS3Available)
+                    {
+                        <span class="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            S3 conectado
                         </span>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-0.5">
-                        Afecta solo a las nuevas imágenes. Se eliminan EXIF, XMP, IPTC y perfil ICC de todas las variantes.
-                    </p>
+                    }
+                    else
+                    {
+                        <span class="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            Modo local
+                        </span>
+                    }
                 </div>
             </div>
-
-            <div class="flex items-center gap-2 flex-wrap">
-                <span id="imageQualitySummary"
-                      class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-mono text-[11px] text-slate-600">
-                    Global @Model.ImageQuality.Quality% · 400 @Model.ImageQuality.ForWidth(400)% ·
-                    800 @Model.ImageQuality.ForWidth(800)% · 1600 @Model.ImageQuality.ForWidth(1600)%
+            <div class="flex flex-wrap gap-1.5 text-[10px] text-slate-600">
+                <span class="max-w-full truncate rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-mono" title="Bucket S3">
+                    S3: @(string.IsNullOrEmpty(Model.StorageStatus.S3Bucket) ? "No config" : Model.StorageStatus.S3Bucket)
                 </span>
-                <button type="button" id="btnOpenImageQualityModal"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00296B] hover:bg-[#00509D] text-white text-xs font-bold shadow-xs transition">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                    </svg>
-                    Configurar
-                </button>
+                <span class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                    Local: @(Model.StorageStatus.IsLocalAvailable ? "activo" : "inaccesible")
+                </span>
             </div>
+            <p class="text-[10px] leading-relaxed text-slate-400">
+                @(Model.StorageStatus.IsS3Available
+                    ? "Las nuevas imÃ¡genes se envÃ­an a S3."
+                    : "S3 no disponible: las imÃ¡genes se guardan en local.")
+            </p>
         </div>
-    </div>
 
-    <!-- --- Subida rápida de imágenes ------------------------------------------- -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 p-6" id="libraryUploadCard">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 flex flex-col justify-between gap-3">
+            <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 text-[#00296B]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-800">Calidad WebP</p>
+                    <span class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">Sin metadatos</span>
+                </div>
+            </div>
+            <span id="imageQualitySummary" class="block rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 font-mono text-[10px] leading-relaxed text-slate-600">
+                Global @Model.ImageQuality.Quality% Â· 400 @Model.ImageQuality.ForWidth(400)% Â· 800 @Model.ImageQuality.ForWidth(800)% Â· 1600 @Model.ImageQuality.ForWidth(1600)%
+            </span>
+            <button type="button" id="btnOpenImageQualityModal"
+                    class="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                Configurar
+            </button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 flex flex-col justify-between gap-3" id="libraryUploadCard">
             <div>
-                <h3 class="font-bold text-slate-800 text-base">Subir imágenes</h3>
-                <p class="text-xs text-slate-500 mt-1">
-                    Selecciona hasta 10 imágenes a la vez. El nombre y el texto ALT se generan automáticamente desde cada archivo.
-                    Para vincular una imagen a un artículo o usarla como portada, hazlo desde el editor del artículo.
+                <p class="text-xs font-bold text-slate-800">Subir imÃ¡genes</p>
+                <p class="mt-1 text-[10px] leading-relaxed text-slate-500">
+                    Hasta 10 imÃ¡genes. El nombre y el ALT se generan automÃ¡ticamente. Para vincular a un artÃ­culo o usar como portada, edita el artÃ­culo.
                 </p>
             </div>
-
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-2">
                 <input type="file" id="libraryImageInput" accept="image/*" multiple class="sr-only" tabindex="-1" />
                 <button type="button" id="libraryUploadButton"
-                        title="Puedes seleccionar hasta 10 imágenes a la vez"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-xs transition disabled:opacity-60 disabled:cursor-wait">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
+                        title="Puedes seleccionar hasta 10 imÃ¡genes a la vez"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-xs transition disabled:opacity-60 disabled:cursor-wait">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                     <span id="libraryUploadLabel">Subir imagen</span>
                 </button>
             </div>
+            <p id="libraryUploadError" class="hidden text-[10px] font-semibold text-rose-600" role="alert"></p>
+            @Html.AntiForgeryToken()
         </div>
-
-        <p id="libraryUploadError" class="hidden mt-3 text-[11px] font-semibold text-rose-600" role="alert"></p>
-        @Html.AntiForgeryToken()
     </div>
-
-    <!-- --- Filtros y Búsqueda de la Biblioteca -------------------------------- -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
+    <!-- --- Filtros y BÃºsqueda de la Biblioteca -------------------------------- -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-4">
         <form method="get" asp-area="Admin" asp-controller="Imagenes" asp-action="Index" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
             <div class="lg:col-span-4">
                 <div class="relative">
-                    <input type="text" name="search" value="@Model.Search" placeholder="Buscar por nombre o descripción..."
+                    <input type="text" name="search" value="@Model.Search" placeholder="Buscar por nombre o descripciÃ³n..."
                            class="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
                     <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
@@ -169,8 +128,8 @@
 
             <div class="lg:col-span-3">
                 <select name="articleId" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none">
-                    <option value="">-- Vinculación con Artículos --</option>
-                    <option value="linked" selected="@(Model.ArticleFilter == "linked")">Solo con artículo vinculado</option>
+                    <option value="">-- VinculaciÃ³n con ArtÃ­culos --</option>
+                    <option value="linked" selected="@(Model.ArticleFilter == "linked")">Solo con artÃ­culo vinculado</option>
                     <option value="none" selected="@(Model.ArticleFilter == "none")">Sin vincular (Biblioteca suelta)</option>
                 </select>
             </div>
@@ -189,17 +148,17 @@
         </form>
     </div>
 
-    <!-- --- Galería de la Biblioteca de Imágenes ------------------------------- -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
+    <!-- --- GalerÃ­a de la Biblioteca de ImÃ¡genes ------------------------------- -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-4">
         <div class="flex items-center justify-between mb-5">
             <div>
-                <h3 class="font-bold text-slate-800 text-lg">Catálogo Multimedia</h3>
-                <p class="text-xs text-slate-400">Total encontrado: @Model.TotalCount imágenes</p>
+                <h3 class="font-bold text-slate-800 text-lg">CatÃ¡logo Multimedia</h3>
+                <p class="text-xs text-slate-400">Total encontrado: @Model.TotalCount imÃ¡genes</p>
             </div>
             @if (Model.TotalPages > 1)
             {
                 <span class="text-xs text-slate-500 font-medium">
-                    Página @Model.CurrentPage de @Model.TotalPages
+                    PÃ¡gina @Model.CurrentPage de @Model.TotalPages
                 </span>
             }
         </div>
@@ -208,13 +167,13 @@
         {
             <div class="py-16 text-center text-slate-400">
                 <svg class="w-16 h-16 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                <p class="font-semibold text-slate-700 text-base">No se encontraron imágenes en este criterio.</p>
-                <p class="text-xs text-slate-400 mt-1">Sube una nueva imagen o ajusta los filtros de búsqueda.</p>
+                <p class="font-semibold text-slate-700 text-base">No se encontraron imÃ¡genes en este criterio.</p>
+                <p class="text-xs text-slate-400 mt-1">Sube una nueva imagen o ajusta los filtros de bÃºsqueda.</p>
             </div>
         }
         else
         {
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 @foreach (var img in Model.Images)
                 {
                     var previewVariant = img.Variants.OrderBy(v => v.Width).FirstOrDefault() ?? img.Variants.FirstOrDefault();
@@ -250,11 +209,11 @@
 
                                 <!-- Dimensiones originales -->
                                 <span class="absolute top-2 right-2 bg-black/70 text-white text-[10px] font-mono px-2 py-0.5 rounded-full backdrop-blur-xs">
-                                    @img.OriginalWidth × @img.OriginalHeight
+                                    @img.OriginalWidth Ã— @img.OriginalHeight
                                 </span>
                             </div>
 
-                            <div class="p-4 space-y-3">
+                            <div class="p-3 space-y-2">
                                 <div>
                                     <p class="text-xs font-bold text-slate-800 truncate" title="@img.OriginalFileName">
                                         @img.OriginalFileName
@@ -264,51 +223,62 @@
                                     </p>
                                 </div>
 
-                                <!-- Estado de vinculación con Artículo -->
-                                <div>
-                                    @if (!string.IsNullOrEmpty(img.ArticleId))
-                                    {
-                                        <div class="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
-                                            <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                                            <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@img.ArticleId" class="truncate hover:underline font-semibold" title="Ir a editar artículo">
-                                                @(img.ArticleTitle ?? "Artículo vinculado")
-                                            </a>
+                                <details class="group rounded-xl border border-slate-200 bg-white/80">
+                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[11px] font-semibold text-slate-600 [&::-webkit-details-marker]:hidden">
+                                        <span>InformaciÃ³n y variantes</span>
+                                        <svg class="w-3.5 h-3.5 shrink-0 transition group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </summary>
+
+                                    <div class="space-y-3 border-t border-slate-100 px-3 pb-3 pt-3">
+                                        <!-- Estado de vinculaciÃ³n con ArtÃ­culo -->
+                                        <div>
+                                            @if (!string.IsNullOrEmpty(img.ArticleId))
+                                            {
+                                                <div class="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
+                                                    <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                                                    <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@img.ArticleId" class="truncate hover:underline font-semibold" title="Ir a editar artÃ­culo">
+                                                        @(img.ArticleTitle ?? "ArtÃ­culo vinculado")
+                                                    </a>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-[11px] text-slate-400 italic block py-0.5">Sin artÃ­culo vinculado</span>
+                                            }
                                         </div>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-[11px] text-slate-400 italic block py-0.5">Sin artículo vinculado</span>
-                                    }
-                                </div>
 
-                                <!-- Variantes WebP generadas -->
-                                <div>
-                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Variantes WebP:</p>
-                                    <div class="flex flex-wrap gap-1 text-[10px] font-mono text-slate-600">
-                                        @foreach (var v in img.Variants)
-                                        {
-                                            <span class="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-2xs" title="@v.Key">
-                                                @(v.Width)w (@(v.SizeBytes / 1024)KB)
-                                            </span>
-                                        }
+                                        <!-- Variantes WebP generadas -->
+                                        <div>
+                                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Variantes WebP:</p>
+                                            <div class="flex flex-wrap gap-1 text-[10px] font-mono text-slate-600">
+                                                @foreach (var v in img.Variants)
+                                                {
+                                                    <span class="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-2xs" title="@v.Key">
+                                                        @(v.Width)w (@(v.SizeBytes / 1024)KB)
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <!-- Formulario rÃ¡pido de Texto Alt -->
+                                        <form method="post" asp-area="Admin" asp-controller="Imagenes" asp-action="UpdateAlt" class="flex gap-1.5 items-center">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@img.Id" />
+                                            <input type="text" name="alt" value="@img.Alt" placeholder="Texto Alt..."
+                                                   class="w-full text-xs rounded-lg border border-slate-300 px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-[#00509D]" />
+                                            <button type="submit" class="p-1.5 rounded-lg bg-slate-200 hover:bg-[#00509D] hover:text-white text-slate-600 transition" title="Guardar Alt">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
+                                        </form>
                                     </div>
-                                </div>
-
-                                <!-- Formulario rápido de Texto Alt -->
-                                <form method="post" asp-area="Admin" asp-controller="Imagenes" asp-action="UpdateAlt" class="flex gap-1.5 items-center">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@img.Id" />
-                                    <input type="text" name="alt" value="@img.Alt" placeholder="Texto Alt..."
-                                           class="w-full text-xs rounded-lg border border-slate-300 px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-[#00509D]" />
-                                    <button type="submit" class="p-1.5 rounded-lg bg-slate-200 hover:bg-[#00509D] hover:text-white text-slate-600 transition" title="Guardar Alt">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                    </button>
-                                </form>
+                                </details>
                             </div>
                         </div>
 
                         <!-- Barra de acciones inferiores -->
-                        <div class="p-3 border-t border-slate-200/80 bg-white flex items-center justify-between text-xs">
+                        <div class="p-2.5 border-t border-slate-200/80 bg-white flex items-center justify-between text-xs">
                             <div class="flex items-center gap-2">
                                 <button type="button" onclick="copyToClipboard('@maxUrl')"
                                         class="text-[#00509D] font-semibold hover:underline flex items-center gap-1">
@@ -330,12 +300,12 @@
                 }
             </div>
 
-            <!-- --- Paginación -------------------------------------------------------- -->
+            <!-- --- PaginaciÃ³n -------------------------------------------------------- -->
             @if (Model.TotalPages > 1)
             {
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-slate-200">
                     <p class="text-xs text-slate-500">
-                        Mostrando imágenes <strong>@((Model.CurrentPage - 1) * Model.PageSize + 1)</strong> a 
+                        Mostrando imÃ¡genes <strong>@((Model.CurrentPage - 1) * Model.PageSize + 1)</strong> a 
                         <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount))</strong> de 
                         <strong>@Model.TotalCount</strong>
                     </p>
@@ -390,15 +360,15 @@
     </div>
 </div>
 
-<!-- --- Modal de Confirmación de Eliminación --------------------------------- -->
+<!-- --- Modal de ConfirmaciÃ³n de EliminaciÃ³n --------------------------------- -->
 <div id="deleteModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
         <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
         </div>
-        <h4 class="text-lg font-bold text-slate-900 text-center">¿Eliminar esta imagen y sus variantes?</h4>
+        <h4 class="text-lg font-bold text-slate-900 text-center">Â¿Eliminar esta imagen y sus variantes?</h4>
         <p class="text-xs text-slate-500 text-center mt-2 leading-relaxed">
-            Se eliminará el archivo <strong id="deleteImageName" class="text-slate-800"></strong> y sus <span id="deleteVariantsCount">3</span> variantes optimizadas WebP del almacenamiento. Si algún artículo público utiliza esta imagen, dejará de verse.
+            Se eliminarÃ¡ el archivo <strong id="deleteImageName" class="text-slate-800"></strong> y sus <span id="deleteVariantsCount">3</span> variantes optimizadas WebP del almacenamiento. Si algÃºn artÃ­culo pÃºblico utiliza esta imagen, dejarÃ¡ de verse.
         </p>
         <form id="deleteForm" method="post" asp-area="Admin" asp-controller="Imagenes" asp-action="Delete" class="mt-6 flex gap-3">
             @Html.AntiForgeryToken()
@@ -406,7 +376,7 @@
                 Cancelar
             </button>
             <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition">
-                Sí, Eliminar Todo
+                SÃ­, Eliminar Todo
             </button>
         </form>
     </div>
@@ -433,7 +403,7 @@
             <div>
                 <h5 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Variantes WebP Disponibles</h5>
                 <div id="detailsModalVariants" class="space-y-2">
-                    <!-- Dinámico vía JS -->
+                    <!-- DinÃ¡mico vÃ­a JS -->
                 </div>
             </div>
         </div>
@@ -442,7 +412,7 @@
 
 <partial name="_ImageQualityModal" model="Model.ImageQuality" />
 
-<!-- --- Scripts de Validación en Tiempo Real e Interacción --------------------- -->
+<!-- --- Scripts de ValidaciÃ³n en Tiempo Real e InteracciÃ³n --------------------- -->
 @section Scripts {
 <script>
     // Datos en memoria para el visor modal
@@ -472,7 +442,7 @@
         if (!libraryUploadLabel) return;
 
         libraryUploadLabel.textContent = value
-            ? (total > 1 ? 'Subiendo ' + Math.min(done + 1, total) + ' de ' + total + '…' : 'Subiendo…')
+            ? (total > 1 ? 'Subiendo ' + Math.min(done + 1, total) + ' de ' + total + 'â€¦' : 'Subiendoâ€¦')
             : 'Subir imagen';
     }
 
@@ -528,7 +498,7 @@
             showLibraryUploadError(
                 failures.length === 1
                     ? failures[0].message
-                    : 'No se pudo subir ninguna imagen. Revisa los archivos e inténtalo de nuevo.');
+                    : 'No se pudo subir ninguna imagen. Revisa los archivos e intÃ©ntalo de nuevo.');
             return;
         }
 
@@ -550,7 +520,7 @@
         uploadLibraryFiles(this.files);
     });
 
-    // Resume del lote anterior tras recargar la página
+    // Resume del lote anterior tras recargar la pÃ¡gina
     (function showBatchSummary() {
         const raw = sessionStorage.getItem('imageBatchUploadSummary');
         if (!raw) return;
@@ -564,26 +534,26 @@
                 window.showToast(
                     summary.success === 1
                         ? 'Imagen subida y optimizada correctamente.'
-                        : summary.success + ' imágenes subidas y optimizadas correctamente.',
+                        : summary.success + ' imÃ¡genes subidas y optimizadas correctamente.',
                     'success');
             }
 
             if (summary.failed && summary.failed.length) {
-                const names = summary.failed.slice(0, 3).map(function (item) { return '«' + item.name + '»'; });
-                if (summary.failed.length > 3) names.push('y ' + (summary.failed.length - 3) + ' más');
+                const names = summary.failed.slice(0, 3).map(function (item) { return 'Â«' + item.name + 'Â»'; });
+                if (summary.failed.length > 3) names.push('y ' + (summary.failed.length - 3) + ' mÃ¡s');
                 const detail = summary.failed.length === 1 ? ' Motivo: ' + summary.failed[0].message : '';
                 window.showToast('No se pudieron subir ' + summary.failed.length + ': ' + names.join(', ') + '.' + detail, 'error');
             }
 
             if (summary.overflow) {
-                window.showToast('Solo se procesaron las primeras ' + MAX_UPLOAD_BATCH + ' imágenes del lote.', 'info');
+                window.showToast('Solo se procesaron las primeras ' + MAX_UPLOAD_BATCH + ' imÃ¡genes del lote.', 'info');
             }
         } catch (error) {
             console.error('No se pudo mostrar el resumen de subida:', error);
         }
     })();
 
-    // Modal de confirmación de eliminación
+    // Modal de confirmaciÃ³n de eliminaciÃ³n
     function confirmDeleteImage(id, name, variantsCount) {
         document.getElementById('deleteImageName').textContent = name;
         document.getElementById('deleteVariantsCount').textContent = variantsCount;
@@ -611,7 +581,7 @@
         const height = img.OriginalHeight || img.originalHeight;
 
         document.getElementById('detailsModalTitle').textContent = fileName;
-        document.getElementById('detailsModalSubtitle').textContent = `Resolución original: ${width} × ${height} px | Alt: "${alt}"`;
+        document.getElementById('detailsModalSubtitle').textContent = `ResoluciÃ³n original: ${width} Ã— ${height} px | Alt: "${alt}"`;
 
         const maxVar = [...variants].sort((a,b) => (b.Width||b.width) - (a.Width||a.width))[0];
         const previewUrl = maxVar ? (maxVar.PublicUrl || maxVar.publicUrl) : '';
