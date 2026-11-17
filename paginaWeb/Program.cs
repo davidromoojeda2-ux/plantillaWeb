@@ -5,6 +5,7 @@ using Aplication.Services;
 using Infrastructure.Ai;
 using Infrastructure.Auth;
 using Infrastructure.Balances;
+using Infrastructure.Links;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Infrastructure.Security;
@@ -87,6 +88,10 @@ builder.Services.AddHttpClient<IAiArticleGenerator, OpenAiCompatibleArticleGener
 builder.Services.AddHttpClient<ITopicCountryValidator, OpenAiCompatibleTopicCountryValidator>();
 builder.Services.AddHttpClient<IAiArticleRewriter, OpenAiCompatibleArticleRewriter>();
 builder.Services.AddHttpClient<IProviderBalanceService, ProviderBalanceService>();
+builder.Services.AddHttpClient<IArticleLinkChecker, ArticleLinkChecker>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 // ─── Worker de automatización (embebido, a prueba de fallos) ─────────────────
 builder.Services.AddHostedService<ArticleAutomationWorker>();

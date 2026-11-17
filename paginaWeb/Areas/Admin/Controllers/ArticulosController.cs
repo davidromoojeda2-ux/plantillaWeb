@@ -5,6 +5,7 @@ using Aplication.DTOs.ContentBlocks;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
+using Aplication.Serialization;
 using Aplication.Services;
 using Domine.Exceptions;
 using Infrastructure.Storage;
@@ -12,6 +13,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using paginaWeb.Areas.Admin.Models;
 using paginaWeb.Helpers;
+using System.Text.Json;
 
 namespace paginaWeb.Areas.Admin.Controllers;
 
@@ -27,6 +29,7 @@ public class ArticulosController : Controller
     private readonly IAiArticleRewriter _rewriter;
     private readonly IAutomationService _automation;
     private readonly ISiteSettingsService _siteSettingsService;
+    private readonly IArticleLinkChecker _linkChecker;
 
     public ArticulosController(
         IArticleService articleService,
@@ -35,7 +38,8 @@ public class ArticulosController : Controller
         IMenuService menuService,
         IAiArticleRewriter rewriter,
         IAutomationService automation,
-        ISiteSettingsService siteSettingsService)
+        ISiteSettingsService siteSettingsService,
+        IArticleLinkChecker linkChecker)
     {
         _articleService = articleService;
         _categoryService = categoryService;
@@ -44,6 +48,7 @@ public class ArticulosController : Controller
         _rewriter = rewriter;
         _automation = automation;
         _siteSettingsService = siteSettingsService;
+        _linkChecker = linkChecker;
     }
 
     [HttpGet("")]
@@ -220,6 +225,71 @@ public class ArticulosController : Controller
         {
             return NotFound();
         }
+    }
+
+    [HttpPost("validar")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Validar([FromBody] ArticleValidationRequest request)
+    {
+        if (request is null)
+            return BadRequest(new { message = "Solicitud de validación no válida." });
+
+        var errors = new List<string>();
+        var warnings = new List<string>();
+        var blocks = new List<ContentBlockDto>();
+
+        try
+        {
+            blocks = ContentBlockJson.Deserialize(request.BlocksJson);
+        }
+        catch (JsonException ex)
+        {
+            errors.Add(ex.Message);
+        }
+
+        var validation = ArticleFormValidator.Validate(
+            request.Title,
+            request.Summary,
+            request.Slug,
+            request.Author,
+            request.CategoryId,
+            request.CoverImageUrl,
+            request.Status,
+            blocks);
+
+        errors.AddRange(validation.Errors);
+        warnings.AddRange(validation.Warnings);
+
+        var linksToCheck = validation.Links.ToList();
+        if (!string.IsNullOrWhiteSpace(request.CoverImageUrl))
+            linksToCheck.Add(request.CoverImageUrl);
+
+        var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
+        var links = await _linkChecker.CheckAsync(linksToCheck, baseUri, HttpContext.RequestAborted);
+
+        foreach (var link in links)
+        {
+            if (link.IsBroken)
+                errors.Add($"Enlace caído: {link.Url} ({link.Detail ?? link.Status}).");
+            else if (link.IsWarning)
+                warnings.Add($"Enlace restringido: {link.Url} ({link.StatusCode}).");
+        }
+
+        return Json(new
+        {
+            isValid = errors.Count == 0,
+            errors,
+            warnings,
+            links = links.Select(link => new
+            {
+                link.Url,
+                link.StatusCode,
+                link.Status,
+                link.Detail,
+                link.IsBroken
+            }),
+            checkedAt = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        });
     }
 
     [HttpPost("eliminar/{id}")]
