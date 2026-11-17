@@ -142,15 +142,4 @@ public static class SocialNetworks
 
         return key;
     }
-
-    public static string ShareLabel(string key)
-    {
-        foreach (var share in Share)
-        {
-            if (string.Equals(share.Key, key, StringComparison.Ordinal))
-                return share.Label;
-        }
-
-        return key;
-    }
 }

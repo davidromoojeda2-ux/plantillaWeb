@@ -84,27 +84,138 @@
         </button>
     </div>
 
-    <!-- ─── Banner de Cookies ────────────────────────────────────────────────── -->
-    <div id="cookieBanner" class="hidden fixed bottom-4 right-4 max-w-md bg-slate-900 text-white rounded-2xl p-5 shadow-2xl border border-white/10 z-50 transition-all duration-300">
-        <div class="flex items-start gap-4">
-            <span class="text-2xl flex-shrink-0">🍪</span>
-            <div class="space-y-2">
-                <h5 class="font-bold text-sm">Respetamos tu privacidad</h5>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                    Utilizamos cookies analíticas para mejorar tu experiencia en nuestro portal. No compartimos información personal con terceros.
-                </p>
-                <div class="pt-2 flex items-center gap-3">
-                    <button type="button" id="acceptCookiesBtn" class="px-4 py-1.5 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-xs shadow-xs transition">
-                        Aceptar
-                    </button>
-                    <a asp-controller="Home" asp-action="Info" asp-route-slug="politica-de-privacidad" class="text-xs text-slate-400 hover:text-white underline">
-                        Más información
-                    </a>
-                </div>
-            </div>
-        </div>
+    <!-- ─── Aviso y preferencias de cookies ─────────────────────────────────── -->
+@*
+    Aviso de cookies y panel de preferencias.
+    El estado se guarda en el navegador y se puede cambiar desde el pie de página.
+*@
+<section id="cookieBanner"
+         class="cookie-banner"
+         role="region"
+         aria-labelledby="cookieBannerTitle"
+         aria-describedby="cookieBannerText"
+         hidden>
+    <div class="cookie-banner__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v5.2c0 4.4-2.9 8.2-7 9.8-4.1-1.6-7-5.4-7-9.8V6l7-3z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.3 12.2l1.8 1.8 3.7-3.8" />
+        </svg>
     </div>
 
+    <div class="cookie-banner__body">
+        <h2 id="cookieBannerTitle" class="cookie-banner__title">Tu privacidad, bajo control</h2>
+        <p id="cookieBannerText" class="cookie-banner__text">
+            En unautonomo.com usamos cookies técnicas necesarias para que el portal funcione y para recordar tu
+            decisión. Si nos das permiso, también guardaremos tus preferencias de interfaz y podremos activar en el
+            futuro una medición agregada. No hay analítica activa ni publicidad.
+        </p>
+        <a asp-controller="Home" asp-action="Info" asp-route-slug="politica-de-cookies"
+           class="cookie-banner__policy">
+            Política de cookies
+        </a>
+
+        <div class="cookie-actions">
+            <button type="button" class="cookie-btn cookie-btn--ghost" data-cookie-necessary>
+                Solo necesarias
+            </button>
+            <button type="button" class="cookie-btn cookie-btn--primary" data-cookie-accept-all>
+                Aceptar todas
+            </button>
+            <button type="button" class="cookie-btn cookie-btn--link" data-cookie-settings>
+                Configurar
+            </button>
+        </div>
+    </div>
+</section>
+
+<div id="cookieSettings" class="cookie-settings" hidden>
+    <div class="cookie-settings__dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="cookieSettingsTitle"
+         aria-describedby="cookieSettingsIntro"
+         tabindex="-1">
+        <div class="cookie-settings__header">
+            <div>
+                <h2 id="cookieSettingsTitle" class="cookie-settings__title">Preferencias de cookies</h2>
+            </div>
+            <button type="button" class="cookie-settings__close" data-cookie-close aria-label="Cerrar preferencias">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+                </svg>
+            </button>
+        </div>
+
+        <p id="cookieSettingsIntro" class="cookie-settings__intro">
+            Tú decides qué datos de navegación podemos guardar en este dispositivo. Las cookies necesarias no se
+            pueden desactivar porque sin ellas el portal y los formularios no funcionan.
+        </p>
+
+        <div class="cookie-category">
+            <div>
+                <h3 class="cookie-category__title">Técnicas necesarias</h3>
+                <p class="cookie-category__text">
+                    Seguridad, protección de formularios frente a envíos fraudulentos y registro de tu elección de
+                    cookies. No identifican ni perfilan al usuario.
+                </p>
+            </div>
+            <span class="cookie-category__always">Siempre activas</span>
+        </div>
+
+        <div class="cookie-category">
+            <div>
+                <h3 class="cookie-category__title">Preferencias</h3>
+                <p class="cookie-category__text">
+                    Recuerdan tus elecciones de interfaz, como el estado del botón flotante de WhatsApp. Si no las
+                    aceptas, esas preferencias no se guardan entre visitas.
+                </p>
+            </div>
+            <label class="cookie-toggle">
+                <span class="sr-only">Permitir cookies de preferencias</span>
+                <input type="checkbox" data-consent-category="preferences" />
+                <span class="cookie-toggle__track" aria-hidden="true"></span>
+            </label>
+        </div>
+
+        <div class="cookie-category">
+            <div>
+                <h3 class="cookie-category__title">Analítica</h3>
+                <p class="cookie-category__text">
+                    Medición agregada para saber qué contenidos son útiles. Está desactivada por defecto y
+                    actualmente no hay ningún proveedor de analítica activo; si se incorpora, solo se cargará con tu
+                    permiso.
+                </p>
+            </div>
+            <label class="cookie-toggle">
+                <span class="sr-only">Permitir cookies de analítica</span>
+                <input type="checkbox" data-consent-category="analytics" />
+                <span class="cookie-toggle__track" aria-hidden="true"></span>
+            </label>
+        </div>
+
+        <p class="cookie-settings__note">
+            No utilizamos cookies publicitarias ni de elaboración de perfiles. Puedes cambiar tu elección en
+            cualquier momento desde <strong>Configurar cookies</strong> en el pie de página.
+            <a asp-controller="Home" asp-action="Info" asp-route-slug="politica-de-cookies">Ver la política completa</a>.
+        </p>
+
+        <div class="cookie-settings__actions">
+            <button type="button" class="cookie-btn cookie-btn--ghost" data-cookie-necessary>
+                Solo necesarias
+            </button>
+            <button type="button" class="cookie-btn cookie-btn--primary" data-cookie-save>
+                Guardar preferencias
+            </button>
+            <button type="button" class="cookie-btn cookie-btn--ghost" data-cookie-accept-all>
+                Aceptar todas
+            </button>
+        </div>
+    </div>
+</div>
+
+<p id="cookieConsentStatus" class="sr-only" role="status" aria-live="polite"></p>
+
+    <script src="~/js/cookie-consent.js" asp-append-version="true" defer></script>
     <script src="~/js/site.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

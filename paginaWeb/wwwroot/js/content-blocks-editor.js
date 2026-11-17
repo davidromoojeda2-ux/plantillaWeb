@@ -24,7 +24,7 @@
     ];
 
     const TYPE_LABEL = Object.fromEntries(BLOCK_TYPES.map(item => [item.type, item.label]));
-    const ALLOWED_INLINE_TAGS = new Set(['strong', 'b', 'em', 'i', 'u', 's', 'a', 'code', 'br']);
+    const ALLOWED_INLINE_TAGS = new Set(['strong', 'b', 'em', 'i', 'u', 's', 'mark', 'a', 'code', 'br']);
     const DANGEROUS_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'svg', 'math', 'template', 'noscript']);
     const LINK_SCHEMES = new Set(['http:', 'https:', 'mailto:']);
     const CALLOUT_VARIANTS = ['info', 'tip', 'warning', 'success'];
@@ -34,8 +34,12 @@
         down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>',
         trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>',
         plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15"/></svg>',
+        more: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>',
         bold: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>',
         italic: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>',
+        underline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v6a5 5 0 0010 0V4M4 20h16"/></svg>',
+        strike: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h16"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 6.5C15.6 5.2 14 4.5 12 4.5c-2.5 0-4.5 1.2-4.5 3 0 1.5 1.2 2.5 3.2 3M7.5 17.5c.9 1.3 2.5 2 4.5 2 2.5 0 4.5-1.2 4.5-3 0-1.4-1-2.4-2.8-2.9"/></svg>',
+        highlight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.5 14.5L15 9l4 4-5.5 5.5H9.5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 21h12"/></svg>',
         link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>',
         image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
         upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>'
@@ -64,7 +68,11 @@
 
     function plainTextFromHtml(html) {
         const container = document.createElement('div');
-        container.innerHTML = String(html ?? '');
+        // Los saltos de línea y cierres de bloque deben separar palabras; si no,
+        // "contactoTitular" al convertir un párrafo multilínea en encabezado.
+        container.innerHTML = String(html ?? '')
+            .replace(/<\s*br\s*\/?>/gi, ' ')
+            .replace(/<\s*\/\s*(p|div|li|h[1-6]|blockquote)\s*>/gi, ' ');
         return (container.textContent || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
@@ -188,7 +196,6 @@
             this.root = root;
             this.input = input;
             this.canvas = root.querySelector('[data-cbe-canvas]');
-            this.toolbar = root.querySelector('[data-cbe-toolbar]');
             this.blocks = [];
             this.activeEditable = null;
             this.inlineToolbar = null;
@@ -200,6 +207,8 @@
             this.inserterMenuCleanup = null;
             this.draggedBlock = null;
             this.ignoreSelectionUntil = 0;
+            this.dirty = false;
+            this.initialized = false;
 
             this.allowedImageHosts = (root.dataset.allowedImageHosts || '')
                 .split(',').map(host => host.trim().toLowerCase()).filter(Boolean);
@@ -215,7 +224,11 @@
         init() {
             if (!this.canvas) return;
 
-            this.buildToolbar();
+            this.status = element('div', 'cbe-status');
+            this.status.setAttribute('role', 'status');
+            this.status.setAttribute('aria-live', 'polite');
+            this.root.appendChild(this.status);
+
             this.inlineToolbar = this.createInlineToolbar();
             this.root.appendChild(this.inlineToolbar);
 
@@ -227,8 +240,20 @@
             }
 
             this.sync();
+            this.initialized = true;
+
             const form = this.input.closest('form');
-            form?.addEventListener('submit', () => this.sync());
+            form?.addEventListener('submit', () => {
+                this.sync();
+                this.dirty = false;
+            });
+
+            // Evita perder cambios si se abandona la página sin guardar.
+            window.addEventListener('beforeunload', event => {
+                if (!this.dirty) return;
+                event.preventDefault();
+                event.returnValue = '';
+            });
 
             document.addEventListener('selectionchange', () => this.handleSelectionChange());
 
@@ -239,45 +264,42 @@
                 this.closeInserterMenu();
             });
 
+            // Al pulsar fuera de la burbuja, desaparece de inmediato: si se
+            // queda encima del texto, impide hacer clic en el contenido de al lado.
+            document.addEventListener('pointerdown', event => {
+                if (!this.inlineToolbar || this.inlineToolbar.hidden) return;
+                if (this.inlineToolbar.contains(event.target)) return;
+                this.hideInlineToolbarNow();
+            }, true);
+
             this.canvas.addEventListener('pointerdown', event => {
                 if (event.target === this.canvas) this.clearSelectedBlock();
             });
-        }
 
-        buildToolbar() {
-            if (!this.toolbar) return;
-
-            this.toolbar.innerHTML = '';
-            const label = element('span', 'cbe-toolbar-label', 'Añadir bloque');
-            const select = element('select', 'cbe-select cbe-add-select');
-            select.setAttribute('aria-label', 'Tipo de bloque que se va a añadir');
-            BLOCK_TYPES.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.type;
-                option.textContent = item.label;
-                select.appendChild(option);
-            });
-
-            const addButton = element('button', 'cbe-btn cbe-btn-primary', 'Añadir');
-            addButton.type = 'button';
-            addButton.addEventListener('click', () => {
-                this.addBlock(select.value, defaultsFor(select.value));
-            });
-
-            this.status = element('span', 'cbe-status');
-            this.status.setAttribute('role', 'status');
-            this.status.setAttribute('aria-live', 'polite');
-
-            this.toolbar.append(label, select, addButton, this.status);
+            document.addEventListener('scroll', () => {
+                if (this.inlineToolbar && !this.inlineToolbar.hidden) {
+                    this.scheduleHideInlineToolbar();
+                }
+            }, { passive: true, capture: true });
         }
 
         createInlineToolbar() {
             const bar = element('div', 'cbe-inline-toolbar');
             bar.hidden = true;
+            bar.setAttribute('role', 'toolbar');
+            bar.setAttribute('aria-label', 'Formato de texto');
             bar.innerHTML = `
-                <button type="button" class="cbe-format-btn" data-cmd="bold" title="Negrita" aria-label="Negrita" aria-pressed="false">${ICONS.bold}</button>
-                <button type="button" class="cbe-format-btn" data-cmd="italic" title="Cursiva" aria-label="Cursiva" aria-pressed="false">${ICONS.italic}</button>
-                <button type="button" class="cbe-format-btn" data-cmd="createLink" title="Insertar enlace" aria-label="Insertar enlace" aria-pressed="false">${ICONS.link}</button>
+                <div class="cbe-inline-group">
+                    <button type="button" class="cbe-format-btn" data-cmd="bold" title="Negrita" aria-label="Negrita" aria-pressed="false">${ICONS.bold}</button>
+                    <button type="button" class="cbe-format-btn" data-cmd="italic" title="Cursiva" aria-label="Cursiva" aria-pressed="false">${ICONS.italic}</button>
+                    <button type="button" class="cbe-format-btn" data-cmd="underline" title="Subrayado" aria-label="Subrayado" aria-pressed="false">${ICONS.underline}</button>
+                    <button type="button" class="cbe-format-btn" data-cmd="strikeThrough" title="Tachado" aria-label="Tachado" aria-pressed="false">${ICONS.strike}</button>
+                </div>
+                <span class="cbe-inline-separator" aria-hidden="true"></span>
+                <div class="cbe-inline-group">
+                    <button type="button" class="cbe-format-btn cbe-format-btn-highlight" data-cmd="mark" title="Resaltar" aria-label="Resaltar texto" aria-pressed="false">${ICONS.highlight}</button>
+                    <button type="button" class="cbe-format-btn" data-cmd="createLink" title="Insertar enlace" aria-label="Insertar enlace" aria-pressed="false">${ICONS.link}</button>
+                </div>
             `;
 
             bar.querySelectorAll('button[data-cmd]').forEach(button => {
@@ -287,7 +309,13 @@
                 });
             });
 
-            bar.addEventListener('pointerdown', event => event.preventDefault());
+            // No se cancela el pointerdown de los botones: hacerlo suprime el
+            // mousedown posterior en Chromium y el comando nunca se ejecutaría.
+            // Solo se cierra la burbuja al pulsar su fondo (fuera de un botón).
+            bar.addEventListener('pointerdown', event => {
+                if (event.target.closest('button')) return;
+                this.hideInlineToolbarNow();
+            });
             return bar;
         }
 
@@ -334,21 +362,18 @@
             return block;
         }
 
-        createBlockInserter(index) {
-            const row = element('div', 'cbe-block-inserter');
-            const lineBefore = element('span', 'cbe-inserter-line');
-            const button = element('button', 'cbe-inserter-btn', ICONS.plus);
-            button.type = 'button';
-            button.title = 'Insertar bloque aquí';
-            button.setAttribute('aria-label', 'Insertar bloque aquí');
-            button.addEventListener('click', event => {
-                event.stopPropagation();
-                this.openInserterMenu(button, index);
+        blockTypeOptions() {
+            const options = [];
+            BLOCK_TYPES.forEach(item => {
+                if (item.type === 'heading') {
+                    [2, 3].forEach(level => {
+                        options.push({ type: 'heading', level, label: `Encabezado H${level}` });
+                    });
+                } else {
+                    options.push({ type: item.type, level: null, label: item.label });
+                }
             });
-            const lineAfter = element('span', 'cbe-inserter-line');
-
-            row.append(lineBefore, button, lineAfter);
-            return row;
+            return options;
         }
 
         openInserterMenu(anchor, index) {
@@ -358,18 +383,102 @@
             menu.setAttribute('role', 'menu');
             menu.setAttribute('aria-label', 'Insertar bloque');
 
-            BLOCK_TYPES.forEach(item => {
-                const option = element('button', 'cbe-inserter-item', escapeHtml(item.label));
-                option.type = 'button';
-                option.setAttribute('role', 'menuitem');
-                option.addEventListener('click', () => {
+            this.blockTypeOptions().forEach(option => {
+                const button = element('button', 'cbe-inserter-item', escapeHtml(option.label));
+                button.type = 'button';
+                button.setAttribute('role', 'menuitem');
+                button.addEventListener('click', () => {
                     this.closeInserterMenu();
-                    this.insertBlockAt(index, item.type, defaultsFor(item.type));
+                    const data = option.type === 'heading'
+                        ? Object.assign(defaultsFor('heading'), { level: option.level })
+                        : defaultsFor(option.type);
+                    this.insertBlockAt(index, option.type, data);
                 });
-                menu.appendChild(option);
+                menu.appendChild(button);
             });
 
+            this.presentMenu(anchor, menu);
+        }
+
+        openBlockMenu(anchor, block) {
+            this.closeInserterMenu();
+
+            const menu = element('div', 'cbe-inserter-menu');
+            menu.setAttribute('role', 'menu');
+            menu.setAttribute('aria-label', 'Opciones del bloque');
+
+            const heading = element('p', 'cbe-menu-heading', 'Convertir en');
+            menu.appendChild(heading);
+
+            const currentLevel = Number(
+                block.el.querySelector('[data-field="level"]')?.value) === 3 ? 3 : 2;
+
+            this.blockTypeOptions().forEach(option => {
+                const isCurrent = option.type === block.type
+                    && (option.type !== 'heading' || option.level === currentLevel);
+
+                const button = element('button',
+                    `cbe-inserter-item${isCurrent ? ' is-current' : ''}`,
+                    `${this.typeIconMarkup(option.type, { level: option.level })}<span>${escapeHtml(option.label)}</span>`);
+                button.type = 'button';
+                button.setAttribute('role', 'menuitemradio');
+                button.setAttribute('aria-checked', isCurrent ? 'true' : 'false');
+                button.addEventListener('click', () => {
+                    this.closeInserterMenu();
+                    if (option.type === 'heading') {
+                        if (block.type === 'heading' && currentLevel === option.level) return;
+                        this.changeType(block, 'heading', { level: option.level });
+                        return;
+                    }
+                    if (option.type !== block.type) this.changeType(block, option.type);
+                });
+                menu.appendChild(button);
+            });
+
+            menu.appendChild(element('div', 'cbe-menu-separator'));
+
+            const blockIndex = this.blocks.indexOf(block);
+            const actions = [
+                {
+                    label: 'Mover arriba',
+                    icon: ICONS.up,
+                    disabled: blockIndex <= 0,
+                    run: () => this.moveBlock(block, -1)
+                },
+                {
+                    label: 'Mover abajo',
+                    icon: ICONS.down,
+                    disabled: blockIndex >= this.blocks.length - 1,
+                    run: () => this.moveBlock(block, 1)
+                },
+                {
+                    label: 'Eliminar bloque',
+                    icon: ICONS.trash,
+                    danger: true,
+                    run: () => this.removeBlock(block)
+                }
+            ];
+
+            actions.forEach(action => {
+                const button = element('button',
+                    `cbe-inserter-item cbe-menu-action${action.danger ? ' is-danger' : ''}`,
+                    `${action.icon}<span>${action.label}</span>`);
+                button.type = 'button';
+                button.setAttribute('role', 'menuitem');
+                button.disabled = !!action.disabled;
+                button.addEventListener('click', () => {
+                    this.closeInserterMenu();
+                    action.run();
+                });
+                menu.appendChild(button);
+            });
+
+            this.presentMenu(anchor, menu);
+        }
+
+        presentMenu(anchor, menu) {
             document.body.appendChild(menu);
+
             const rect = anchor.getBoundingClientRect();
             const width = menu.offsetWidth;
             const left = Math.min(
@@ -377,10 +486,10 @@
                 Math.max(8, window.innerWidth - width - 8));
             menu.style.left = `${left}px`;
 
-            const estimatedHeight = menu.offsetHeight;
-            const below = rect.bottom + 8;
-            const top = below + estimatedHeight > window.innerHeight - 8
-                ? Math.max(8, rect.top - estimatedHeight - 8)
+            const menuHeight = menu.offsetHeight;
+            const below = rect.bottom + 6;
+            const top = below + menuHeight > window.innerHeight - 8
+                ? Math.max(8, rect.top - menuHeight - 6)
                 : below;
             menu.style.top = `${top}px`;
 
@@ -417,9 +526,8 @@
             if (!this.canvas) return;
             this.canvas.innerHTML = '';
 
-            this.blocks.forEach((block, index) => {
+            this.blocks.forEach(block => {
                 this.canvas.appendChild(block.el);
-                this.canvas.appendChild(this.createBlockInserter(index + 1));
             });
 
             this.refreshIndices();
@@ -442,12 +550,13 @@
             const normalized = this.normaliseData(type, data);
             const card = element('article', 'cbe-block');
             card.dataset.type = type;
+            if (type === 'heading') {
+                card.dataset.level = String(Number(normalized.level) === 3 ? 3 : 2);
+            }
 
-            const header = this.buildBlockHeader(block, type, normalized);
-            const side = this.buildBlockSideControls(block);
+            const side = this.buildBlockSideControls(block, type, normalized);
             const body = this.buildBlockBody(block, type, normalized);
-            const remove = this.iconButton('Eliminar bloque', ICONS.trash, () => this.removeBlock(block), 'cbe-block-delete');
-            card.append(header, side, body, remove);
+            card.append(side, body);
             block.el = card;
 
             card.addEventListener('pointerdown', () => this.selectBlock(block));
@@ -456,16 +565,27 @@
             return block;
         }
 
-        buildBlockSideControls(block) {
+        buildBlockSideControls(block, type, data) {
             const side = element('div', 'cbe-block-side');
-            const up = this.iconButton('Mover bloque arriba', ICONS.up, () => this.moveBlock(block, -1), 'cbe-side-btn');
+
+            const add = this.iconButton(
+                'Insertar bloque después',
+                ICONS.plus,
+                () => this.openInserterMenu(add, this.blocks.indexOf(block) + 1),
+                'cbe-side-btn cbe-side-add');
+
             const handle = element('span', 'cbe-drag-handle', '<span></span>'.repeat(6));
             handle.title = 'Arrastrar bloque';
             handle.setAttribute('aria-hidden', 'true');
             handle.draggable = true;
-            const down = this.iconButton('Mover bloque abajo', ICONS.down, () => this.moveBlock(block, 1), 'cbe-side-btn');
 
-            side.append(up, handle, down);
+            const typeButton = this.iconButton(
+                `Opciones del bloque (${this.typeDisplayLabel(type, data)})`,
+                ICONS.more,
+                () => this.openBlockMenu(typeButton, block),
+                'cbe-side-btn');
+
+            side.append(add, handle, typeButton);
             return side;
         }
 
@@ -528,79 +648,6 @@
             });
         }
 
-        buildBlockHeader(block, type, data) {
-            const header = element('div', 'cbe-block-header cbe-block-toolbar');
-            const position = element('span', 'cbe-block-index');
-            position.textContent = '1';
-            const typeLabel = element('span', 'cbe-block-type', this.typeDisplayLabel(type, data));
-
-            const typeControl = element('div', 'cbe-type-control');
-            const typeIcon = element('span', 'cbe-type-icon', this.typeIconMarkup(type, data));
-            const select = element('select', 'cbe-select cbe-type-select');
-            select.setAttribute('aria-label', 'Cambiar tipo de bloque');
-            BLOCK_TYPES.forEach(item => {
-                if (item.type === 'heading') {
-                    [2, 3].forEach(level => {
-                        const option = document.createElement('option');
-                        option.value = 'heading';
-                        option.dataset.headingLevel = String(level);
-                        option.textContent = `Encabezado H${level}`;
-                        option.selected = type === 'heading' && Number(data.level) === level;
-                        select.appendChild(option);
-                    });
-                    return;
-                }
-
-                const option = document.createElement('option');
-                option.value = item.type;
-                option.textContent = item.label;
-                option.selected = item.type === type;
-                select.appendChild(option);
-            });
-            select.addEventListener('change', () => {
-                const option = select.selectedOptions[0];
-                if (!option) return;
-
-                const targetType = option.value;
-                const headingLevel = option.dataset.headingLevel
-                    ? Number(option.dataset.headingLevel)
-                    : null;
-
-                if (targetType === 'heading' && headingLevel) {
-                    if (block.type === 'heading') {
-                        const levelField = block.el.querySelector('[data-field="level"]');
-                        const currentLevel = Number(levelField?.value) === 3 ? 3 : 2;
-                        if (currentLevel === headingLevel) return;
-
-                        if (levelField) levelField.value = String(headingLevel);
-                        this.refreshBlockTypeControl(block, { level: headingLevel });
-                        this.sync();
-                        return;
-                    }
-
-                    this.changeType(block, 'heading', { level: headingLevel });
-                    return;
-                }
-
-                if (targetType !== block.type) this.changeType(block, targetType);
-            });
-            typeControl.append(typeIcon, select);
-
-            const formatGroup = this.buildBlockFormatActions(block, type);
-
-            const actions = element('div', 'cbe-block-actions');
-            actions.append(
-                this.iconButton('Mover bloque arriba', ICONS.up, () => this.moveBlock(block, -1)),
-                this.iconButton('Mover bloque abajo', ICONS.down, () => this.moveBlock(block, 1)),
-                this.iconButton('Eliminar bloque', ICONS.trash, () => this.removeBlock(block), 'cbe-icon-btn-danger')
-            );
-
-            header.append(position, typeLabel, typeControl);
-            if (formatGroup) header.appendChild(formatGroup);
-            header.appendChild(actions);
-            return header;
-        }
-
         typeDisplayLabel(type, data = {}) {
             if (type === 'heading') {
                 return `Encabezado H${Number(data.level) === 3 ? 3 : 2}`;
@@ -631,54 +678,6 @@
                 default:
                     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/></svg>';
             }
-        }
-
-        refreshBlockTypeControl(block, data) {
-            const level = Number(data.level) === 3 ? 3 : 2;
-            const select = block.el.querySelector('.cbe-type-select');
-            select?.querySelectorAll('option[data-heading-level]').forEach(option => {
-                option.selected = Number(option.dataset.headingLevel) === level;
-            });
-
-            const icon = block.el.querySelector('.cbe-type-icon');
-            if (icon) icon.innerHTML = this.typeIconMarkup('heading', { level });
-        }
-
-        buildBlockFormatActions(block, type) {
-            if (!['paragraph', 'quote', 'callout', 'ordered-list', 'bullet-list'].includes(type)) {
-                return null;
-            }
-
-            const group = element('div', 'cbe-block-format');
-            const formats = [
-                ['bold', ICONS.bold, 'Negrita'],
-                ['italic', ICONS.italic, 'Cursiva'],
-                ['createLink', ICONS.link, 'Insertar enlace']
-            ];
-
-            formats.forEach(([command, icon, label]) => {
-                const button = element('button', 'cbe-format-btn', icon);
-                button.type = 'button';
-                button.dataset.cmd = command;
-                button.title = label;
-                button.setAttribute('aria-label', label);
-                button.setAttribute('aria-pressed', 'false');
-                button.addEventListener('mousedown', event => {
-                    event.preventDefault();
-                    const field = this.richFieldForBlock(block);
-                    if (field) this.applyInlineCommand(command, field, false);
-                });
-                group.appendChild(button);
-            });
-
-            return group;
-        }
-
-        richFieldForBlock(block) {
-            if (this.activeEditable && block.el.contains(this.activeEditable)) {
-                return this.activeEditable;
-            }
-            return block.el.querySelector('.cbe-rich');
         }
 
         buildBlockBody(block, type, data) {
@@ -722,13 +721,48 @@
             level.dataset.field = 'level';
             level.value = String(Number(data.level) === 3 ? 3 : 2);
 
-            const text = this.createPlainInput(data.text, 'Escribe un encabezado...', 'text');
-            text.classList.add('cbe-heading-input');
-            text.setAttribute('aria-label', 'Texto del encabezado');
-
+            const text = this.createHeadingControl(data.text);
             row.append(level, text);
             body.appendChild(row);
             return body;
+        }
+
+        /**
+         * Campo de encabezado multilínea: mantiene el texto completo visible
+         * (los H2/H3 largos no se recortan como en un input de una sola línea)
+         * pero sin permitir saltos de línea internos.
+         */
+        createHeadingControl(value) {
+            const field = document.createElement('textarea');
+            field.className = 'cbe-input cbe-heading-input';
+            field.rows = 1;
+            field.value = value || '';
+            field.placeholder = 'Escribe un encabezado...';
+            field.dataset.field = 'text';
+            field.autocomplete = 'off';
+            field.spellcheck = true;
+            field.setAttribute('aria-label', 'Texto del encabezado');
+
+            const autosize = () => {
+                if (!field.isConnected) return;
+                field.style.height = 'auto';
+                if (field.scrollHeight > 0) {
+                    field.style.height = `${field.scrollHeight}px`;
+                }
+            };
+
+            field.addEventListener('input', () => {
+                autosize();
+                this.sync();
+            });
+            field.addEventListener('keydown', event => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                field.blur();
+            });
+
+            requestAnimationFrame(autosize);
+            return field;
         }
 
         buildListBody(block, type, data) {
@@ -1228,6 +1262,13 @@
                 this.activeEditable = rich;
             });
             rich.addEventListener('blur', () => this.scheduleHideInlineToolbar());
+            rich.addEventListener('keydown', event => {
+                const modifier = event.ctrlKey || event.metaKey;
+                if (!modifier || event.altKey || !event.shiftKey) return;
+                if (event.key.toLowerCase() !== 'h') return;
+                event.preventDefault();
+                this.applyInlineCommand('mark', rich, true);
+            });
             rich.addEventListener('paste', event => {
                 const html = event.clipboardData?.getData('text/html');
                 const text = event.clipboardData?.getData('text/plain');
@@ -1318,39 +1359,65 @@
             this.activeEditable = field;
             if (!this.inlineToolbar) return;
 
-            this.root.classList.add('cbe-bubble-open');
-            let rect = field.getBoundingClientRect();
-            const selection = document.getSelection();
+            clearTimeout(this.hideTimer);
+            const selection = document.getSelection();            let rect = null;
             if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
                 const rangeRect = selection.getRangeAt(0).getBoundingClientRect();
                 if (rangeRect && (rangeRect.width || rangeRect.height)) rect = rangeRect;
             }
+            if (!rect) rect = field.getBoundingClientRect();
 
             this.inlineToolbar.hidden = false;
-            const top = rect.top < 60 ? rect.bottom + 8 : rect.top - 44;
-            const left = Math.min(Math.max(8, rect.left - 8), Math.max(8, window.innerWidth - 180));
-            this.inlineToolbar.style.top = `${top}px`;
-            this.inlineToolbar.style.left = `${left}px`;
+            const barRect = this.inlineToolbar.getBoundingClientRect();
+            const gap = 10;
+            const viewportW = window.innerWidth;
+            const viewportH = window.innerHeight;
+
+            // Evita que la burbuja se coloque fuera del bloque actual y tape
+            // el bloque anterior (por ejemplo, el encabezado que hay encima).
+            const blockRect = field.closest('.cbe-block')?.getBoundingClientRect();
+            let top = rect.top - barRect.height - gap;
+            const fitsInsideBlock = !blockRect || top >= blockRect.top;
+            if (!fitsInsideBlock || top < 8) {
+                const below = rect.bottom + gap;
+                if (below + barRect.height <= viewportH - 8) top = below;
+            }
+            top = Math.max(8, Math.min(top, viewportH - barRect.height - 8));
+
+            let left = rect.left + (rect.width / 2) - (barRect.width / 2);
+            left = Math.max(8, Math.min(left, viewportW - barRect.width - 8));
+
+            this.inlineToolbar.style.top = `${Math.round(top)}px`;
+            this.inlineToolbar.style.left = `${Math.round(left)}px`;
         }
 
         updateFormatState(field = null) {
             const activeField = field && this.root.contains(field) ? field : null;
             const activeBlock = activeField?.closest('.cbe-block') || null;
             const selection = document.getSelection();
-            const hasSelection = !!selection && !selection.isCollapsed && selection.rangeCount > 0;
-            const states = { bold: false, italic: false, createLink: false };
+            const anchorNode = selection?.anchorNode || null;
+            const inField = !!activeField && !!anchorNode && activeField.contains(anchorNode);
+            const states = {
+                bold: false, italic: false, underline: false,
+                strikeThrough: false, mark: false, createLink: false
+            };
 
-            if (activeField && hasSelection && activeField.contains(selection.anchorNode)) {
+            if (inField) {
                 try {
                     states.bold = document.queryCommandState('bold');
                     states.italic = document.queryCommandState('italic');
+                    states.underline = document.queryCommandState('underline');
                 } catch (error) {
                     states.bold = false;
                     states.italic = false;
+                    states.underline = false;
                 }
 
-                const node = selection.anchorNode;
-                const elementNode = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+                const elementNode = anchorNode.nodeType === Node.ELEMENT_NODE
+                    ? anchorNode
+                    : anchorNode.parentElement;
+                states.strikeThrough = !!elementNode?.closest('s, strike');
+                states.mark = !!elementNode?.closest('mark');
                 states.createLink = !!elementNode?.closest('a');
             }
 
@@ -1363,21 +1430,92 @@
             });
         }
 
+        hideInlineToolbarNow() {
+            clearTimeout(this.hideTimer);
+            if (!this.inlineToolbar) return;
+            this.inlineToolbar.hidden = true;
+            this.activeEditable = null;
+            this.updateFormatState(null);
+        }
+
         scheduleHideInlineToolbar() {
             clearTimeout(this.hideTimer);
             this.hideTimer = setTimeout(() => {
                 if (!this.inlineToolbar) return;
                 if (this.inlineToolbar.contains(document.activeElement)) return;
-                this.inlineToolbar.hidden = true;
-                this.root.classList.remove('cbe-bubble-open');
-                this.activeEditable = null;
-                this.updateFormatState(null);
+                this.hideInlineToolbarNow();
             }, 180);
+        }
+
+        closestInlineElement(node, field, selector) {
+            let current = node;
+            if (!current) return null;
+            if (current.nodeType !== Node.ELEMENT_NODE) current = current.parentElement;
+            const match = current?.closest?.(selector) || null;
+            return match && field.contains(match) ? match : null;
+        }
+
+        selectContents(node) {
+            if (!node) return;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            const selection = document.getSelection();
+            if (!selection) return;
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        unwrapInlineElement(node) {
+            const parent = node?.parentNode;
+            if (!parent) return;
+
+            const first = node.firstChild;
+            const last = node.lastChild;
+            while (node.firstChild) parent.insertBefore(node.firstChild, node);
+            node.remove();
+
+            if (!first || !last) return;
+            const range = document.createRange();
+            range.setStartBefore(first);
+            range.setEndAfter(last);
+            const selection = document.getSelection();
+            if (!selection) return;
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        /**
+         * Alterna un contenedor inline (p. ej. <mark> o <s>) sobre la selección.
+         * Se usa un wrapper semántico en lugar de estilos en línea para que el
+         * servidor y la vista pública los conserven.
+         */
+        toggleInlineWrapper(field, tagName) {
+            const selection = document.getSelection();
+            if (!selection || selection.rangeCount === 0) return false;
+
+            const range = selection.getRangeAt(0);
+            if (!field.contains(range.commonAncestorContainer)) return false;
+            if (range.collapsed) {
+                this.notify('Selecciona primero el texto al que quieres aplicar el formato.');
+                return false;
+            }
+
+            const existing = this.closestInlineElement(range.commonAncestorContainer, field, tagName);
+            if (existing) {
+                this.unwrapInlineElement(existing);
+                return true;
+            }
+
+            const wrapper = document.createElement(tagName);
+            wrapper.appendChild(range.extractContents());
+            range.insertNode(wrapper);
+            this.selectContents(wrapper);
+            return true;
         }
 
         applyInlineCommand(command, field = this.activeEditable, showBubble = true) {
             if (!field) return;
-            this.ignoreSelectionUntil = Date.now() + 250;
+            this.ignoreSelectionUntil = Date.now() + 350;
             field.focus();
 
             if (command === 'createLink') {
@@ -1411,7 +1549,13 @@
                 return;
             }
 
-            document.execCommand(command, false, null);
+            if (command === 'mark') {
+                this.toggleInlineWrapper(field, 'mark');
+            } else if (command === 'strikeThrough') {
+                this.toggleInlineWrapper(field, 's');
+            } else {
+                document.execCommand(command, false, null);
+            }
 
             this.updateFormatState(field);
             this.sync();
@@ -1675,8 +1819,6 @@
         refreshIndices() {
             this.blocks.forEach((block, index) => {
                 block.el.dataset.index = String(index);
-                const marker = block.el.querySelector('.cbe-block-index');
-                if (marker) marker.textContent = String(index + 1);
             });
         }
 
@@ -1689,6 +1831,7 @@
         sync() {
             if (!this.input) return;
             this.input.value = JSON.stringify(this.blocks.map(block => this.readBlock(block)));
+            if (this.initialized) this.dirty = true;
         }
 
         isPreviewUrl(value) {

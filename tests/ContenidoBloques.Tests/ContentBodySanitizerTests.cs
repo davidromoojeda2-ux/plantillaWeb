@@ -50,6 +50,24 @@ public class ContentBodySanitizerTests
     }
 
     [Fact]
+    public void Sanitize_PreservesInlineHighlightWithoutStyles()
+    {
+        var sanitizer = CreateSanitizer();
+
+        var blocks = sanitizer.Sanitize(
+        [
+            new ContentParagraphBlockDto
+            {
+                Text = "<mark style=\"background:red\" onclick=\"alert(1)\">resaltado</mark>"
+            }
+        ]);
+
+        var paragraph = Assert.IsType<ContentParagraphBlock>(Assert.Single(blocks));
+        Assert.Equal("<mark>resaltado</mark>", paragraph.Text.Html);
+        Assert.Equal("resaltado", paragraph.Text.Text);
+    }
+
+    [Fact]
     public void Sanitize_RejectsTooManyBlocksAndEmptyParagraphs()
     {
         var sanitizer = CreateSanitizer(o => o.MaxBlocks = 1);

@@ -149,21 +149,9 @@ public static class MongoDbIndexer
             await context.Users.InsertOneAsync(adminUser);
         }
 
-        // ─── Páginas Informativas Básicas (Única página de ejemplo) ───────────
-        var pageCount = await context.Pages.CountDocumentsAsync(Builders<Domine.Entities.InformativePage>.Filter.Empty);
-        if (pageCount == 0)
-        {
-            var privacidad = new Domine.Entities.InformativePage
-            {
-                Title = "Política de Privacidad y Cookies",
-                Slug = "politica-de-privacidad",
-                Subtitle = "Cómo recopilamos, usamos y protegemos tus datos personales al visitar nuestro portal.",
-                Blocks = LegacyContentBlocks.FromHtml("<h2>Tratamiento de Datos Personales</h2><p>Respetamos tu privacidad. No almacenamos direcciones IP en texto plano ni comercializamos datos personales con terceros.</p>"),
-                Order = 1,
-                ShowInFooter = true
-            };
-            await context.Pages.InsertOneAsync(privacidad);
-        }
+        // ─── Páginas informativas ──────────────────────────────────────────────
+        // La sección institucional se siembra manualmente con
+        // InstitutionalPagesSeed, no de forma automática al arrancar.
 
         // ─── Auto-vincular artículos huérfanos sin categoría (CategoryId == null) ───
         await EnsureOrphanArticlesLinkedAsync(context);

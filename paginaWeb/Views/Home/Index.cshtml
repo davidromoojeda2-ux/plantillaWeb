@@ -153,12 +153,13 @@
 
                 @{
                     var hasSubcategories = Model.TextoPersuasivo.TotalSubcategories > 0;
+                    var statsModifier = hasSubcategories ? string.Empty : "persuasive-stats--2";
                 }
                 <!-- Columna Derecha: Estadísticas en tiempo real de artículos y categorías -->
-                <div class="persuasive-stats @(hasSubcategories ? "persuasive-stats--3" : "persuasive-stats--2")" aria-label="Estadísticas del catálogo editorial">
+                <div class="persuasive-stats @statsModifier" aria-label="Estadísticas del catálogo editorial">
                     <!-- Métrica Principal: Total de Artículos -->
                     <div class="persuasive-stat-card persuasive-stat-card--featured">
-                        <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalArticles</span>
+                        <span class="persuasive-stat-card__number" data-count-to="@Model.TextoPersuasivo.TotalArticles">@Model.TextoPersuasivo.TotalArticles</span>
                         <div class="persuasive-stat-card__meta">
                             <span class="persuasive-stat-card__label">Artículos publicados</span>
                         </div>
@@ -166,7 +167,7 @@
 
                     <!-- Métrica Secundaria 1: Categorías Principales -->
                     <div class="persuasive-stat-card">
-                        <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalCategories</span>
+                        <span class="persuasive-stat-card__number" data-count-to="@Model.TextoPersuasivo.TotalCategories">@Model.TextoPersuasivo.TotalCategories</span>
                         <div class="persuasive-stat-card__meta">
                             <span class="persuasive-stat-card__label">Categorías</span>
                         </div>
@@ -176,7 +177,7 @@
                     {
                         <!-- Métrica Secundaria 2: Especialidades / Subcategorías -->
                         <div class="persuasive-stat-card">
-                            <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalSubcategories</span>
+                            <span class="persuasive-stat-card__number" data-count-to="@Model.TextoPersuasivo.TotalSubcategories">@Model.TextoPersuasivo.TotalSubcategories</span>
                             <div class="persuasive-stat-card__meta">
                                 <span class="persuasive-stat-card__label">Especialidades</span>
                             </div>
@@ -444,4 +445,5 @@
 @section Scripts {
     <script src="~/js/reveal.js" asp-append-version="true" defer></script>
     <script src="~/js/hero-dynamic.js" asp-append-version="true" defer></script>
+    <script src="~/js/stats-count.js" asp-append-version="true" defer></script>
 }

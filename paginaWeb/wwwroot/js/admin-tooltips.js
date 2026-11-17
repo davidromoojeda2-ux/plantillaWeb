@@ -1,19 +1,31 @@
 /**
  * CMS Admin Tooltips Engine
- * Sistema accesible, fluido y universal de tooltips flotantes para el CMS.
- * Soporta [data-tooltip] y reemplaza de forma elegante el atributo [title] nativo del navegador.
+ * Sistema accesible de tooltips flotantes para el CMS.
+ *
+ * Mejoras clave frente a la versión anterior:
+ *  - La espera de aparición se cancela si el puntero sale antes de mostrarse
+ *    (causa principal de los tooltips "pegados").
+ *  - Cualquier pulsación, scroll, cambio de foco o eliminación del disparador
+ *    oculta el tooltip de inmediato.
+ *  - Ya no se interceptan clics: los botones con [data-tooltip] funcionan
+ *    normalmente (antes se bloqueaban los formularios de moderación).
  */
 (function () {
     'use strict';
+
+    const SHOW_DELAY_MS = 120;
+    const HIDE_DELAY_MS = 60;
+    const ARROW_SIZE = 8;
+    const OFFSET_PX = 8;
 
     let tooltipEl = null;
     let tooltipInner = null;
     let tooltipArrow = null;
     let currentTrigger = null;
     let showTimeout = null;
-    const SHOW_DELAY_MS = 60;
-    const ARROW_SIZE = 8;
-    const OFFSET_PX = 8;
+    let hideTimeout = null;
+    const ariaDescribedByOriginals = new WeakMap();
+    let lastPointerDown = 0;
 
     function getOrCreateTooltip() {
         if (!tooltipEl) {
@@ -39,36 +51,36 @@
     function getTooltipText(element) {
         if (!element || element.nodeType !== Node.ELEMENT_NODE) return null;
 
-        if (element.hasAttribute('data-tooltip')) {
-            const val = element.getAttribute('data-tooltip');
-            return val && val.trim() ? val.trim() : null;
-        }
+        const dataTooltip = element.getAttribute('data-tooltip');
+        if (dataTooltip && dataTooltip.trim()) return dataTooltip.trim();
 
-        if (element.hasAttribute('data-cms-title')) {
-            return element.getAttribute('data-cms-title');
-        }
+        const cached = element.getAttribute('data-cms-title');
+        if (cached && cached.trim()) return cached.trim();
 
-        if (element.hasAttribute('title')) {
-            const rawTitle = element.getAttribute('title');
-            if (rawTitle && rawTitle.trim()) {
-                const clean = rawTitle.trim();
-                element.setAttribute('data-cms-title', clean);
-                element.removeAttribute('title');
-                return clean;
-            }
+        // Migración perezosa del title nativo: se elimina en cuanto aparece el
+        // puntero para que no convivan el tooltip del navegador y el propio.
+        const rawTitle = element.getAttribute('title');
+        if (rawTitle && rawTitle.trim()) {
+            const clean = rawTitle.trim();
+            element.setAttribute('data-cms-title', clean);
+            element.removeAttribute('title');
+            return clean;
         }
 
         return null;
+    }
+
+    function findTrigger(target) {
+        if (!target || target.nodeType !== Node.ELEMENT_NODE) return null;
+        return target.closest('[data-tooltip], [data-cms-title], [title]');
     }
 
     function positionTooltip(trigger) {
         const tooltip = getOrCreateTooltip();
         const triggerRect = trigger.getBoundingClientRect();
 
-        // Limpiar clases de posicionamiento previas manteniendo la base
         tooltip.className = 'cms-tooltip';
 
-        // Aplicar variante si corresponde
         const explicitVariant = trigger.getAttribute('data-tooltip-variant');
         if (explicitVariant) {
             tooltip.classList.add(`cms-tooltip--${explicitVariant}`);
@@ -92,14 +104,12 @@
         const viewportW = window.innerWidth;
         const viewportH = window.innerHeight;
 
-        // Auto-flip vertical si se saldría de la pantalla
         if (finalPos === 'top' && triggerRect.top - tooltipH - OFFSET_PX < 8) {
             finalPos = 'bottom';
         } else if (finalPos === 'bottom' && triggerRect.bottom + tooltipH + OFFSET_PX > viewportH - 8) {
             finalPos = 'top';
         }
 
-        // Auto-flip horizontal si se saldría de la pantalla
         if (finalPos === 'left' && triggerRect.left - tooltipW - OFFSET_PX < 8) {
             finalPos = 'right';
         } else if (finalPos === 'right' && triggerRect.right + tooltipW + OFFSET_PX > viewportW - 8) {
@@ -131,7 +141,6 @@
             arrowTop = (tooltipH / 2) - arrowOffset;
         }
 
-        // Limitar dentro de los bordes horizontales de la ventana
         const margin = 8;
         if (left < margin) {
             const shift = margin - left;
@@ -143,7 +152,6 @@
             if (arrowLeft !== null) arrowLeft += shift;
         }
 
-        // Ajustar flecha para que no desborde la burbuja
         if (arrowLeft !== null) {
             arrowLeft = Math.max(8, Math.min(tooltipW - 16, arrowLeft));
             tooltipArrow.style.left = `${Math.round(arrowLeft)}px`;
@@ -159,12 +167,54 @@
         tooltip.style.top = `${Math.round(top)}px`;
     }
 
-    function showTooltip(trigger) {
+    function clearTimers() {
+        clearTimeout(showTimeout);
+        clearTimeout(hideTimeout);
+        showTimeout = null;
+        hideTimeout = null;
+    }
+
+    function markDescribedBy(trigger) {
+        if (ariaDescribedByOriginals.has(trigger)) return;
+        const original = trigger.getAttribute('aria-describedby');
+        ariaDescribedByOriginals.set(trigger, original);
+
+        const ids = original ? original.split(/\s+/).filter(Boolean) : [];
+        if (!ids.includes('cms-tooltip')) {
+            ids.push('cms-tooltip');
+            trigger.setAttribute('aria-describedby', ids.join(' '));
+        }
+    }
+
+    function restoreDescribedBy(trigger) {
+        if (!ariaDescribedByOriginals.has(trigger)) return;
+        const original = ariaDescribedByOriginals.get(trigger);
+        ariaDescribedByOriginals.delete(trigger);
+
+        if (original) trigger.setAttribute('aria-describedby', original);
+        else trigger.removeAttribute('aria-describedby');
+    }
+
+    function isTriggerActive(trigger) {
+        if (!trigger || !trigger.isConnected) return false;
+        if (trigger.matches(':hover')) return true;
+        return !!document.activeElement && trigger.contains(document.activeElement);
+    }
+
+    function startShow(trigger) {
         const text = getTooltipText(trigger);
+        clearTimers();
         if (!text) return;
 
-        clearTimeout(showTimeout);
+        // Si ya hay otro tooltip visible, se oculta antes de programar el nuevo.
+        if (currentTrigger && currentTrigger !== trigger) hideTooltip(true);
+
         showTimeout = setTimeout(() => {
+            showTimeout = null;
+
+            // El puntero pudo salir durante la espera: no mostrar nada.
+            if (!isTriggerActive(trigger)) return;
+
             currentTrigger = trigger;
             const tooltip = getOrCreateTooltip();
             tooltipInner.textContent = text;
@@ -172,83 +222,127 @@
             tooltip.style.display = 'block';
             tooltip.style.visibility = 'hidden';
             tooltip.style.opacity = '0';
-
             positionTooltip(trigger);
 
             requestAnimationFrame(() => {
-                if (currentTrigger === trigger) {
-                    tooltip.setAttribute('aria-hidden', 'false');
-                    tooltip.classList.add('is-visible');
-                    tooltip.style.visibility = 'visible';
-                    tooltip.style.opacity = '1';
-                }
+                if (currentTrigger !== trigger) return;
+                tooltip.setAttribute('aria-hidden', 'false');
+                tooltip.classList.add('is-visible');
+                tooltip.style.visibility = '';
+                tooltip.style.opacity = '';
+
+                markDescribedBy(trigger);
             });
         }, SHOW_DELAY_MS);
     }
 
-    function hideTooltip() {
+    function scheduleHide() {
         clearTimeout(showTimeout);
-        if (!tooltipEl) {
-            currentTrigger = null;
-            return;
-        }
+        showTimeout = null;
+
+        clearTimeout(hideTimeout);
+        hideTimeout = setTimeout(() => hideTooltip(), HIDE_DELAY_MS);
+    }
+
+    function hideTooltip(immediate = false) {
+        clearTimers();
+
+        if (currentTrigger) restoreDescribedBy(currentTrigger);
+        currentTrigger = null;
+
+        if (!tooltipEl) return;
+
         tooltipEl.classList.remove('is-visible');
         tooltipEl.setAttribute('aria-hidden', 'true');
-        tooltipEl.style.opacity = '0';
-        tooltipEl.style.visibility = 'hidden';
-        currentTrigger = null;
+        // Se dejan los estilos en manos de la transición CSS (fundido suave).
+        tooltipEl.style.opacity = '';
+        tooltipEl.style.visibility = '';
+
+        if (immediate) {
+            tooltipEl.style.display = 'none';
+        }
     }
 
     function initEvents() {
-        document.addEventListener('mouseover', function (e) {
-            const trigger = e.target.closest('[data-tooltip], [title], [data-cms-title]');
-            if (trigger) {
-                showTooltip(trigger);
-            }
+        document.addEventListener('pointerover', function (e) {
+            const trigger = findTrigger(e.target);
+            if (!trigger) return;
+
+            const from = e.relatedTarget instanceof Element ? findTrigger(e.relatedTarget) : null;
+            if (from === trigger) return;
+
+            startShow(trigger);
         }, { passive: true });
 
-        document.addEventListener('mouseout', function (e) {
-            const trigger = e.target.closest('[data-tooltip], [title], [data-cms-title]');
-            if (trigger && trigger === currentTrigger) {
-                if (e.relatedTarget && trigger.contains(e.relatedTarget)) {
-                    return;
-                }
-                hideTooltip();
+        document.addEventListener('pointerout', function (e) {
+            const trigger = findTrigger(e.target);
+            if (!trigger) return;
+
+            const to = e.relatedTarget;
+            if (to && trigger.contains(to)) return;
+
+            // Evita ocultar el tooltip del disparador que se acaba de abandonar
+            // cuando el puntero entra en otro disparador distinto.
+            if (!currentTrigger || currentTrigger === trigger) {
+                scheduleHide();
             }
         }, { passive: true });
 
         document.addEventListener('focusin', function (e) {
-            const trigger = e.target.closest('[data-tooltip], [title], [data-cms-title]');
-            if (trigger) {
-                showTooltip(trigger);
-            }
+            // El foco posterior a un clic no debe reabrir el tooltip: el usuario
+            // ya está interactuando con el control.
+            if (Date.now() - lastPointerDown < 600) return;
+            const trigger = findTrigger(e.target);
+            if (trigger) startShow(trigger);
         }, { passive: true });
 
-        document.addEventListener('focusout', function () {
-            hideTooltip();
+        document.addEventListener('focusout', function (e) {
+            const trigger = findTrigger(e.target);
+            if (!trigger) return;
+            const to = e.relatedTarget;
+            if (to && trigger.contains(to)) return;
+            if (!currentTrigger || currentTrigger === trigger) scheduleHide();
         }, { passive: true });
 
-        document.addEventListener('click', function (e) {
-            const trigger = e.target.closest('.cms-tooltip-icon, [data-tooltip]');
-            if (trigger && (trigger.classList.contains('cms-tooltip-icon') || trigger.tagName === 'BUTTON')) {
-                // Prevenir que un click en el icono active labels externos
-                e.preventDefault();
-                e.stopPropagation();
-                if (currentTrigger === trigger && tooltipEl && tooltipEl.classList.contains('is-visible')) {
-                    hideTooltip();
-                } else {
-                    showTooltip(trigger);
-                }
-                return;
-            }
-            hideTooltip();
-        });
+        document.addEventListener('pointerdown', function () {
+            lastPointerDown = Date.now();
+            hideTooltip(true);
+        }, { passive: true, capture: true });
+
+        document.addEventListener('click', function () {
+            hideTooltip(true);
+        }, { passive: true });
 
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') hideTooltip();
+            if (e.key === 'Escape') hideTooltip(true);
         }, { passive: true });
 
-        window.addEventListener('scroll', hideTooltip, { passive: true, capture: true });
+        window.addEventListener('scroll', function () {
+            hideTooltip(true);
+        }, { passive: true, capture: true });
+
+        window.addEventListener('resize', function () {
+            hideTooltip(true);
+        }, { passive: true });
+
+        window.addEventListener('blur', function () {
+            hideTooltip(true);
+        });
+
+        // Si el disparador se elimina del DOM (por ejemplo, al re-renderizar
+        // bloques del editor), el tooltip no debe quedarse huérfano.
+        if (typeof MutationObserver === 'function') {
+            const observer = new MutationObserver(function () {
+                if (currentTrigger && !currentTrigger.isConnected) {
+                    hideTooltip(true);
+                    return;
+                }
+                if (tooltipEl && tooltipEl.classList.contains('is-visible') && currentTrigger) {
+                    if (!isTriggerActive(currentTrigger)) scheduleHide();
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
     }
 
     if (document.readyState === 'loading') {

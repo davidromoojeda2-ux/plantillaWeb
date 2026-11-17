@@ -1,7 +1,10 @@
 @model ContentTableBlockDto
+@{
+    var tableModifier = Model.Headers.Count <= 2 ? "article-table--compact" : "article-table--wide";
+}
 
 <div class="table-responsive-wrapper">
-    <table class="article-table">
+    <table class="article-table @tableModifier">
         @if (!string.IsNullOrWhiteSpace(Model.Caption))
         {
             <caption>@Model.Caption</caption>

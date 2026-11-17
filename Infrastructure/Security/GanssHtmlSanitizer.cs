@@ -1,8 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
-using Aplication.Interfaces;
 using AngleSharp.Html.Parser;
-using Ganss.Xss;
 
 namespace Infrastructure.Security;
 
@@ -14,7 +12,7 @@ namespace Infrastructure.Security;
 public sealed class GanssHtmlSanitizer : Aplication.Interfaces.IHtmlSanitizer
 {
     private static readonly string[] AllowedTags =
-        ["strong", "b", "em", "i", "u", "s", "a", "code", "br"];
+        ["strong", "b", "em", "i", "u", "s", "mark", "a", "code", "br"];
 
     private readonly Ganss.Xss.HtmlSanitizer _sanitizer;
     private readonly HtmlParser _parser = new();

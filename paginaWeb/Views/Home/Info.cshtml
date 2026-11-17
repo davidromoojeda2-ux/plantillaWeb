@@ -4,7 +4,7 @@
     var otherPages = (List<PageResponseDto>?)ViewBag.OtherPages ?? new();
     var institutionalNavDesktop = new InstitutionalNavViewModel(otherPages, Model.Slug, IsMobile: false);
     var institutionalNavMobile = new InstitutionalNavViewModel(otherPages, Model.Slug, IsMobile: true);
-    var institutionalHeader = new CollapsibleMenuHeaderViewModel("Documentos Institucionales");
+    var institutionalHeader = new CollapsibleMenuHeaderViewModel("Información legal");
 }
 
 
@@ -18,7 +18,7 @@
             <nav class="page-hero__breadcrumb" aria-label="Migas de pan">
                 <a asp-controller="Home" asp-action="Index">Inicio</a>
                 <span>/</span>
-                <span class="text-white/80">Institucional</span>
+                <span class="text-white/80">Legal</span>
                 <span>/</span>
                 <span class="page-hero__breadcrumb-current">@Model.Title</span>
             </nav>
@@ -68,6 +68,23 @@
                 <div class="article-prose max-w-none">
                     <partial name="Partials/ContentBlocks/_ContentBlocks" model="Model.Blocks" />
                 </div>
+
+                @if (Model.Slug == "politica-de-cookies")
+                {
+                    <div id="configurar-cookies"
+                         class="mt-10 rounded-2xl border border-slate-200 bg-slate-50/80 p-6 sm:p-7">
+                        <h2 class="text-lg font-bold text-[#00296B]">Gestionar tus preferencias</h2>
+                        <p class="mt-2 text-sm text-slate-600 leading-relaxed">
+                            Puedes aceptar o rechazar las categorías opcionales en cualquier momento. Tu elección
+                            se guarda durante 12 meses y puedes cambiarla cuando quieras.
+                        </p>
+                        <a href="/info/politica-de-cookies#configurar-cookies"
+                           data-cookie-settings
+                           class="mt-4 inline-flex items-center justify-center rounded-xl bg-[#00296B] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#00509D]">
+                            Configurar cookies
+                        </a>
+                    </div>
+                }
             </article>
         </div>
     </main>

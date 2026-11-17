@@ -140,13 +140,17 @@
   }
 
   .article-prose strong,
-  .prose strong {
+  .article-prose b,
+  .prose strong,
+  .prose b {
     font-weight: 700;
     color: #0f172a;
   }
 
   .article-prose em,
-  .prose em {
+  .article-prose i,
+  .prose em,
+  .prose i {
     font-style: italic;
     color: var(--prose-ink-soft);
   }
@@ -167,10 +171,14 @@
     text-decoration-color: var(--color-accent);
   }
 
-  .article-prose mark {
+  .article-prose mark,
+  .prose mark {
     background: linear-gradient(transparent 60%, rgb(253 197 0 / 0.45) 60%);
     color: inherit;
     padding: 0 0.1em;
+    border-radius: 2px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
 
   /* ── Listas Enumeradas (Ordenadas) ───────────────────────────────────── */
@@ -480,6 +488,38 @@
 
   /* En pantallas pequeñas la primera columna queda fija al desplazar en horizontal */
   @media (max-width: 767px) {
+    .article-prose table,
+    .article-table {
+      font-size: 0.875rem;
+    }
+
+    /* Tablas de 1-2 columnas: se ajustan al ancho disponible sin scroll. */
+    .article-prose .article-table--compact,
+    .article-table--compact {
+      min-width: 100%;
+      table-layout: fixed;
+    }
+
+    /* Tablas con más columnas: mantienen scroll horizontal, pero con la
+       primera columna acotada para no ocupar toda la pantalla. */
+    .article-prose .article-table--wide,
+    .article-table--wide {
+      min-width: 34rem;
+      table-layout: fixed;
+    }
+
+    .article-prose thead th,
+    .article-table thead th {
+      padding: 0.75rem 0.875rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .article-prose tbody td,
+    .article-table tbody td {
+      padding: 0.75rem 0.875rem;
+    }
+
     .article-prose thead th:first-child,
     .article-table thead th:first-child,
     .article-prose tbody td:first-child,
@@ -487,19 +527,28 @@
       position: sticky;
       left: 0;
       z-index: 1;
+      width: 7rem;
+      min-width: 7rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
       box-shadow: 6px 0 8px -6px rgb(0 41 107 / 0.18);
     }
+  }
 
-    .article-prose table,
-    .article-table {
-      font-size: 0.875rem;
-    }
-
-    .article-prose thead th,
-    .article-table thead th,
-    .article-prose tbody td,
-    .article-table tbody td {
-      padding: 0.75rem 0.875rem;
+  /*
+     En móviles estrechos la columna fija consume una parte demasiado grande
+     del ancho y los datos nunca llegan a verse completos. Se desactiva el
+     anclaje para que toda la tabla se pueda recorrer horizontalmente.
+  */
+  @media (max-width: 480px) {
+    .article-prose thead th:first-child,
+    .article-table thead th:first-child,
+    .article-prose tbody td:first-child,
+    .article-table tbody td:first-child {
+      position: static;
+      width: auto;
+      min-width: 0;
+      box-shadow: none;
     }
   }
 

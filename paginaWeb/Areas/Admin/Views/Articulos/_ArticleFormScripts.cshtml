@@ -1,36 +1,8 @@
 ﻿@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
-@{
-    var isEdit = ViewData["IsEdit"] as bool? == true;
-}
 
 <script src="~/js/content-blocks-editor.js" asp-append-version="true"></script>
+<script src="~/js/admin-slug.js" asp-append-version="true"></script>
 <script>
-    // El editor sincroniza el JSON en cada cambio; se fuerza una última
-    // sincronización por si el navegador envía el formulario con el foco activo.
-    const articleForm = document.getElementById('articleForm');
-    articleForm?.addEventListener('submit', () => window.contentBlocksEditor?.sync());
-
-@if (!isEdit)
-{
-    <text>
-    // Generador automático de Slug basado en el Título
-    const titleInput = document.getElementById('titleInput');
-    const slugInput = document.getElementById('slugInput');
-    titleInput?.addEventListener('input', () => {
-        if (!slugInput.dataset.manual) {
-            slugInput.value = titleInput.value
-                .toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/^-+|-+$/g, '');
-        }
-    });
-    slugInput?.addEventListener('input', () => {
-        slugInput.dataset.manual = 'true';
-    });
-    </text>
-}
 
     const coverImageUrlInput = document.getElementById('coverImageUrlInput');
     const coverImageIdInput = document.getElementById('coverImageIdInput');

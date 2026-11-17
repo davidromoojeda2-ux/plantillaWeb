@@ -1,6 +1,3 @@
-using System.Net;
-using System.Text;
-using System.Text.Json;
 using Aplication.DTOs.ContentBlocks;
 using Aplication.Interfaces;
 using Infrastructure.Ai;
@@ -43,58 +40,25 @@ public class OpenAiCompatibleArticleRewriterTests
         Assert.Contains("Tono narrativo de crónica", prompt);
     }
 
-    private static async Task<string> CapturePromptAsync(
+    private static Task<string> CapturePromptAsync(
         string template, string tone = "informativo",
         bool includeConclusion = false, bool includeFaq = false, bool includeCta = false)
-    {
-        string? requestBody = null;
+        => OpenAiPromptCapture.CaptureAsync(async http =>
+        {
+            var rewriter = new OpenAiCompatibleArticleRewriter(
+                http, NullLogger<OpenAiCompatibleArticleRewriter>.Instance);
 
-        var content = JsonSerializer.Serialize(new
-        {
-            title = "Título de prueba",
-            summary = "Resumen de prueba",
-            metaDescription = "Meta descripción",
-            tags = new[] { "uno", "dos", "tres" },
-            blocks = new object[] { new { type = "paragraph", text = "Contenido de prueba." } }
-        });
-        var chat = JsonSerializer.Serialize(new
-        {
-            choices = new[] { new { message = new { content } } },
-            usage = new { total_tokens = 1 }
-        });
-
-        var handler = new StubHttpMessageHandler(request =>
-        {
-            requestBody = request.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-            return new HttpResponseMessage(HttpStatusCode.OK)
+            await rewriter.RewriteAsync(new ArticleRewriteRequest
             {
-                Content = new StringContent(chat, Encoding.UTF8, "application/json")
-            };
+                Title = "Artículo original",
+                Summary = "Resumen original",
+                Blocks = [new ContentParagraphBlockDto { Text = "Contenido original." }],
+                ApiKey = "k",
+                Template = template,
+                Tone = tone,
+                IncludeConclusion = includeConclusion,
+                IncludeFaq = includeFaq,
+                IncludeCta = includeCta
+            });
         });
-
-        var rewriter = new OpenAiCompatibleArticleRewriter(
-            new HttpClient(handler),
-            NullLogger<OpenAiCompatibleArticleRewriter>.Instance);
-
-        await rewriter.RewriteAsync(new ArticleRewriteRequest
-        {
-            Title = "Artículo original",
-            Summary = "Resumen original",
-            Blocks = [new ContentParagraphBlockDto { Text = "Contenido original." }],
-            ApiKey = "k",
-            Template = template,
-            Tone = tone,
-            IncludeConclusion = includeConclusion,
-            IncludeFaq = includeFaq,
-            IncludeCta = includeCta
-        });
-
-        using var document = JsonDocument.Parse(
-            requestBody ?? throw new InvalidOperationException("No se capturó la petición."));
-
-        return document.RootElement
-            .GetProperty("messages")[1]
-            .GetProperty("content")
-            .GetString()!;
-    }
 }

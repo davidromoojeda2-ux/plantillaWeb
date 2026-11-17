@@ -6,7 +6,7 @@ namespace paginaWeb.Helpers;
 
 /// <summary>
 /// Helpers de presentación para los bloques editoriales: ids deterministas de
-/// encabezados, clases de callout e índice del bloque.
+/// encabezados y clases de callout.
 /// </summary>
 public static class ContentBlockViewHelpers
 {
@@ -39,6 +39,4 @@ public static class ContentBlockViewHelpers
         "success" => "callout callout-success",
         _ => "callout callout-info"
     };
-
-    public static int ContentBlockIndex(object? viewData) => viewData is int index ? index : 0;
 }

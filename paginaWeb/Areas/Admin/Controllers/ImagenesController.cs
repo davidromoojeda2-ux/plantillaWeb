@@ -1,6 +1,5 @@
 using Aplication.DTOs;
 using Aplication.Exceptions;
-using Aplication.Interfaces;
 using Aplication.Mappers;
 using Aplication.Services;
 using Domine.Exceptions;
@@ -8,6 +7,7 @@ using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using paginaWeb.Areas.Admin.Models;
+using paginaWeb.Helpers;
 
 namespace paginaWeb.Areas.Admin.Controllers;
 
@@ -41,7 +41,7 @@ public class ImagenesController : Controller
         var (images, totalCount) = await _imageService.GetPagedAsync(page, pageSize, search, storage, articleId);
         var articles = await _articleService.GetAllAdminAsync(1, 100);
 
-        ApplyArticleUsage(images, articles);
+        ImageCatalogHelper.ApplyArticleUsage(images, articles);
 
         var storageStatus = await _imageService.GetStorageStatusAsync();
         var imageQuality = await _siteSettingsService.GetImageQualityAsync();
@@ -69,24 +69,7 @@ public class ImagenesController : Controller
     [HttpGet("listado")]
     public async Task<IActionResult> List(string? currentArticleId = null)
     {
-        var images = await GetImagesWithArticleUsageAsync();
-
-        var result = images.Select(img => new
-        {
-            id = img.Id,
-            fileName = img.OriginalFileName,
-            alt = img.Alt,
-            width = img.OriginalWidth,
-            height = img.OriginalHeight,
-            uploadedAt = img.UploadedAt.ToString("dd/MM/yyyy"),
-            url = ImageMapper.GetBestUrl(img) ?? img.Variants.FirstOrDefault()?.PublicUrl,
-            thumbnailUrl = ImageMapper.GetThumbnailUrl(img) ?? ImageMapper.GetBestUrl(img),
-            storage = img.Storage,
-            isUsed = !string.IsNullOrEmpty(img.ArticleId),
-            usedInArticleId = img.ArticleId,
-            usedInArticleTitle = img.ArticleTitle,
-            isCurrentArticle = !string.IsNullOrEmpty(currentArticleId) && img.ArticleId == currentArticleId
-        });
+        var result = await ImageCatalogHelper.BuildAsync(_imageService, _articleService, currentArticleId);
 
         return Json(result);
     }
@@ -320,60 +303,6 @@ public class ImagenesController : Controller
         }
 
         return metadata;
-    }
-
-    private async Task<List<ImageMetadataResponseDto>> GetImagesWithArticleUsageAsync()
-    {
-        var images = await _imageService.GetAllAsync(0, 500);
-        var allArticles = await _articleService.GetAllAdminAsync(1, 500);
-
-        ApplyArticleUsage(images, allArticles);
-        return images;
-    }
-
-    /// <summary>
-    /// Completa cada imagen con el artículo que la usa, ya sea como portada o en su galería.
-    /// </summary>
-    private static void ApplyArticleUsage(
-        IReadOnlyList<ImageMetadataResponseDto> images,
-        IReadOnlyList<ArticleResponseDto> articles)
-    {
-        var usageMap = new Dictionary<string, (string ArticleId, string ArticleTitle)>();
-        var articlesDict = new Dictionary<string, string>();
-
-        foreach (var article in articles)
-        {
-            articlesDict[article.Id] = article.Title;
-
-            if (!string.IsNullOrEmpty(article.CoverImageId))
-            {
-                usageMap.TryAdd(article.CoverImageId, (article.Id, article.Title));
-            }
-
-            if (article.ImageIds is null) continue;
-
-            foreach (var imageId in article.ImageIds)
-            {
-                if (!string.IsNullOrEmpty(imageId))
-                {
-                    usageMap.TryAdd(imageId, (article.Id, article.Title));
-                }
-            }
-        }
-
-        foreach (var image in images)
-        {
-            if (usageMap.TryGetValue(image.Id, out var usage))
-            {
-                image.ArticleId = usage.ArticleId;
-                image.ArticleTitle = usage.ArticleTitle;
-            }
-            else if (!string.IsNullOrEmpty(image.ArticleId) &&
-                     articlesDict.TryGetValue(image.ArticleId, out var title))
-            {
-                image.ArticleTitle = title;
-            }
-        }
     }
 
     private static string ResolveImageErrorMessage(Exception ex) => ex switch

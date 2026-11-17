@@ -1,11 +1,9 @@
 using Aplication.DTOs;
 using Aplication.DTOs.ContentBlocks;
-using Aplication.Mappers;
 using Aplication.Services;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc;
 using paginaWeb.Models;
-using paginaWeb.Models.Category;
 using paginaWeb.Models.Home;
 using System.Diagnostics;
 

@@ -1,6 +1,5 @@
 using Aplication.DTOs;
 using Aplication.Exceptions;
-using Aplication.Mappers;
 using Aplication.Services;
 using Domine.Exceptions;
 using Microsoft.AspNetCore.Authorization;
