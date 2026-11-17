@@ -39,14 +39,51 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
-                        <select value="@_categoryId" @onchange="OnCategoryChanged" aria-label="Filtrar publicaciones por categoría"
-                                class="w-full sm:w-52 text-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00509D] transition">
-                            <option value="">Todas las categorías</option>
-                            @foreach (var category in CategoryOptions())
+                        <div class="relative w-full sm:w-52">
+                            @if (_categoryMenuOpen)
                             {
-                                <option value="@category.Id">@category.Label</option>
+                                <div class="fixed inset-0 z-40" @onclick="CloseCategoryMenu" aria-hidden="true"></div>
                             }
-                        </select>
+
+                            <button type="button"
+                                    class="w-full flex items-center justify-between gap-2 text-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00509D] transition"
+                                    @onclick="ToggleCategoryMenu"
+                                    aria-haspopup="listbox"
+                                    aria-expanded="@(_categoryMenuOpen ? "true" : "false")"
+                                    aria-label="Filtrar publicaciones por categoría">
+                                <span class="truncate">@SelectedCategoryLabel()</span>
+                                <svg class="w-4 h-4 text-slate-400 flex-shrink-0 @(_categoryMenuOpen ? "rotate-180" : "")"
+                                     fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            @if (_categoryMenuOpen)
+                            {
+                                <div class="absolute left-0 right-0 z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl ring-1 ring-slate-900/5"
+                                     role="listbox" aria-label="Categorías">
+                                    <button type="button"
+                                            class="w-full text-left px-3 py-2 text-xs transition @(string.IsNullOrEmpty(_categoryId) ? "bg-[#00296B] text-white font-semibold" : "text-slate-700 hover:bg-slate-50")"
+                                            @onclick='() => SelectCategory("")'
+                                            role="option"
+                                            aria-selected="@(string.IsNullOrEmpty(_categoryId) ? "true" : "false")">
+                                        Todas las categorías
+                                    </button>
+
+                                    @foreach (var category in CategoryOptions())
+                                    {
+                                        <button type="button"
+                                                class="w-full text-left px-3 py-2 text-xs transition @(_categoryId == category.Id ? "bg-[#00296B] text-white font-semibold" : "text-slate-700 hover:bg-slate-50")"
+                                                @onclick='() => SelectCategory(category.Id)'
+                                                role="option"
+                                                aria-selected="@(_categoryId == category.Id ? "true" : "false")">
+                                            @category.Label
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
 
                         <div class="relative w-full sm:w-72 flex-shrink-0">
                             <input type="text" value="@_search" @oninput="OnSearchChanged"
@@ -236,6 +273,7 @@
     private string _filter = "all";
     private string _search = string.Empty;
     private string _categoryId = string.Empty;
+    private bool _categoryMenuOpen;
     private int _page = 1;
     private string? _message;
     private bool _busy;
@@ -471,10 +509,23 @@
         _page = 1;
     }
 
-    private void OnCategoryChanged(ChangeEventArgs args)
+    private void ToggleCategoryMenu() => _categoryMenuOpen = !_categoryMenuOpen;
+
+    private void CloseCategoryMenu() => _categoryMenuOpen = false;
+
+    private void SelectCategory(string? categoryId)
     {
-        _categoryId = args.Value?.ToString() ?? string.Empty;
+        _categoryId = categoryId ?? string.Empty;
+        _categoryMenuOpen = false;
         _page = 1;
+    }
+
+    private string SelectedCategoryLabel()
+    {
+        if (string.IsNullOrWhiteSpace(_categoryId)) return "Todas las categorías";
+
+        var selected = CategoryOptions().FirstOrDefault(option => option.Id == _categoryId);
+        return selected.Label ?? "Todas las categorías";
     }
 
     private void OnSearchChanged(ChangeEventArgs args)
@@ -487,6 +538,7 @@
     {
         _filter = "all";
         _categoryId = string.Empty;
+        _categoryMenuOpen = false;
         _search = string.Empty;
         _page = 1;
     }
