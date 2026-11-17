@@ -143,4 +143,166 @@
             card.className = "relative flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer bg-slate-50/60 border-slate-200 hover:border-slate-300";
         }
     }
+
+    // Validación editorial: campos, estructura y enlaces caídos.
+    (function () {
+        const card = document.getElementById('articleValidationCard');
+        const button = document.getElementById('btnValidateArticle');
+        const label = document.getElementById('btnValidateArticleLabel');
+        const results = document.getElementById('validationResults');
+        const errorsBox = document.getElementById('validationErrors');
+        const warningsBox = document.getElementById('validationWarnings');
+        const linksSection = document.getElementById('validationLinksSection');
+        const linksBox = document.getElementById('validationLinks');
+        const cleanBox = document.getElementById('validationClean');
+        const summaryBadge = document.getElementById('validationSummaryBadge');
+        const form = document.getElementById('articleForm');
+
+        if (!card || !button || !results || !form) return;
+
+        const validateUrl = card.getAttribute('data-validate-url');
+        if (!validateUrl) return;
+
+        function setBadge(text, classes) {
+            summaryBadge.textContent = text;
+            summaryBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold ' + classes;
+        }
+
+        function renderList(container, title, items) {
+            container.innerHTML = '';
+            if (!items || items.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            const heading = document.createElement('p');
+            heading.className = 'font-bold mb-1';
+            heading.textContent = title;
+            container.appendChild(heading);
+
+            const list = document.createElement('ul');
+            list.className = 'space-y-1 list-disc list-inside';
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                list.appendChild(li);
+            });
+            container.appendChild(list);
+            container.classList.remove('hidden');
+        }
+
+        function statusMeta(status) {
+            switch (status) {
+                case 'ok':
+                    return { label: 'Correcto', classes: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+                case 'restringido':
+                    return { label: 'Restringido', classes: 'bg-amber-100 text-amber-800 border-amber-200' };
+                case 'caido':
+                    return { label: 'Caído', classes: 'bg-rose-100 text-rose-800 border-rose-200' };
+                case 'sin-respuesta':
+                    return { label: 'Sin respuesta', classes: 'bg-rose-100 text-rose-800 border-rose-200' };
+                case 'error-servidor':
+                    return { label: 'Error del servidor', classes: 'bg-rose-100 text-rose-800 border-rose-200' };
+                default:
+                    return { label: status || 'Desconocido', classes: 'bg-slate-100 text-slate-700 border-slate-200' };
+            }
+        }
+
+        function renderLinks(links) {
+            linksBox.innerHTML = '';
+            if (!links || links.length === 0) {
+                linksSection.classList.add('hidden');
+                return;
+            }
+
+            links.forEach(link => {
+                const meta = statusMeta(link.status);
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5';
+
+                const anchor = document.createElement('a');
+                anchor.href = link.url;
+                anchor.target = '_blank';
+                anchor.rel = 'noopener noreferrer';
+                anchor.className = 'min-w-0 flex-1 truncate text-[11px] text-[#00509D] hover:underline';
+                anchor.textContent = link.url;
+                anchor.title = link.url;
+
+                const badge = document.createElement('span');
+                badge.className = 'shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-bold ' + meta.classes;
+                badge.textContent = meta.label + (link.statusCode ? ' · ' + link.statusCode : '');
+
+                row.appendChild(anchor);
+                row.appendChild(badge);
+                linksBox.appendChild(row);
+            });
+
+            linksSection.classList.remove('hidden');
+        }
+
+        async function validateArticle() {
+            const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const payload = {
+                title: document.getElementById('titleInput')?.value || document.getElementById('Title')?.value || '',
+                summary: document.getElementById('Summary')?.value || '',
+                slug: document.getElementById('slugInput')?.value || document.getElementById('Slug')?.value || '',
+                author: document.getElementById('Author')?.value || '',
+                categoryId: document.getElementById('categorySelect')?.value || document.getElementById('CategoryId')?.value || '',
+                coverImageUrl: document.getElementById('coverImageUrlInput')?.value || document.getElementById('CoverImageUrl')?.value || '',
+                status: document.getElementById('Status')?.value || '',
+                blocksJson: document.getElementById('BlocksJsonInput')?.value || '[]'
+            };
+
+            button.disabled = true;
+            const originalLabel = label.textContent;
+            label.textContent = 'Validando…';
+
+            try {
+                const response = await fetch(validateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error('La validación no está disponible (HTTP ' + response.status + ').');
+                }
+
+                const data = await response.json();
+                results.classList.remove('hidden');
+
+                renderList(errorsBox, 'Errores', data.errors);
+                renderList(warningsBox, 'Avisos', data.warnings);
+                renderLinks(data.links);
+
+                const errorCount = Array.isArray(data.errors) ? data.errors.length : 0;
+                const warningCount = Array.isArray(data.warnings) ? data.warnings.length : 0;
+
+                cleanBox.classList.toggle('hidden', errorCount > 0 || warningCount > 0);
+
+                if (errorCount > 0) {
+                    setBadge(errorCount + (errorCount === 1 ? ' error' : ' errores'), 'bg-rose-100 text-rose-800 border border-rose-200');
+                } else if (warningCount > 0) {
+                    setBadge(warningCount + (warningCount === 1 ? ' aviso' : ' avisos'), 'bg-amber-100 text-amber-800 border border-amber-200');
+                } else {
+                    setBadge('Sin problemas', 'bg-emerald-100 text-emerald-800 border border-emerald-200');
+                }
+            } catch (error) {
+                results.classList.remove('hidden');
+                renderList(errorsBox, 'No se pudo validar', [error.message || 'Inténtalo de nuevo.']);
+                warningsBox.classList.add('hidden');
+                linksSection.classList.add('hidden');
+                cleanBox.classList.add('hidden');
+                setBadge('Error', 'bg-rose-100 text-rose-800 border border-rose-200');
+            } finally {
+                button.disabled = false;
+                label.textContent = originalLabel || 'Validar artículo';
+            }
+        }
+
+        button.addEventListener('click', validateArticle);
+    })();
 </script>

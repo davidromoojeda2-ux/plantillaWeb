@@ -205,6 +205,46 @@
                 </div>
             </div>
 
+            <!-- Validación editorial -->
+            <div id="articleValidationCard"
+                 class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-3"
+                 data-validate-url="@Url.Action("Validar", "Articulos", new { area = "Admin" })">
+                <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                        Validación
+                        <button type="button" class="cms-tooltip-icon"
+                                data-tooltip="Revisa los campos obligatorios, la estructura del contenido y comprueba por HTTP que los enlaces respondan antes de publicar."
+                                data-tooltip-position="top"
+                                aria-label="Información sobre la validación del artículo">i</button>
+                    </h4>
+                    <span id="validationSummaryBadge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold"></span>
+                </div>
+
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Comprueba la información del artículo y verifica que los enlaces no estén caídos.
+                </p>
+
+                <button type="button" id="btnValidateArticle"
+                        class="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white font-semibold text-sm shadow-sm transition disabled:opacity-60 disabled:cursor-wait">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="btnValidateArticleLabel">Validar artículo</span>
+                </button>
+
+                <div id="validationResults" class="hidden space-y-2" aria-live="polite">
+                    <div id="validationErrors" class="hidden rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"></div>
+                    <div id="validationWarnings" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"></div>
+                    <div id="validationLinksSection" class="hidden">
+                        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Enlaces comprobados</p>
+                        <div id="validationLinks" class="space-y-1.5 max-h-56 overflow-y-auto pr-1"></div>
+                    </div>
+                    <p id="validationClean" class="hidden rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-semibold">
+                        Sin problemas detectados. El artículo está listo para guardarse.
+                    </p>
+                </div>
+            </div>
+
             <!-- Categoría y Taxonomía -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
