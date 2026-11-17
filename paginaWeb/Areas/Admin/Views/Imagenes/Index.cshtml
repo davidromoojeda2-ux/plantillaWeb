@@ -1,16 +1,16 @@
-﻿@model paginaWeb.Areas.Admin.Models.ImageLibraryViewModel
+@model paginaWeb.Areas.Admin.Models.ImageLibraryViewModel
 @{
-    ViewData["Title"] = "Biblioteca de Imágenes";
+    ViewData["Title"] = "Biblioteca de Im�genes";
 }
 
 <div class="space-y-8">
-    <!-- ─── Alertas del Sistema ────────────────────────────────────────────────── -->
+    <!-- --- Alertas del Sistema -------------------------------------------------- -->
     @if (TempData["Success"] != null)
     {
         <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-start gap-3 shadow-xs">
             <svg class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <div>
-                <p class="font-semibold">Operación exitosa</p>
+                <p class="font-semibold">Operaci�n exitosa</p>
                 <p class="text-xs text-emerald-700 mt-0.5">@TempData["Success"]</p>
             </div>
         </div>
@@ -27,7 +27,7 @@
         </div>
     }
 
-    <!-- ─── Estado del Servicio de Almacenamiento (S3 Prioritario vs Local) ───── -->
+    <!-- --- Estado del Servicio de Almacenamiento (S3 Prioritario vs Local) ----- -->
     <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-3.5">
@@ -57,11 +57,11 @@
                     <p class="text-xs text-slate-500 mt-0.5">
                         @if (Model.StorageStatus.IsS3Available)
                         {
-                            <span>Las nuevas imágenes se optimizan y envían automáticamente al bucket S3 <strong>@Model.StorageStatus.S3Bucket</strong>.</span>
+                            <span>Las nuevas im�genes se optimizan y env�an autom�ticamente al bucket S3 <strong>@Model.StorageStatus.S3Bucket</strong>.</span>
                         }
                         else
                         {
-                            <span>El servicio S3 no responde o no tiene credenciales configuradas. Las imágenes se guardan de forma segura en almacenamiento local.</span>
+                            <span>El servicio S3 no responde o no tiene credenciales configuradas. Las im�genes se guardan de forma segura en almacenamiento local.</span>
                         }
                     </p>
                 </div>
@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <!-- ─── Calidad de Optimización WebP (Configurable) ──────────────────────── -->
+    <!-- --- Calidad de Optimizaci�n WebP (Configurable) ------------------------ -->
     <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex items-center gap-3.5">
@@ -90,13 +90,13 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <h4 class="font-bold text-slate-800 text-sm">Calidad de optimización WebP</h4>
+                        <h4 class="font-bold text-slate-800 text-sm">Calidad de optimizaci�n WebP</h4>
                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
                             Sin metadatos
                         </span>
                     </div>
                     <p class="text-xs text-slate-500 mt-0.5">
-                        Afecta solo a las nuevas imágenes. Se eliminan EXIF, XMP, IPTC y perfil ICC de todas las variantes.
+                        Afecta solo a las nuevas im�genes. Se eliminan EXIF, XMP, IPTC y perfil ICC de todas las variantes.
                     </p>
                 </div>
             </div>
@@ -104,8 +104,8 @@
             <div class="flex items-center gap-2 flex-wrap">
                 <span id="imageQualitySummary"
                       class="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-mono text-[11px] text-slate-600">
-                    Global @Model.ImageQuality.Quality% · 400 @Model.ImageQuality.ForWidth(400)% ·
-                    800 @Model.ImageQuality.ForWidth(800)% · 1600 @Model.ImageQuality.ForWidth(1600)%
+                    Global @Model.ImageQuality.Quality% � 400 @Model.ImageQuality.ForWidth(400)% �
+                    800 @Model.ImageQuality.ForWidth(800)% � 1600 @Model.ImageQuality.ForWidth(1600)%
                 </span>
                 <button type="button" id="btnOpenImageQualityModal"
                         class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00296B] hover:bg-[#00509D] text-white text-xs font-bold shadow-xs transition">
@@ -119,99 +119,41 @@
         </div>
     </div>
 
-    <!-- ─── Subida de Nuevas Imágenes con Verificación de Nombre ──────────────── -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
-        <div class="flex items-center justify-between mb-4">
+    <!-- --- Subida r�pida de im�genes ------------------------------------------- -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6" id="libraryUploadCard">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <h3 class="font-bold text-slate-800 text-base">Subir y Optimizar Nueva Imagen</h3>
-                <p class="text-xs text-slate-500">
-                    El servicio verificará primero la disponibilidad de S3, validará que el nombre no se repita y generará variantes WebP automáticas.
+                <h3 class="font-bold text-slate-800 text-base">Subir im�genes</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                    Selecciona hasta 10 im�genes a la vez. El nombre y el texto ALT se generan autom�ticamente desde cada archivo.
+                    Para vincular una imagen a un art�culo o usarla como portada, hazlo desde el editor del art�culo.
                 </p>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <input type="file" id="libraryImageInput" accept="image/*" multiple class="sr-only" tabindex="-1" />
+                <button type="button" id="libraryUploadButton"
+                        title="Puedes seleccionar hasta 10 im�genes a la vez"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-xs transition disabled:opacity-60 disabled:cursor-wait">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span id="libraryUploadLabel">Subir imagen</span>
+                </button>
             </div>
         </div>
 
-        <form method="post" asp-area="Admin" asp-controller="Imagenes" asp-action="Upload" enctype="multipart/form-data" id="uploadForm" class="space-y-4">
-            @Html.AntiForgeryToken()
-
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <!-- Selector de archivo -->
-                <div class="md:col-span-4">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                        Archivo de Imagen <span class="text-rose-500">*</span>
-                    </label>
-                    <input type="file" id="fileInput" name="file" accept="image/*" required multiple
-                           class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#003F88] hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl p-1 bg-slate-50" />
-                    <p id="batchHint" class="text-[11px] mt-1 text-slate-500">Puedes seleccionar hasta 10 imágenes a la vez. Con varias, el nombre y el alt se generan desde cada archivo.</p>
-                </div>
-
-                <!-- Nombre de archivo con verificación de no repetición -->
-                <div class="md:col-span-4">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600">
-                            Nombre del Archivo (Único)
-                        </label>
-                        <span id="nameCheckBadge" class="text-[11px] font-semibold hidden"></span>
-                    </div>
-                    <div class="relative">
-                        <input type="text" id="customNameInput" name="customName" placeholder="Se asignará automáticamente al elegir archivo..."
-                               class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 pr-8 focus:ring-2 focus:ring-[#00509D] focus:outline-none transition" />
-                        <span id="nameSpinner" class="hidden absolute right-2.5 top-2.5 text-slate-400">
-                            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                        </span>
-                    </div>
-                    <p id="nameFeedbackText" class="text-[11px] mt-1 text-slate-500">
-                        Se verificará que no exista previamente en la base de datos ni en almacenamiento.
-                    </p>
-                </div>
-
-                <!-- Texto Alt -->
-                <div class="md:col-span-4">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                        Texto Alternativo (Alt / Accesibilidad)
-                    </label>
-                    <input type="text" id="altInput" name="alt" placeholder="Breve descripción del contenido..."
-                           class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-2 border-t border-slate-100">
-                <!-- Vincular a artículo -->
-                <div class="md:col-span-7">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                        Vincular a Artículo (Opcional)
-                    </label>
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <select name="articleId" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none">
-                            <option value="">-- Sin artículo (Disponible en biblioteca general) --</option>
-                            @foreach (var art in Model.Articles)
-                            {
-                                <option value="@art.Id">@art.Title</option>
-                            }
-                        </select>
-                        <label class="flex items-center gap-2 cursor-pointer shrink-0">
-                            <input type="checkbox" id="setAsCoverInput" name="setAsCover" value="true" class="rounded border-slate-300 text-[#00296B] focus:ring-[#00296B]" />
-                            <span class="text-xs text-slate-700 font-medium">Asignar como portada</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Botón de optimización y subida -->
-                <div class="md:col-span-5">
-                    <button type="submit" id="btnSubmitUpload" class="w-full py-2.5 px-5 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white font-bold text-sm shadow-sm transition flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                        <span>Optimizar WebP y Guardar</span>
-                    </button>
-                </div>
-            </div>
-        </form>
+        <p id="libraryUploadError" class="hidden mt-3 text-[11px] font-semibold text-rose-600" role="alert"></p>
+        @Html.AntiForgeryToken()
     </div>
 
-    <!-- ─── Filtros y Búsqueda de la Biblioteca ──────────────────────────────── -->
+    <!-- --- Filtros y B�squeda de la Biblioteca -------------------------------- -->
     <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <form method="get" asp-area="Admin" asp-controller="Imagenes" asp-action="Index" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
             <div class="lg:col-span-4">
                 <div class="relative">
-                    <input type="text" name="search" value="@Model.Search" placeholder="Buscar por nombre o descripción..."
+                    <input type="text" name="search" value="@Model.Search" placeholder="Buscar por nombre o descripci�n..."
                            class="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
                     <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
@@ -227,8 +169,8 @@
 
             <div class="lg:col-span-3">
                 <select name="articleId" class="w-full text-sm rounded-xl border border-slate-300 px-3 py-2 bg-white focus:ring-2 focus:ring-[#00509D] focus:outline-none">
-                    <option value="">-- Vinculación con Artículos --</option>
-                    <option value="linked" selected="@(Model.ArticleFilter == "linked")">Solo con artículo vinculado</option>
+                    <option value="">-- Vinculaci�n con Art�culos --</option>
+                    <option value="linked" selected="@(Model.ArticleFilter == "linked")">Solo con art�culo vinculado</option>
                     <option value="none" selected="@(Model.ArticleFilter == "none")">Sin vincular (Biblioteca suelta)</option>
                 </select>
             </div>
@@ -247,17 +189,17 @@
         </form>
     </div>
 
-    <!-- ─── Galería de la Biblioteca de Imágenes ─────────────────────────────── -->
+    <!-- --- Galer�a de la Biblioteca de Im�genes ------------------------------- -->
     <div class="bg-white rounded-2xl border border-slate-200/80 p-6">
         <div class="flex items-center justify-between mb-5">
             <div>
-                <h3 class="font-bold text-slate-800 text-lg">Catálogo Multimedia</h3>
-                <p class="text-xs text-slate-400">Total encontrado: @Model.TotalCount imágenes</p>
+                <h3 class="font-bold text-slate-800 text-lg">Cat�logo Multimedia</h3>
+                <p class="text-xs text-slate-400">Total encontrado: @Model.TotalCount im�genes</p>
             </div>
             @if (Model.TotalPages > 1)
             {
                 <span class="text-xs text-slate-500 font-medium">
-                    Página @Model.CurrentPage de @Model.TotalPages
+                    P�gina @Model.CurrentPage de @Model.TotalPages
                 </span>
             }
         </div>
@@ -266,8 +208,8 @@
         {
             <div class="py-16 text-center text-slate-400">
                 <svg class="w-16 h-16 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                <p class="font-semibold text-slate-700 text-base">No se encontraron imágenes en este criterio.</p>
-                <p class="text-xs text-slate-400 mt-1">Sube una nueva imagen o ajusta los filtros de búsqueda.</p>
+                <p class="font-semibold text-slate-700 text-base">No se encontraron im�genes en este criterio.</p>
+                <p class="text-xs text-slate-400 mt-1">Sube una nueva imagen o ajusta los filtros de b�squeda.</p>
             </div>
         }
         else
@@ -308,7 +250,7 @@
 
                                 <!-- Dimensiones originales -->
                                 <span class="absolute top-2 right-2 bg-black/70 text-white text-[10px] font-mono px-2 py-0.5 rounded-full backdrop-blur-xs">
-                                    @img.OriginalWidth × @img.OriginalHeight
+                                    @img.OriginalWidth � @img.OriginalHeight
                                 </span>
                             </div>
 
@@ -322,20 +264,20 @@
                                     </p>
                                 </div>
 
-                                <!-- Estado de vinculación con Artículo -->
+                                <!-- Estado de vinculaci�n con Art�culo -->
                                 <div>
                                     @if (!string.IsNullOrEmpty(img.ArticleId))
                                     {
                                         <div class="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
                                             <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                                            <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@img.ArticleId" class="truncate hover:underline font-semibold" title="Ir a editar artículo">
-                                                @(img.ArticleTitle ?? "Artículo vinculado")
+                                            <a asp-area="Admin" asp-controller="Articulos" asp-action="Edit" asp-route-id="@img.ArticleId" class="truncate hover:underline font-semibold" title="Ir a editar art�culo">
+                                                @(img.ArticleTitle ?? "Art�culo vinculado")
                                             </a>
                                         </div>
                                     }
                                     else
                                     {
-                                        <span class="text-[11px] text-slate-400 italic block py-0.5">Sin artículo vinculado</span>
+                                        <span class="text-[11px] text-slate-400 italic block py-0.5">Sin art�culo vinculado</span>
                                     }
                                 </div>
 
@@ -352,7 +294,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Formulario rápido de Texto Alt -->
+                                <!-- Formulario r�pido de Texto Alt -->
                                 <form method="post" asp-area="Admin" asp-controller="Imagenes" asp-action="UpdateAlt" class="flex gap-1.5 items-center">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@img.Id" />
@@ -388,12 +330,12 @@
                 }
             </div>
 
-            <!-- ─── Paginación ──────────────────────────────────────────────────────── -->
+            <!-- --- Paginaci�n -------------------------------------------------------- -->
             @if (Model.TotalPages > 1)
             {
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-slate-200">
                     <p class="text-xs text-slate-500">
-                        Mostrando imágenes <strong>@((Model.CurrentPage - 1) * Model.PageSize + 1)</strong> a 
+                        Mostrando im�genes <strong>@((Model.CurrentPage - 1) * Model.PageSize + 1)</strong> a 
                         <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount))</strong> de 
                         <strong>@Model.TotalCount</strong>
                     </p>
@@ -448,15 +390,15 @@
     </div>
 </div>
 
-<!-- ─── Modal de Confirmación de Eliminación ───────────────────────────────── -->
+<!-- --- Modal de Confirmaci�n de Eliminaci�n --------------------------------- -->
 <div id="deleteModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
         <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
         </div>
-        <h4 class="text-lg font-bold text-slate-900 text-center">¿Eliminar esta imagen y sus variantes?</h4>
+        <h4 class="text-lg font-bold text-slate-900 text-center">�Eliminar esta imagen y sus variantes?</h4>
         <p class="text-xs text-slate-500 text-center mt-2 leading-relaxed">
-            Se eliminará el archivo <strong id="deleteImageName" class="text-slate-800"></strong> y sus <span id="deleteVariantsCount">3</span> variantes optimizadas WebP del almacenamiento. Si algún artículo público utiliza esta imagen, dejará de verse.
+            Se eliminar� el archivo <strong id="deleteImageName" class="text-slate-800"></strong> y sus <span id="deleteVariantsCount">3</span> variantes optimizadas WebP del almacenamiento. Si alg�n art�culo p�blico utiliza esta imagen, dejar� de verse.
         </p>
         <form id="deleteForm" method="post" asp-area="Admin" asp-controller="Imagenes" asp-action="Delete" class="mt-6 flex gap-3">
             @Html.AntiForgeryToken()
@@ -464,13 +406,13 @@
                 Cancelar
             </button>
             <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition">
-                Sí, Eliminar Todo
+                S�, Eliminar Todo
             </button>
         </form>
     </div>
 </div>
 
-<!-- ─── Modal para Ver Variantes y Detalles ─────────────────────────────────── -->
+<!-- --- Modal para Ver Variantes y Detalles ----------------------------------- -->
 <div id="detailsModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -491,7 +433,7 @@
             <div>
                 <h5 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Variantes WebP Disponibles</h5>
                 <div id="detailsModalVariants" class="space-y-2">
-                    <!-- Dinámico vía JS -->
+                    <!-- Din�mico v�a JS -->
                 </div>
             </div>
         </div>
@@ -500,88 +442,66 @@
 
 <partial name="_ImageQualityModal" model="Model.ImageQuality" />
 
-<!-- ─── Scripts de Validación en Tiempo Real e Interacción ───────────────────── -->
+<!-- --- Scripts de Validaci�n en Tiempo Real e Interacci�n --------------------- -->
 @section Scripts {
 <script>
     // Datos en memoria para el visor modal
     const imagesCatalog = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Images));
 
     const MAX_UPLOAD_BATCH = 10;
-    const uploadForm = document.getElementById('uploadForm');
-    const fileInput = document.getElementById('fileInput');
-    const customNameInput = document.getElementById('customNameInput');
-    const altInput = document.getElementById('altInput');
-    const setAsCoverInput = document.getElementById('setAsCoverInput');
-    const batchHint = document.getElementById('batchHint');
-    const nameCheckBadge = document.getElementById('nameCheckBadge');
-    const nameSpinner = document.getElementById('nameSpinner');
-    const nameFeedbackText = document.getElementById('nameFeedbackText');
-    const btnSubmitUpload = document.getElementById('btnSubmitUpload');
-
-    let debounceTimer = null;
-    let isNameValid = false;
-    let batchUploading = false;
+    const libraryUploadInput = document.getElementById('libraryImageInput');
+    const libraryUploadButton = document.getElementById('libraryUploadButton');
+    const libraryUploadLabel = document.getElementById('libraryUploadLabel');
+    const libraryUploadError = document.getElementById('libraryUploadError');
+    const libraryUploadCard = document.getElementById('libraryUploadCard');
+    let libraryUploading = false;
 
     function autoAltFromFileName(fileName) {
         const baseName = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
         return baseName.replace(/[-_]+/g, ' ');
     }
 
-    function getSelectedFiles() {
-        return Array.prototype.slice.call(fileInput.files || []);
+    function libraryToken() {
+        const input = libraryUploadCard?.querySelector('input[name="__RequestVerificationToken"]');
+        return input ? input.value : '';
     }
 
-    function updateBatchMode() {
-        const count = getSelectedFiles().length;
-        const isBatch = count > 1;
+    function setLibraryUploading(value, total, done) {
+        libraryUploading = value;
+        if (libraryUploadButton) libraryUploadButton.disabled = value;
+        if (!libraryUploadLabel) return;
 
-        customNameInput.disabled = isBatch;
-        altInput.disabled = isBatch;
-        setAsCoverInput.disabled = isBatch;
-
-        if (isBatch) {
-            customNameInput.value = '';
-            altInput.value = '';
-            setAsCoverInput.checked = false;
-            resetNameBadge();
-            batchHint.textContent = count + ' imágenes seleccionadas: se subirán una a una usando el nombre de cada archivo. El artículo elegido se vincula a todas y la portada no se asigna automáticamente.';
-        } else {
-            batchHint.textContent = 'Puedes seleccionar hasta 10 imágenes a la vez. Con varias, el nombre y el alt se generan desde cada archivo.';
-        }
+        libraryUploadLabel.textContent = value
+            ? (total > 1 ? 'Subiendo ' + Math.min(done + 1, total) + ' de ' + total + '�' : 'Subiendo�')
+            : 'Subir imagen';
     }
 
-    function setBatchBusy(busy, done, total) {
-        batchUploading = busy;
-        btnSubmitUpload.disabled = busy;
-        btnSubmitUpload.classList.toggle('opacity-50', busy);
-        btnSubmitUpload.classList.toggle('cursor-not-allowed', busy);
-
-        const label = btnSubmitUpload.querySelector('span');
-        if (!label) return;
-
-        label.textContent = busy
-            ? (total > 1 ? 'Subiendo ' + Math.min(done + 1, total) + ' de ' + total + '…' : 'Subiendo…')
-            : 'Optimizar WebP y Guardar';
+    function showLibraryUploadError(message) {
+        if (!libraryUploadError) return;
+        libraryUploadError.textContent = message || '';
+        libraryUploadError.classList.toggle('hidden', !message);
     }
 
-    async function uploadBatch(files, overflow) {
-        const tokenInput = uploadForm.querySelector('input[name="__RequestVerificationToken"]');
-        const articleSelect = uploadForm.querySelector('select[name="articleId"]');
-        const token = tokenInput ? tokenInput.value : '';
-        const articleId = articleSelect ? articleSelect.value : '';
+    async function uploadLibraryFiles(fileList) {
+        const files = Array.prototype.slice.call(fileList || []);
+        if (!files.length || libraryUploading) return;
+
+        const overflow = files.length > MAX_UPLOAD_BATCH;
+        const batch = overflow ? files.slice(0, MAX_UPLOAD_BATCH) : files;
+        const token = libraryToken();
         const successes = [];
         const failures = [];
 
-        setBatchBusy(true, 0, files.length);
+        showLibraryUploadError('');
+        setLibraryUploading(true, batch.length, 0);
 
-        for (let i = 0; i < files.length; i++) {
-            setBatchBusy(true, i, files.length);
-            const file = files[i];
+        for (let i = 0; i < batch.length; i++) {
+            setLibraryUploading(true, batch.length, i);
+            const file = batch[i];
             const formData = new FormData();
             formData.append('file', file);
             formData.append('customName', file.name);
             formData.append('alt', autoAltFromFileName(file.name));
-            if (articleId) formData.append('articleId', articleId);
 
             try {
                 const response = await fetch('/admin/imagenes/subir-ajax', {
@@ -601,6 +521,17 @@
             }
         }
 
+        setLibraryUploading(false);
+        if (libraryUploadInput) libraryUploadInput.value = '';
+
+        if (successes.length === 0) {
+            showLibraryUploadError(
+                failures.length === 1
+                    ? failures[0].message
+                    : 'No se pudo subir ninguna imagen. Revisa los archivos e int�ntalo de nuevo.');
+            return;
+        }
+
         sessionStorage.setItem('imageBatchUploadSummary', JSON.stringify({
             success: successes.length,
             failed: failures,
@@ -610,7 +541,16 @@
         window.location.reload();
     }
 
-    // Resume del lote anterior tras recargar la página
+    libraryUploadButton?.addEventListener('click', function () {
+        if (libraryUploading) return;
+        libraryUploadInput?.click();
+    });
+
+    libraryUploadInput?.addEventListener('change', function () {
+        uploadLibraryFiles(this.files);
+    });
+
+    // Resume del lote anterior tras recargar la p�gina
     (function showBatchSummary() {
         const raw = sessionStorage.getItem('imageBatchUploadSummary');
         if (!raw) return;
@@ -624,120 +564,26 @@
                 window.showToast(
                     summary.success === 1
                         ? 'Imagen subida y optimizada correctamente.'
-                        : summary.success + ' imágenes subidas y optimizadas correctamente.',
+                        : summary.success + ' im�genes subidas y optimizadas correctamente.',
                     'success');
             }
 
             if (summary.failed && summary.failed.length) {
-                const names = summary.failed.slice(0, 3).map(function (item) { return '«' + item.name + '»'; });
-                if (summary.failed.length > 3) names.push('y ' + (summary.failed.length - 3) + ' más');
+                const names = summary.failed.slice(0, 3).map(function (item) { return '�' + item.name + '�'; });
+                if (summary.failed.length > 3) names.push('y ' + (summary.failed.length - 3) + ' m�s');
                 const detail = summary.failed.length === 1 ? ' Motivo: ' + summary.failed[0].message : '';
                 window.showToast('No se pudieron subir ' + summary.failed.length + ': ' + names.join(', ') + '.' + detail, 'error');
             }
 
             if (summary.overflow) {
-                window.showToast('Solo se procesaron las primeras ' + MAX_UPLOAD_BATCH + ' imágenes del lote.', 'info');
+                window.showToast('Solo se procesaron las primeras ' + MAX_UPLOAD_BATCH + ' im�genes del lote.', 'info');
             }
         } catch (error) {
             console.error('No se pudo mostrar el resumen de subida:', error);
         }
     })();
 
-    // Al seleccionar archivo: rellenar nombre y texto alt si están vacíos
-    fileInput.addEventListener('change', function () {
-        const files = getSelectedFiles();
-        updateBatchMode();
-
-        if (files.length === 1) {
-            const fileName = files[0].name;
-            customNameInput.value = fileName;
-
-            if (!altInput.value.trim()) {
-                altInput.value = autoAltFromFileName(fileName);
-            }
-
-            verifyFileName(fileName);
-        } else if (files.length > 1) {
-            resetNameBadge();
-        }
-    });
-
-    uploadForm.addEventListener('submit', function (event) {
-        const files = getSelectedFiles();
-        if (files.length <= 1) return;
-        if (batchUploading) {
-            event.preventDefault();
-            return;
-        }
-
-        event.preventDefault();
-        const overflow = files.length > MAX_UPLOAD_BATCH;
-        uploadBatch(overflow ? files.slice(0, MAX_UPLOAD_BATCH) : files, overflow);
-    });
-
-    // Al editar nombre manualmente con debounce
-    customNameInput.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        const name = this.value.trim();
-        if (!name) {
-            resetNameBadge();
-            return;
-        }
-
-        nameSpinner.classList.remove('hidden');
-        debounceTimer = setTimeout(() => {
-            verifyFileName(name);
-        }, 350);
-    });
-
-    async function verifyFileName(name) {
-        if (!name) return;
-        nameSpinner.classList.remove('hidden');
-
-        try {
-            const res = await fetch(`/admin/imagenes/verificar-nombre?fileName=${encodeURIComponent(name)}`);
-            const data = await res.json();
-            nameSpinner.classList.add('hidden');
-
-            nameCheckBadge.classList.remove('hidden');
-            if (data.exists) {
-                isNameValid = false;
-                nameCheckBadge.className = 'text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200';
-                nameCheckBadge.innerHTML = '<svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg> Nombre ya registrado';
-                nameFeedbackText.className = 'text-[11px] mt-1 text-rose-600 font-medium';
-                nameFeedbackText.textContent = `Ya existe una imagen llamada "${name}". Cámbialo para evitar sobreescritura o conflicto.`;
-                customNameInput.classList.add('border-rose-400', 'focus:ring-rose-400');
-                customNameInput.classList.remove('border-emerald-400', 'focus:ring-emerald-400');
-                btnSubmitUpload.disabled = true;
-                btnSubmitUpload.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                isNameValid = true;
-                nameCheckBadge.className = 'text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200';
-                nameCheckBadge.innerHTML = '<svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg> Nombre disponible';
-                nameFeedbackText.className = 'text-[11px] mt-1 text-emerald-600';
-                nameFeedbackText.textContent = 'Este nombre es único y puede ser almacenado correctamente.';
-                customNameInput.classList.remove('border-rose-400', 'focus:ring-rose-400');
-                customNameInput.classList.add('border-emerald-400', 'focus:ring-emerald-400');
-                btnSubmitUpload.disabled = false;
-                btnSubmitUpload.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        } catch (err) {
-            nameSpinner.classList.add('hidden');
-            console.error('Error al verificar nombre:', err);
-        }
-    }
-
-    function resetNameBadge() {
-        nameCheckBadge.classList.add('hidden');
-        nameSpinner.classList.add('hidden');
-        nameFeedbackText.className = 'text-[11px] mt-1 text-slate-500';
-        nameFeedbackText.textContent = 'Se verificará que no exista previamente en la base de datos ni en almacenamiento.';
-        customNameInput.classList.remove('border-rose-400', 'border-emerald-400');
-        btnSubmitUpload.disabled = false;
-        btnSubmitUpload.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
-
-    // Modal de confirmación de eliminación
+    // Modal de confirmaci�n de eliminaci�n
     function confirmDeleteImage(id, name, variantsCount) {
         document.getElementById('deleteImageName').textContent = name;
         document.getElementById('deleteVariantsCount').textContent = variantsCount;
@@ -765,7 +611,7 @@
         const height = img.OriginalHeight || img.originalHeight;
 
         document.getElementById('detailsModalTitle').textContent = fileName;
-        document.getElementById('detailsModalSubtitle').textContent = `Resolución original: ${width} × ${height} px | Alt: "${alt}"`;
+        document.getElementById('detailsModalSubtitle').textContent = `Resoluci�n original: ${width} � ${height} px | Alt: "${alt}"`;
 
         const maxVar = [...variants].sort((a,b) => (b.Width||b.width) - (a.Width||a.width))[0];
         const previewUrl = maxVar ? (maxVar.PublicUrl || maxVar.publicUrl) : '';
