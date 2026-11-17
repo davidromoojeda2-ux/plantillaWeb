@@ -41,9 +41,9 @@ ImageMapper.GetBestUrl(coverImage);
     </div>
 </div>
 
-<article class="py-8 sm:py-12">
+<article class="container py-8 sm:py-12 space-y-10 sm:space-y-14">
     <!-- ─── Cabecera Editorial ──────────────────────────────────────────────── -->
-    <header class="container max-w-5xl mx-auto space-y-6 sm:space-y-8 text-center">
+    <header class="max-w-5xl mx-auto space-y-6 sm:space-y-8 text-center">
         <!-- Breadcrumbs y Navegabilidad Rápida -->
         <div class="flex flex-col gap-3 text-xs font-medium text-slate-500 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
             <nav aria-label="Ruta de navegación" class="flex flex-wrap items-center justify-center gap-1.5 lg:justify-start">
@@ -183,29 +183,29 @@ ImageMapper.GetBestUrl(coverImage);
         </div>
     </header>
 
-    <!-- ─── Portada Principal a Ancho Completo ─────────────────────────────── -->
+    <!-- ─── Portada Principal Destacada ─────────────────────────────────────── -->
     @if (!string.IsNullOrEmpty(coverUrl))
     {
-        <figure class="relative mt-8 sm:mt-12 w-full">
-            <div class="overflow-hidden bg-slate-100">
+        <figure class="relative w-full">
+            <div class="absolute inset-x-6 -bottom-3 top-10 rounded-3xl bg-gradient-to-br from-[#00296B]/10 to-[#FDC500]/20 blur-2xl -z-10" aria-hidden="true"></div>
+            <div class="overflow-hidden rounded-2xl sm:rounded-3xl shadow-2xl shadow-[#00296B]/15 ring-1 ring-slate-900/5 bg-slate-100">
                 <img src="@coverUrl" srcset="@coverSrcSet"
-                     sizes="100vw"
+                     sizes="(min-width: 1024px) 1200px, 100vw"
                      alt="@(!string.IsNullOrWhiteSpace(coverImage?.Alt) ? coverImage.Alt : Model.Title)"
                      width="@(coverImage?.OriginalWidth > 0 ? coverImage.OriginalWidth : null)"
                      height="@(coverImage?.OriginalHeight > 0 ? coverImage.OriginalHeight : null)"
                      loading="eager"
                      fetchpriority="high"
                      decoding="async"
-                     class="block h-[clamp(220px,42vw,520px)] w-full object-cover object-center" />
+                     class="block h-auto w-full" />
             </div>
         </figure>
     }
 
-    <div class="container mt-10 sm:mt-14 space-y-10 sm:space-y-14">
-        <!-- ─── Barra Interactiva para Compartir (Componente Modular) ──────────── -->
-        <div class="w-full">
-            <partial name="Partials/_SocialShareBar" model="(Url: pageUrl, Title: Model.Title, Networks: (IReadOnlyList<string>)shareNetworks)" />
-        </div>
+    <!-- ─── Barra Interactiva para Compartir (Componente Modular) ──────────── -->
+    <div class="w-full">
+        <partial name="Partials/_SocialShareBar" model="(Url: pageUrl, Title: Model.Title, Networks: (IReadOnlyList<string>)shareNetworks)" />
+    </div>
 
     <!-- ─── Layout a Dos Columnas de Ancho Completo (Índice Adhesivo + Contenido) ─ -->
     <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-10 items-start">
@@ -299,7 +299,6 @@ ImageMapper.GetBestUrl(coverImage);
         <partial name="Partials/_CommentForm" model="(ArticleId: Model.Id, ArticleSlug: Model.Slug)" />
         <partial name="Partials/_CommentsSection" model="comments" />
     </section>
-    </div>
 </article>
 
 @section Preloads {
@@ -307,7 +306,7 @@ ImageMapper.GetBestUrl(coverImage);
     {
         <link rel="preload" as="image" href="@coverUrl"
               imagesrcset="@coverSrcSet"
-              imagesizes="100vw"
+              imagesizes="(min-width: 1024px) 1200px, 100vw"
               fetchpriority="high" />
     }
 }
