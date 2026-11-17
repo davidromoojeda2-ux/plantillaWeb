@@ -1,0 +1,20 @@
+@model ContentBlocksEditorViewModel
+@inject IOptions<ContentSecurityOptions> ContentSecurity
+
+<div id="contentBlocksEditor"
+     class="content-blocks-editor"
+     data-content-blocks-editor
+     data-input-id="BlocksJsonInput"
+     data-upload-url="@Url.Action("UploadInline", "Articulos", new { area = "Admin" })"
+     data-article-id="@Model.Id"
+     data-allowed-image-hosts="@string.Join(",", ContentSecurity.Value.AllowedImageHosts)"
+     data-max-blocks="@ContentSecurity.Value.MaxBlocks"
+     data-max-list-items="@ContentSecurity.Value.MaxListItems"
+     data-max-table-rows="@ContentSecurity.Value.MaxTableRows"
+     data-max-table-columns="@ContentSecurity.Value.MaxTableColumns"
+     data-max-url-length="@ContentSecurity.Value.MaxUrlLength">
+    <div data-cbe-toolbar class="cbe-toolbar"></div>
+    <div data-cbe-canvas class="cbe-canvas" id="editorCanvas"></div>
+</div>
+<textarea asp-for="BlocksJson" id="BlocksJsonInput" class="hidden" aria-hidden="true"></textarea>
+<span asp-validation-for="BlocksJson" class="text-xs text-rose-600 mt-1 block"></span>

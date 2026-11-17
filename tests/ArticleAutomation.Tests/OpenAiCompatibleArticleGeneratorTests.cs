@@ -193,56 +193,23 @@ public class OpenAiCompatibleArticleGeneratorTests
         Assert.Contains("Tono informativo, objetivo y neutro", prompt);
     }
 
-    private static async Task<string> CapturePromptAsync(
+    private static Task<string> CapturePromptAsync(
         string template, string tone = "informativo",
         bool includeConclusion = false, bool includeFaq = false, bool includeCta = false)
-    {
-        string? requestBody = null;
+        => OpenAiPromptCapture.CaptureAsync(async http =>
+        {
+            var service = new OpenAiCompatibleArticleGenerator(
+                http, NullLogger<OpenAiCompatibleArticleGenerator>.Instance);
 
-        var content = JsonSerializer.Serialize(new
-        {
-            title = "Título de prueba",
-            summary = "Resumen de prueba",
-            metaDescription = "Meta descripción",
-            tags = new[] { "uno", "dos", "tres" },
-            blocks = new object[] { new { type = "paragraph", text = "Contenido de prueba." } }
-        });
-        var chat = JsonSerializer.Serialize(new
-        {
-            choices = new[] { new { message = new { content } } },
-            usage = new { total_tokens = 1 }
-        });
-
-        var handler = new StubHttpMessageHandler(request =>
-        {
-            requestBody = request.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-            return new HttpResponseMessage(HttpStatusCode.OK)
+            await service.GenerateAsync(new TopicGenerationRequest
             {
-                Content = new StringContent(chat, Encoding.UTF8, "application/json")
-            };
+                TopicTitle = "Tema de prueba",
+                ApiKey = "k",
+                Template = template,
+                Tone = tone,
+                IncludeConclusion = includeConclusion,
+                IncludeFaq = includeFaq,
+                IncludeCta = includeCta
+            });
         });
-
-        var service = new OpenAiCompatibleArticleGenerator(
-            new HttpClient(handler),
-            NullLogger<OpenAiCompatibleArticleGenerator>.Instance);
-
-        await service.GenerateAsync(new TopicGenerationRequest
-        {
-            TopicTitle = "Tema de prueba",
-            ApiKey = "k",
-            Template = template,
-            Tone = tone,
-            IncludeConclusion = includeConclusion,
-            IncludeFaq = includeFaq,
-            IncludeCta = includeCta
-        });
-
-        using var document = JsonDocument.Parse(
-            requestBody ?? throw new InvalidOperationException("No se capturó la petición."));
-
-        return document.RootElement
-            .GetProperty("messages")[1]
-            .GetProperty("content")
-            .GetString()!;
-    }
 }

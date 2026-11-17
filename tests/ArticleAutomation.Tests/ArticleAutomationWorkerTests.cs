@@ -1,4 +1,3 @@
-using Aplication.Interfaces;
 using Aplication.Services;
 using Domine.Entities;
 using Microsoft.Extensions.DependencyInjection;

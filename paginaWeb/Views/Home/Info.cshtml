@@ -4,7 +4,7 @@
     var otherPages = (List<PageResponseDto>?)ViewBag.OtherPages ?? new();
     var institutionalNavDesktop = new InstitutionalNavViewModel(otherPages, Model.Slug, IsMobile: false);
     var institutionalNavMobile = new InstitutionalNavViewModel(otherPages, Model.Slug, IsMobile: true);
-    var institutionalHeader = new CollapsibleMenuHeaderViewModel("Documentos Institucionales");
+    var institutionalHeader = new CollapsibleMenuHeaderViewModel("Información legal");
 }
 
 
@@ -18,7 +18,7 @@
             <nav class="page-hero__breadcrumb" aria-label="Migas de pan">
                 <a asp-controller="Home" asp-action="Index">Inicio</a>
                 <span>/</span>
-                <span class="text-white/80">Institucional</span>
+                <span class="text-white/80">Legal</span>
                 <span>/</span>
                 <span class="page-hero__breadcrumb-current">@Model.Title</span>
             </nav>

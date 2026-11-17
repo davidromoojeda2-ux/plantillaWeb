@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.Hosting;
 using paginaWeb.Realtime;
 using paginaWeb.Workers;
 

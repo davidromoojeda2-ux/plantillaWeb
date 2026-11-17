@@ -337,22 +337,8 @@ public class ArticulosController : Controller
     [HttpGet("imagenes-disponibles")]
     public async Task<IActionResult> GetAvailableImages(string? currentArticleId = null)
     {
-        var images = await GetImagesWithArticleUsageAsync();
-        var result = images.Select(img => new
-        {
-            id = img.Id,
-            fileName = img.OriginalFileName,
-            alt = img.Alt,
-            width = img.OriginalWidth,
-            height = img.OriginalHeight,
-            uploadedAt = img.UploadedAt.ToString("dd/MM/yyyy"),
-            url = ImageMapper.GetBestUrl(img) ?? img.Variants.FirstOrDefault()?.PublicUrl,
-            thumbnailUrl = ImageMapper.GetThumbnailUrl(img) ?? ImageMapper.GetBestUrl(img),
-            isUsed = !string.IsNullOrEmpty(img.ArticleId),
-            usedInArticleId = img.ArticleId,
-            usedInArticleTitle = img.ArticleTitle,
-            isCurrentArticle = !string.IsNullOrEmpty(currentArticleId) && img.ArticleId == currentArticleId
-        });
+        var result = await ImageCatalogHelper.BuildAsync(
+            _imageService, _articleService, currentArticleId, imageTake: 100, articleTake: 200);
 
         return Json(result);
     }
@@ -362,41 +348,7 @@ public class ArticulosController : Controller
         var images = await _imageService.GetAllAsync(0, 100);
         var allArticles = await _articleService.GetAllAdminAsync(1, 200);
 
-        var usageMap = new Dictionary<string, (string ArticleId, string ArticleTitle)>();
-
-        foreach (var art in allArticles)
-        {
-            if (!string.IsNullOrEmpty(art.CoverImageId) && !usageMap.ContainsKey(art.CoverImageId))
-            {
-                usageMap[art.CoverImageId] = (art.Id, art.Title);
-            }
-
-            if (art.ImageIds != null)
-            {
-                foreach (var imgId in art.ImageIds)
-                {
-                    if (!string.IsNullOrEmpty(imgId) && !usageMap.ContainsKey(imgId))
-                    {
-                        usageMap[imgId] = (art.Id, art.Title);
-                    }
-                }
-            }
-        }
-
-        var articlesDict = allArticles.ToDictionary(a => a.Id, a => a.Title);
-
-        foreach (var img in images)
-        {
-            if (usageMap.TryGetValue(img.Id, out var usage))
-            {
-                img.ArticleId = usage.ArticleId;
-                img.ArticleTitle = usage.ArticleTitle;
-            }
-            else if (!string.IsNullOrEmpty(img.ArticleId) && articlesDict.TryGetValue(img.ArticleId, out var title))
-            {
-                img.ArticleTitle = title;
-            }
-        }
+        ImageCatalogHelper.ApplyArticleUsage(images, allArticles);
 
         return images;
     }

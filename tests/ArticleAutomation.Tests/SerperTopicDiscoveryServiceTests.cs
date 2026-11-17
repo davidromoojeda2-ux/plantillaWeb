@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Aplication.DTOs.Automation;
 using Aplication.Interfaces;
 using Infrastructure.Serper;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -101,26 +102,7 @@ public class SerperTopicDiscoveryServiceTests
     [Fact]
     public async Task DiscoverAsync_RoundRobin_Interleaves_Results()
     {
-        var call = 0;
-        var handler = new StubHttpMessageHandler(_ =>
-        {
-            call++;
-            var json = call == 1
-                ? """{"news":[{"title":"A1"},{"title":"A2"}],"credits":1}"""
-                : """{"news":[{"title":"B1"},{"title":"B2"}],"credits":1}""";
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-        });
-
-        var service = new SerperTopicDiscoveryService(
-            new HttpClient(handler),
-            NullLogger<SerperTopicDiscoveryService>.Instance);
-
-        var result = await service.DiscoverAsync(
-            new TopicDiscoveryRequest { Topics = ["a", "b"], Limit = 4, RoundRobin = true, ApiKey = "k" },
-            CancellationToken.None);
+        var result = await DiscoverPairAsync(roundRobin: true);
 
         Assert.Equal(["A1", "B1", "A2", "B2"], result.Topics.Select(t => t.Title).ToArray());
         Assert.Equal(["a", "b", "a", "b"], result.Topics.Select(t => t.BaseTopic).ToArray());
@@ -129,6 +111,14 @@ public class SerperTopicDiscoveryServiceTests
 
     [Fact]
     public async Task DiscoverAsync_Sequential_Keeps_Query_Order()
+    {
+        var result = await DiscoverPairAsync(roundRobin: false);
+
+        Assert.Equal(["A1", "A2", "B1", "B2"], result.Topics.Select(t => t.Title).ToArray());
+    }
+
+    /// <summary>Descubre dos consultas devolviendo dos noticias por consulta.</summary>
+    private static async Task<DiscoveryResult> DiscoverPairAsync(bool roundRobin)
     {
         var call = 0;
         var handler = new StubHttpMessageHandler(_ =>
@@ -147,10 +137,8 @@ public class SerperTopicDiscoveryServiceTests
             new HttpClient(handler),
             NullLogger<SerperTopicDiscoveryService>.Instance);
 
-        var result = await service.DiscoverAsync(
-            new TopicDiscoveryRequest { Topics = ["a", "b"], Limit = 4, RoundRobin = false, ApiKey = "k" },
+        return await service.DiscoverAsync(
+            new TopicDiscoveryRequest { Topics = ["a", "b"], Limit = 4, RoundRobin = roundRobin, ApiKey = "k" },
             CancellationToken.None);
-
-        Assert.Equal(["A1", "A2", "B1", "B2"], result.Topics.Select(t => t.Title).ToArray());
     }
 }

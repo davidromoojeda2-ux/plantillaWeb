@@ -1,5 +1,4 @@
 using Aplication.Interfaces;
-using Domine.Entities;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Aplication.Services;
@@ -30,16 +29,13 @@ public class MenuService : IMenuService
     private const string CacheKey = "nav_menu";
     private readonly IMemoryCache _cache;
     private readonly ICategoryRepository _categoryRepo;
-    private readonly IArticleRepository _articleRepo;
 
     public MenuService(
         IMemoryCache cache,
-        ICategoryRepository categoryRepo,
-        IArticleRepository articleRepo)
+        ICategoryRepository categoryRepo)
     {
         _cache = cache;
         _categoryRepo = categoryRepo;
-        _articleRepo = articleRepo;
     }
 
     public async Task<List<MenuCategory>> GetMenuAsync()

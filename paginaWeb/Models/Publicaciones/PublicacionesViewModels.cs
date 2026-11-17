@@ -1,4 +1,3 @@
-using Aplication.DTOs;
 using paginaWeb.Models.Category;
 
 namespace paginaWeb.Models.Publicaciones;

@@ -2,7 +2,6 @@ using Aplication.DTOs;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 using Aplication.Services;
-using Domine.Entities;
 
 namespace Infrastructure.Auth;
 

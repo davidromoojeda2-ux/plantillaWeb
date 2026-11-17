@@ -1,5 +1,4 @@
 @model paginaWeb.Areas.Admin.Models.PageFormViewModel
-@inject IOptions<ContentSecurityOptions> ContentSecurity
 @{
     var isEdit = ViewData["IsEdit"] as bool? == true;
     var formAction = isEdit ? "Edit" : "Create";
@@ -49,23 +48,8 @@
 
         <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Contenido Estructurado (Editor por Bloques)</label>
-            <div id="contentBlocksEditor"
-                 class="content-blocks-editor"
-                 data-content-blocks-editor
-                 data-input-id="BlocksJsonInput"
-                 data-upload-url="@Url.Action("UploadInline", "Articulos", new { area = "Admin" })"
-                 data-article-id="@Model.Id"
-                 data-allowed-image-hosts="@string.Join(",", ContentSecurity.Value.AllowedImageHosts)"
-                 data-max-blocks="@ContentSecurity.Value.MaxBlocks"
-                 data-max-list-items="@ContentSecurity.Value.MaxListItems"
-                 data-max-table-rows="@ContentSecurity.Value.MaxTableRows"
-                 data-max-table-columns="@ContentSecurity.Value.MaxTableColumns"
-                 data-max-url-length="@ContentSecurity.Value.MaxUrlLength">
-                <div data-cbe-toolbar class="cbe-toolbar"></div>
-                <div data-cbe-canvas class="cbe-canvas" id="editorCanvas"></div>
-            </div>
-            <textarea asp-for="BlocksJson" id="BlocksJsonInput" class="hidden" aria-hidden="true"></textarea>
-            <span asp-validation-for="BlocksJson" class="text-xs text-rose-600 mt-1 block"></span>
+            <partial name="_ContentBlocksEditor"
+                     model="@(new ContentBlocksEditorViewModel(Model.Id, Model.BlocksJson))" />
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
