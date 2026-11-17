@@ -1,8 +1,15 @@
 @model CollapsibleMenuHeaderViewModel
 
-<summary class="flex items-center justify-between gap-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden px-5 py-4 min-h-[56px]">
-    <partial name="Partials/_MenuBrand" model="Model.Title" />
-    <svg class="w-5 h-5 shrink-0 text-white transition-transform duration-200 group-open:rotate-180" fill="none"
+<summary class="flex items-center justify-between gap-2 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden px-4 py-2.5 min-h-[44px]">
+    <span class="flex items-center gap-2 min-w-0 font-extrabold text-[#FDC500] text-[11px] uppercase tracking-[0.14em] leading-tight">
+        <span class="flex items-center justify-center w-6 h-6 shrink-0 rounded-md bg-[#FDC500] text-[#00296B]">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+        </span>
+        <span class="min-w-0">@Model.Title</span>
+    </span>
+    <svg class="w-4 h-4 shrink-0 text-white transition-transform duration-200 group-open:rotate-180" fill="none"
          stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
     </svg>
