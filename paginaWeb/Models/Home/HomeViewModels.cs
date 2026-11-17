@@ -137,14 +137,11 @@ public sealed record CategorySectionViewModel(
 /// Sección editorial persuasiva con métricas en tiempo real del catálogo (artículos y categorías).
 /// </summary>
 public sealed record textPersuasivSectionViewModel(
-    string Kicker,
     string Title,
     string HighlightText,
-    string Subtitle,
     long TotalArticles,
     int TotalCategories,
-    int TotalSubcategories,
-    string? ExploreHref = null
+    int TotalSubcategories
 );
 
 /// <summary>Modelo completo de la página principal.</summary>
@@ -185,7 +182,7 @@ public static class HomePageViewModelFactory
         var heroSource = (featured.Count > 0 ? featured : recent).Take(5).ToList();
         var hero = new HeroViewModel(
             Title: SiteBrand.Name,
-            Subtitle: "Noticias, guías y análisis para producir, almacenar y aprovechar tu propia energía.",
+            Subtitle: "Información completa para producir, almacenar y aprovechar tu propia energía y alcanzar la autonomía energética.",
             Cards: heroSource.Select(a => new FeatureCardViewModel(
                 a.Title,
                 a.Summary,
@@ -343,14 +340,11 @@ public static class HomePageViewModelFactory
             AllCategories: activeCategories);
 
         var textoPersuasivo = new textPersuasivSectionViewModel(
-            Kicker: "Catálogo Editorial Verificado",
-            Title: "Encuentra el tema de tu interés",
-            HighlightText: "y domina cada materia a fondo",
-            Subtitle: "Reunimos investigaciones, guías prácticas y análisis rigurosos organizados por especialidades para que encuentres respuestas claras, accionables y respaldadas por evidencia en minutos.",
+            Title: "Explora nuestros artículos por categoría",
+            HighlightText: "y encuentra la información que buscas.",
             TotalArticles: publishedArticlesCount,
             TotalCategories: mainCategories.Count,
-            TotalSubcategories: subCategoriesCount,
-            ExploreHref: searchHref ?? "/publicaciones"
+            TotalSubcategories: subCategoriesCount
         );
 
         return new HomePageViewModel(

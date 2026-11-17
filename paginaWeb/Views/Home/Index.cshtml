@@ -18,7 +18,23 @@
                      decoding="async" />
 
                 <h1 id="hero-title" class="hero__title">@Model.Hero.Title</h1>
-                <p class="hero__subtitle">@Model.Hero.Subtitle</p>
+                <p class="hero__subtitle">
+                    @{
+                        const string accentPhrase = "autonomía energética.";
+                        var subtitleText = Model.Hero.Subtitle ?? string.Empty;
+                        var accentIdx = subtitleText.IndexOf(accentPhrase, StringComparison.OrdinalIgnoreCase);
+                    }
+                    @if (accentIdx >= 0)
+                    {
+                        @(subtitleText[..accentIdx])
+                        <span class="hero__subtitle--accent">@subtitleText.Substring(accentIdx, accentPhrase.Length)</span>
+                        @(subtitleText[(accentIdx + accentPhrase.Length)..])
+                    }
+                    else
+                    {
+                        @subtitleText
+                    }
+                </p>
 
                 <!-- Componente Parcial de Búsqueda Modular -->
                 <partial name="Partials/_SearchBar"
@@ -64,7 +80,7 @@
                 <div class="entries-panel__header">
                     <span class="entries-panel__tag">
                         <span class="entries-panel__dot" aria-hidden="true"></span>
-                        <span>Últimas publicaciones</span>
+                        <span>Información reciente</span>
                     </span>
                 </div>
 
@@ -145,7 +161,6 @@
                         <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalArticles</span>
                         <div class="persuasive-stat-card__meta">
                             <span class="persuasive-stat-card__label">Artículos publicados</span>
-                            <p class="persuasive-stat-card__desc">Guías, comparativas y análisis</p>
                         </div>
                     </div>
 
@@ -154,7 +169,6 @@
                         <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalCategories</span>
                         <div class="persuasive-stat-card__meta">
                             <span class="persuasive-stat-card__label">Categorías</span>
-                            <p class="persuasive-stat-card__desc">Áreas temáticas troncales</p>
                         </div>
                     </div>
 
@@ -165,7 +179,6 @@
                             <span class="persuasive-stat-card__number">@Model.TextoPersuasivo.TotalSubcategories</span>
                             <div class="persuasive-stat-card__meta">
                                 <span class="persuasive-stat-card__label">Especialidades</span>
-                                <p class="persuasive-stat-card__desc">Subcategorías y temas específicos</p>
                             </div>
                         </div>
                     }
