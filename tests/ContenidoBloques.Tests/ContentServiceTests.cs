@@ -86,7 +86,7 @@ public class ContentServiceTests
 
         public Task<List<Article>> GetPublishedAsync(int skip = 0, int take = 9) => throw new NotImplementedException();
         public Task<List<Article>> GetAllPublishedAsync() => throw new NotImplementedException();
-        public Task<List<Article>> GetFeaturedAsync(int take = 3) => throw new NotImplementedException();
+        public Task<List<Article>> GetFeaturedAsync(int take = ArticleDisplayLimits.HeroFeaturedLimit) => throw new NotImplementedException();
         public Task<List<Article>> GetByCategoryAsync(string categoryId, int skip = 0, int take = 9) => throw new NotImplementedException();
         public Task<long> CountByCategoryAsync(string categoryId) => throw new NotImplementedException();
         public Task<long> CountPublishedAsync() => throw new NotImplementedException();

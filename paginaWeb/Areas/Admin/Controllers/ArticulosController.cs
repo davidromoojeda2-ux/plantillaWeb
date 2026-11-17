@@ -1,3 +1,4 @@
+using Aplication.Configuration;
 using Aplication.Content;
 using Aplication.DTOs;
 using Aplication.DTOs.Automation;
@@ -122,10 +123,6 @@ public class ArticulosController : Controller
     [HttpGet("nuevo")]
     public async Task<IActionResult> Create()
     {
-        var allArticles = await _articleService.GetAllAdminAsync(1, 100);
-        ViewBag.FeaturedCount = allArticles.Count(a => a.Featured);
-        ViewBag.MaxHero = 3;
-
         var model = new ArticleFormViewModel
         {
             Author = User.Identity?.Name ?? "Redacción",
@@ -174,10 +171,6 @@ public class ArticulosController : Controller
     {
         var article = await _articleService.GetByIdAsync(id);
         if (article is null) return NotFound();
-
-        var allArticles = await _articleService.GetAllAdminAsync(1, 100);
-        ViewBag.FeaturedCount = allArticles.Count(a => a.Featured && a.Id != id);
-        ViewBag.MaxHero = 3;
 
         string? coverUrl = await ResolveCoverImageUrlAsync(article);
 
@@ -452,9 +445,9 @@ public class ArticulosController : Controller
 
         var allAdmin = await _articleService.GetAllAdminAsync(1, 100);
         int currentFeatured = allAdmin.Count(a => a.Featured && (excludeArticleId == null || a.Id != excludeArticleId));
-        if (currentFeatured >= 3)
+        if (currentFeatured >= ArticleDisplayLimits.HeroFeaturedLimit)
         {
-            return (false, "Límite alcanzado: El Hero principal solo permite un máximo de 3 artículos destacados. Debes desmarcar uno antes de designar otro.");
+            return (false, $"Límite alcanzado: El Hero principal solo permite un máximo de {ArticleDisplayLimits.HeroFeaturedLimit} artículos destacados. Debes desmarcar uno antes de designar otro.");
         }
 
         return (true, null);
