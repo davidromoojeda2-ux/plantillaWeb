@@ -1,8 +1,8 @@
 /**
  * JavaScript Global del Sitio — Portal Noticias
  * - Inicialización de clase JS en el documento.
- * - Banner de consentimiento de cookies.
  * - Comportamiento del Navbar global (efecto scroll, menú desplegable, drawer móvil).
+ * - Widget de WhatsApp y preferencias de interfaz (el consentimiento vive en cookie-consent.js).
  */
 (function () {
     'use strict';
@@ -10,22 +10,7 @@
     // 1. Marca soporte de JavaScript en el elemento raíz
     document.documentElement.classList.add('js');
 
-    // 2. Banner de Cookies
-    function initCookieBanner() {
-        var banner = document.getElementById('cookieBanner');
-        var acceptBtn = document.getElementById('acceptCookiesBtn');
-
-        if (!localStorage.getItem('cookies_accepted')) {
-            banner?.classList.remove('hidden');
-        }
-
-        acceptBtn?.addEventListener('click', function () {
-            localStorage.setItem('cookies_accepted', 'true');
-            banner?.classList.add('hidden');
-        });
-    }
-
-    // 3. Navbar Global
+    // 2. Navbar Global
     function initNavbar() {
         var nav = document.querySelector('[data-nav]');
         if (!nav) return;
@@ -179,6 +164,10 @@
         var storageKey = 'whatsapp_float_hidden';
         var chevron = toggle.querySelector('svg');
 
+        function canPersistPreferences() {
+            return !window.UnacConsent || window.UnacConsent.isAllowed('preferences');
+        }
+
         function setCollapsed(collapsed, persist) {
             fab.style.display = collapsed ? 'none' : '';
             toggle.setAttribute('aria-expanded', String(!collapsed));
@@ -186,7 +175,7 @@
             toggle.setAttribute('title', collapsed ? 'Mostrar WhatsApp' : 'Ocultar WhatsApp');
             if (chevron) chevron.classList.toggle('rotate-180', collapsed);
 
-            if (persist) {
+            if (persist && canPersistPreferences()) {
                 try {
                     if (collapsed) localStorage.setItem(storageKey, 'true');
                     else localStorage.removeItem(storageKey);
@@ -195,7 +184,9 @@
         }
 
         var hidden = false;
-        try { hidden = localStorage.getItem(storageKey) === 'true'; } catch (error) { }
+        try {
+            if (canPersistPreferences()) hidden = localStorage.getItem(storageKey) === 'true';
+        } catch (error) { }
         setCollapsed(hidden, false);
 
         toggle.addEventListener('click', function () {
@@ -205,13 +196,11 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
-            initCookieBanner();
             initNavbar();
             initWhatsAppGroupsModal();
             initWhatsAppFloatToggle();
         });
     } else {
-        initCookieBanner();
         initNavbar();
         initWhatsAppGroupsModal();
         initWhatsAppFloatToggle();

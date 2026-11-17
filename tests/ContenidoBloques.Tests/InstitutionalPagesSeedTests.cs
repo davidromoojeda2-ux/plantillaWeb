@@ -73,14 +73,16 @@ public class InstitutionalPagesSeedTests
     }
 
     [Fact]
-    public void PoliticaDeCookies_ReflejaSoloCookiesTecnicas()
+    public void PoliticaDeCookies_ReflejaElModeloDeConsentimiento()
     {
         var cookies = InstitutionalPagesSeed.CreateTemplate()
             .Single(page => page.Slug == "politica-de-cookies");
         var content = Flatten([cookies]);
 
         Assert.Contains("cookies técnicas necesarias", content);
-        Assert.Contains("No se utilizan cookies analíticas", content);
+        Assert.Contains("categorías opcionales", content);
+        Assert.Contains("Configurar cookies", content);
+        Assert.DoesNotContain("No se utilizan cookies analíticas", content);
         Assert.DoesNotContain("Sustituir por el inventario real", content);
         Assert.DoesNotContain("El banner debe permitir", content);
     }

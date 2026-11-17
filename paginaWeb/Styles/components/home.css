@@ -1672,19 +1672,6 @@
         color: #00296B;
     }
 
-    .persuasive-stat-card__desc {
-        font-size: 0.8125rem;
-        line-height: 1.45;
-        color: #64748B;
-        margin: 0;
-        text-align: center;
-    }
-
-    .persuasive-stat-card--featured .persuasive-stat-card__desc {
-        color: #475569;
-        font-size: 0.875rem;
-    }
-
     /* ─── 17. Sección 'Categoria de tu interés' (Colores Base del Tema) ── */
     .bento-section {
         background: #00296B;

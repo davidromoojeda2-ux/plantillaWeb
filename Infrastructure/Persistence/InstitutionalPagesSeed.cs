@@ -250,7 +250,7 @@ public static class InstitutionalPagesSeed
             Paragraph("El portal no está dirigido a menores de 14 años. Si detectamos datos de un menor sin la autorización exigida, procederemos a su supresión. Los padres o tutores pueden contactarnos para solicitar la eliminación."),
 
             Heading("9. Cookies y tecnologías similares"),
-            Paragraph("El sitio utiliza cookies técnicas necesarias para su funcionamiento. Puedes consultar el detalle y cómo eliminarlas en la <a href=\"/info/politica-de-cookies\">Política de Cookies</a>."),
+            Paragraph("El sitio utiliza cookies técnicas necesarias y un registro local de tu consentimiento. Si lo autorizas, pueden utilizarse preferencias de interfaz y medición agregada. Puedes consultar el detalle y cambiar tu elección en la <a href=\"/info/politica-de-cookies\">Política de Cookies</a> y desde «Configurar cookies» en el pie de página."),
 
             Heading("10. Actualizaciones de esta política"),
             Paragraph("Podemos actualizar esta política para reflejar cambios normativos o en nuestros tratamientos. Publicaremos la versión vigente con su fecha de actualización y, si los cambios son sustanciales, lo comunicaremos por los canales habituales."),
@@ -273,18 +273,18 @@ public static class InstitutionalPagesSeed
             Paragraph("Son pequeños archivos que se almacenan en tu dispositivo al visitar un sitio web. Permiten recordar preferencias, mantener la seguridad, medir la audiencia o mostrar contenidos personalizados. También pueden utilizarse tecnologías equivalentes, como el almacenamiento local del navegador."),
 
             Heading("2. Base legal y consentimiento"),
-            Paragraph("Este portal utiliza únicamente cookies técnicas necesarias para su funcionamiento y para proteger la seguridad de los formularios. No se instalan cookies analíticas, publicitarias ni de elaboración de perfiles, por lo que no es necesario recabar consentimiento para su uso. El aviso de cookies es informativo y puedes eliminar las cookies en cualquier momento desde tu navegador."),
+            Paragraph("Este portal utiliza cookies técnicas necesarias para su funcionamiento y para proteger la seguridad de los formularios. Además, ofrece dos categorías opcionales desactivadas por defecto: preferencias de interfaz y medición agregada. Puedes aceptar todas, quedarte solo con las necesarias o configurar cada categoría. Tu elección se guarda durante 12 meses y puedes cambiarla en cualquier momento desde «Configurar cookies» en el pie de página."),
             Callout(
-                "Sin cookies opcionales",
-                "La aceptación del aviso se guarda únicamente en el almacenamiento local del navegador y no se comparte con terceros. Si en el futuro se incorporan cookies opcionales, se solicitará el consentimiento previo con opciones para aceptar, rechazar o configurar por categorías."),
+                "Tú decides",
+                "Las categorías opcionales no se activan hasta que las aceptes. No usamos cookies publicitarias ni de elaboración de perfiles. Si rechazas las opcionales, el portal sigue funcionando con las cookies técnicas."),
 
             Heading("3. Tipos de cookies utilizadas"),
             Table(
                 ["Categoría", "Finalidad", "Ejemplos", "Duración", "Titular"],
                 [
-                    ["Técnicas necesarias", "Mantener la sesión del panel de administración y proteger los formularios frente a envíos fraudulentos (CSRF)", "Cookie de autenticación y cookie antiforgery", "Hasta 8 horas o fin de la sesión", "Propio"],
-                    ["Preferencias", "Recordar que has visto el aviso de cookies", "Almacenamiento local: cookies_accepted", "Hasta borrar los datos del navegador", "Propio"],
-                    ["Analítica", "No se utilizan cookies analíticas", "—", "—", "—"],
+                    ["Técnicas necesarias", "Seguridad, protección de formularios frente a envíos fraudulentos y registro de tu elección de cookies", "Cookie de autenticación, antiforgery y almacenamiento local del consentimiento", "Hasta 8 horas, fin de sesión o 12 meses", "Propio"],
+                    ["Preferencias (opcionales)", "Recordar preferencias de interfaz, como el estado del botón flotante de WhatsApp", "Almacenamiento local: whatsapp_float_hidden", "Hasta borrar los datos del navegador", "Propio"],
+                    ["Analítica (opcionales)", "Medición agregada de audiencia. Actualmente no hay ningún proveedor activo; si se incorpora, solo se cargará con tu consentimiento", "—", "—", "—"],
                     ["Marketing", "No se utilizan cookies publicitarias ni de perfilado", "—", "—", "—"]
                 ],
                 "Inventario de cookies y tecnologías similares utilizadas actualmente por el portal."),
@@ -293,7 +293,7 @@ public static class InstitutionalPagesSeed
             Paragraph("El portal no instala cookies de terceros. Si en el futuro se incorporan servicios externos, como vídeos incrustados o herramientas de medición, se detallarán en la tabla anterior y, cuando sea necesario, se solicitará el consentimiento previo."),
 
             Heading("5. Cómo gestionar o eliminar cookies"),
-            Paragraph("Puedes eliminar o bloquear las cookies desde la configuración de tu navegador. Ten en cuenta que bloquear las cookies técnicas puede impedir el acceso al panel de administración. Enlaces de ayuda:"),
+            Paragraph("Puedes cambiar tu consentimiento en cualquier momento desde «Configurar cookies» en el pie de página. Si rechazas las categorías opcionales, el portal seguirá funcionando con las cookies técnicas. También puedes eliminar o bloquear las cookies desde la configuración de tu navegador. Ten en cuenta que bloquear las cookies técnicas puede impedir el acceso al panel de administración. Enlaces de ayuda:"),
             Bullets(
                 "<a href=\"https://support.google.com/chrome/answer/95647\" title=\"Gestionar cookies en Chrome\" target=\"_blank\" rel=\"noopener noreferrer\">Google Chrome</a>",
                 "<a href=\"https://support.mozilla.org/es/kb/borrar-cookies-y-datos-de-sitios-en-firefox\" title=\"Gestionar cookies en Firefox\" target=\"_blank\" rel=\"noopener noreferrer\">Mozilla Firefox</a>",

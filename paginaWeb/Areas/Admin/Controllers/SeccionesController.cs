@@ -49,7 +49,7 @@ public class SeccionesController : Controller
     [HttpGet("nueva")]
     public IActionResult Create()
     {
-        return View(new PageFormViewModel { Order = 1, ShowInFooter = true });
+        return View(new PageFormViewModel { Order = 0, ShowInFooter = true });
     }
 
     [HttpPost("nueva")]
@@ -63,6 +63,10 @@ public class SeccionesController : Controller
 
         try
         {
+            // El orden no se pide en el formulario: se asigna al final.
+            var pages = await _pageService.GetAllAsync();
+            model.Order = pages.Count == 0 ? 1 : pages.Max(p => p.Order) + 1;
+
             await _pageService.CreateAsync(model.ToDto(blocks));
             TempData["Success"] = "Página informativa creada correctamente.";
             return RedirectToAction(nameof(Index));
