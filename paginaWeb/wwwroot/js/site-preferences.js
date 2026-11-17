@@ -17,11 +17,11 @@
     const VERSION = 1;
     const TTL_MS = 365 * 24 * 60 * 60 * 1000;
 
-    const banner = document.getElementById('cookieBanner');
-    const settings = document.getElementById('cookieSettings');
-    const settingsDialog = settings?.querySelector('.cookie-settings__dialog');
-    const status = document.getElementById('cookieConsentStatus');
-    const categoryInputs = Array.from(document.querySelectorAll('[data-consent-category]'));
+    const banner = document.getElementById('siteNotice');
+    const settings = document.getElementById('sitePreferences');
+    const settingsDialog = settings?.querySelector('.site-preferences__dialog');
+    const status = document.getElementById('siteNoticeStatus');
+    const categoryInputs = Array.from(document.querySelectorAll('[data-preference-category]'));
 
     let memoryConsent = null;
     let lastFocusedElement = null;
@@ -72,7 +72,7 @@
     }
 
     function activateConsentScripts(data) {
-        document.querySelectorAll('script[type="text/plain"][data-consent-category]').forEach(script => {
+        document.querySelectorAll('script[type="text/plain"][data-preference-category]').forEach(script => {
             if (script.dataset.consentLoaded === 'true') return;
             const category = script.dataset.consentCategory;
             const allowed = category === 'necessary' || !!data?.[category];
@@ -80,7 +80,7 @@
 
             const active = document.createElement('script');
             for (const attribute of Array.from(script.attributes)) {
-                if (['type', 'data-consent-category', 'data-consent-loaded'].includes(attribute.name)) continue;
+                if (['type', 'data-preference-category', 'data-preference-loaded'].includes(attribute.name)) continue;
                 active.setAttribute(attribute.name, attribute.value);
             }
             active.text = script.text || '';
@@ -95,14 +95,14 @@
         }
 
         activateConsentScripts(data);
-        document.dispatchEvent(new CustomEvent('cookie-consent:change', { detail: data }));
+        document.dispatchEvent(new CustomEvent('site-preferences:change', { detail: data }));
     }
 
     function showBanner() {
         if (!banner) return;
         clearTimeout(showTimer);
         banner.hidden = false;
-        document.documentElement.classList.add('cookie-consent-open');
+        document.documentElement.classList.add('site-notice-open');
         showTimer = window.setTimeout(() => banner.classList.add('is-visible'), 30);
     }
 
@@ -110,7 +110,7 @@
         if (!banner) return;
         clearTimeout(showTimer);
         banner.classList.remove('is-visible');
-        document.documentElement.classList.remove('cookie-consent-open');
+        document.documentElement.classList.remove('site-notice-open');
         if (immediate) {
             banner.hidden = true;
             return;
@@ -144,9 +144,9 @@
         setStatus('Preferencias de cookies guardadas.');
 
         // Mantiene el foco en un control visible tras cerrar el aviso.
-        const footerTrigger = Array.from(document.querySelectorAll('[data-cookie-settings]'))
+        const visibleTrigger = Array.from(document.querySelectorAll('[data-site-preferences]'))
             .find(trigger => !banner?.contains(trigger));
-        footerTrigger?.focus();
+        visibleTrigger?.focus();
 
         return data;
     }
@@ -159,7 +159,7 @@
     }
 
     function wantsSettings() {
-        return location.hash === '#configurar-cookies'
+        return location.hash === '#preferencias'
             || new URLSearchParams(location.search).get('cookies') === 'config';
     }
 
@@ -167,8 +167,8 @@
         try {
             const base = location.pathname + location.search;
             if (open) {
-                previousHash = location.hash && location.hash !== '#configurar-cookies' ? location.hash : '';
-                history.replaceState(null, '', `${base}#configurar-cookies`);
+                previousHash = location.hash && location.hash !== '#preferencias' ? location.hash : '';
+                history.replaceState(null, '', `${base}#preferencias`);
             } else {
                 history.replaceState(null, '', `${base}${previousHash || ''}`);
                 previousHash = '';
@@ -249,32 +249,32 @@
 
     function bindEvents() {
         document.addEventListener('click', event => {
-            const settingsTrigger = event.target.closest('[data-cookie-settings]');
+            const settingsTrigger = event.target.closest('[data-site-preferences]');
             if (settingsTrigger) {
                 event.preventDefault();
                 openSettings();
                 return;
             }
 
-            if (event.target.closest('[data-cookie-accept-all]')) {
+            if (event.target.closest('[data-preferences-accept-all]')) {
                 event.preventDefault();
                 saveConsent({ preferences: true, analytics: true });
                 return;
             }
 
-            if (event.target.closest('[data-cookie-necessary]')) {
+            if (event.target.closest('[data-preferences-necessary]')) {
                 event.preventDefault();
                 saveConsent({ preferences: false, analytics: false });
                 return;
             }
 
-            if (event.target.closest('[data-cookie-save]')) {
+            if (event.target.closest('[data-preferences-save]')) {
                 event.preventDefault();
                 saveConsent(currentCategoryValues());
                 return;
             }
 
-            if (event.target.closest('[data-cookie-close]')) {
+            if (event.target.closest('[data-preferences-close]')) {
                 event.preventDefault();
                 closeSettings();
                 return;

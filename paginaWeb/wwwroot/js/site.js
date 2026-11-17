@@ -2,7 +2,7 @@
  * JavaScript Global del Sitio — Portal Noticias
  * - Inicialización de clase JS en el documento.
  * - Comportamiento del Navbar global (efecto scroll, menú desplegable, drawer móvil).
- * - Widget de WhatsApp y preferencias de interfaz (el consentimiento vive en cookie-consent.js).
+ * - Widget de WhatsApp y preferencias de interfaz (el consentimiento vive en site-preferences.js).
  */
 (function () {
     'use strict';
