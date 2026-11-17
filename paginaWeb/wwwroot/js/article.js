@@ -42,7 +42,7 @@
         var activeClasses = ['bg-white/10', 'text-[#FDC500]!', 'border-[#FDC500]!'];
         // La sección padre (H2) de un subtítulo activo queda marcada de forma más tenue.
         var parentClasses = ['border-[#FDC500]/40!', 'bg-white/5'];
-        var baseClass = 'block border-l-2 border-transparent rounded-r-md py-1.5 pr-3 leading-snug transition-colors duration-200 hover:bg-white/5 hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-[#FDC500] ';
+        var baseClass = 'block border-l-2 border-transparent rounded-r-md py-2 pr-3 leading-relaxed font-body transition-colors duration-200 hover:bg-white/5 hover:text-[#FDC500] focus-visible:outline-2 focus-visible:outline-[#FDC500] ';
 
         headings.forEach(function (h, idx) {
             // El renderizador de bloques genera ids deterministas; se conservan
@@ -59,7 +59,7 @@
                 link.href = '#' + h.id;
                 link.innerText = h.innerText;
                 link.className = baseClass +
-                    (h.tagName === 'H3' ? 'pl-6 text-sm text-blue-100' : 'pl-3 text-[15px] font-semibold text-white');
+                    (h.tagName === 'H3' ? 'pl-6 text-[15px] font-medium text-blue-50' : 'pl-3 text-[17px] font-semibold text-white');
                 link.addEventListener('click', function () {
                     var details = toc.closest('details');
                     if (details) details.open = false;
