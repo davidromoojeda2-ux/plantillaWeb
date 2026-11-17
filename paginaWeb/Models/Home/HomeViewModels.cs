@@ -1,3 +1,4 @@
+using Aplication.Configuration;
 using Aplication.DTOs;
 using Aplication.Mappers;
 
@@ -178,8 +179,12 @@ public static class HomePageViewModelFactory
     {
         var catDict = allCategories.ToDictionary(c => c.Id, c => c.Name);
 
-        // 1. Hero
-        var heroSource = (featured.Count > 0 ? featured : recent).Take(5).ToList();
+        // 1. Hero: primero los destacados y después los últimos publicados,
+        // para que el carrusel se complete automáticamente hasta el límite.
+        var heroSource = featured.Concat(recent)
+            .DistinctBy(a => a.Id)
+            .Take(ArticleDisplayLimits.HeroFeaturedLimit)
+            .ToList();
         var hero = new HeroViewModel(
             Title: SiteBrand.Name,
             Subtitle: "Información completa para producir, almacenar y aprovechar tu propia energía y alcanzar la autonomía energética.",

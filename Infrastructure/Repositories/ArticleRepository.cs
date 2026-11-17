@@ -1,4 +1,5 @@
-﻿using Aplication.DTOs;
+﻿using Aplication.Configuration;
+using Aplication.DTOs;
 using Aplication.Interfaces;
 using Domine.Entities;
 using Infrastructure.Persistence;
@@ -21,7 +22,7 @@ public class ArticleRepository : IArticleRepository
         await _col.Find(a => a.Status == ArticleStatus.Publicado)
                   .SortByDescending(a => a.PublishedAt).ToListAsync();
 
-    public async Task<List<Article>> GetFeaturedAsync(int take = 3) =>
+    public async Task<List<Article>> GetFeaturedAsync(int take = ArticleDisplayLimits.HeroFeaturedLimit) =>
         await _col.Find(a => a.Status == ArticleStatus.Publicado && a.Featured)
                   .SortByDescending(a => a.PublishedAt).Limit(take).ToListAsync();
 

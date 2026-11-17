@@ -1,4 +1,5 @@
 using Aplication.Content;
+using Aplication.Configuration;
 using Aplication.DTOs;
 using Aplication.DTOs.Automation;
 using Aplication.Exceptions;
@@ -14,7 +15,7 @@ public interface IArticleService
     Task<List<ArticleResponseDto>> GetAllPublishedAsync();
     Task<(List<ArticleResponseDto> Items, long Total)> GetByCategoryAsync(string categoryId, int page = 1, int pageSize = 9);
     Task<(List<ArticleResponseDto> Items, long Total)> SearchAsync(string query, int page = 1, int pageSize = 9);
-    Task<List<ArticleResponseDto>> GetFeaturedAsync(int take = 3);
+    Task<List<ArticleResponseDto>> GetFeaturedAsync(int take = ArticleDisplayLimits.HeroFeaturedLimit);
     Task<ArticleResponseDto?> GetBySlugAsync(string slug);
     Task<ArticleResponseDto?> GetByIdAsync(string id);
     Task<List<ArticleResponseDto>> GetAllAdminAsync(int page = 1, int pageSize = 50);
@@ -80,7 +81,7 @@ public class ArticleService : IArticleService
         return (ArticleMapper.ToDtoList(items), total);
     }
 
-    public async Task<List<ArticleResponseDto>> GetFeaturedAsync(int take = 3) =>
+    public async Task<List<ArticleResponseDto>> GetFeaturedAsync(int take = ArticleDisplayLimits.HeroFeaturedLimit) =>
         ArticleMapper.ToDtoList(await _repo.GetFeaturedAsync(take));
 
     public async Task<ArticleResponseDto?> GetBySlugAsync(string slug)
@@ -154,8 +155,8 @@ public class ArticleService : IArticleService
 
             var allAdmin = await _repo.GetAllAsync(0, 100);
             var currentFeatured = allAdmin.Count(a => a.Featured && a.Id != id);
-            if (currentFeatured >= 3)
-                return (false, dto.Featured, "Límite alcanzado: el Hero principal solo permite un máximo de 3 artículos destacados.");
+            if (currentFeatured >= ArticleDisplayLimits.HeroFeaturedLimit)
+                return (false, dto.Featured, $"Límite alcanzado: el Hero principal solo permite un máximo de {ArticleDisplayLimits.HeroFeaturedLimit} artículos destacados.");
         }
 
         dto.Featured = willBeFeatured;

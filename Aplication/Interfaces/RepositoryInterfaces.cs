@@ -1,3 +1,4 @@
+using Aplication.Configuration;
 using Aplication.DTOs;
 using Domine.Entities;
 
@@ -24,7 +25,7 @@ public interface IArticleRepository
 {
     Task<List<Article>> GetPublishedAsync(int skip = 0, int take = 9);
     Task<List<Article>> GetAllPublishedAsync();
-    Task<List<Article>> GetFeaturedAsync(int take = 3);
+    Task<List<Article>> GetFeaturedAsync(int take = ArticleDisplayLimits.HeroFeaturedLimit);
     Task<List<Article>> GetByCategoryAsync(string categoryId, int skip = 0, int take = 9);
     Task<long> CountByCategoryAsync(string categoryId);
     Task<long> CountPublishedAsync();

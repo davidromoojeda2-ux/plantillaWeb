@@ -1,3 +1,4 @@
+using Aplication.Configuration;
 using Aplication.DTOs;
 using Aplication.DTOs.ContentBlocks;
 using Aplication.Services;
@@ -34,7 +35,7 @@ public class HomeController : Controller
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
-        var featured = await _articleService.GetFeaturedAsync(3);
+        var featured = await _articleService.GetFeaturedAsync(ArticleDisplayLimits.HeroFeaturedLimit);
         var mostRead = await _articleService.GetMostReadAsync(5);
         var (recent, totalPublished) = await _articleService.GetPublishedAsync(1, 50);
         var categories = await _categoryService.GetAllAsync();
