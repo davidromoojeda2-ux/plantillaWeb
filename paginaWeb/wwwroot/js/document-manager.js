@@ -53,8 +53,8 @@
             .replace(/'/g, '&#039;');
     }
 
-    function documentLabel(document) {
-        return document?.displayName || document?.originalFileName || 'Documento';
+    function documentLabel(doc) {
+        return doc?.displayName || doc?.originalFileName || 'Documento';
     }
 
     function documentIcon(extension) {
@@ -99,10 +99,10 @@
         }
 
         selectedIds.forEach(function (id) {
-            var document = allDocuments.find(function (item) { return item.id === id; });
+            var doc = allDocuments.find(function (item) { return item.id === id; });
             var chip = document.createElement('span');
             chip.className = 'inline-flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700';
-            chip.innerHTML = '<span class="truncate max-w-[170px]">' + escapeHtml(documentLabel(document)) +
+            chip.innerHTML = '<span class="truncate max-w-[170px]">' + escapeHtml(documentLabel(doc)) +
                 '</span><button type="button" class="text-slate-400 hover:text-rose-600" aria-label="Quitar documento">&times;</button>';
             chip.querySelector('button')?.addEventListener('click', function () {
                 window.removeArticleDocument(id);
@@ -131,54 +131,54 @@
         loadingElement?.classList.add('hidden');
 
         var term = searchTerm.trim().toLowerCase();
-        var filtered = allDocuments.filter(function (document) {
+        var filtered = allDocuments.filter(function (doc) {
             if (!term) return true;
-            return String(document.displayName || '').toLowerCase().includes(term) ||
-                String(document.originalFileName || '').toLowerCase().includes(term) ||
-                String(document.description || '').toLowerCase().includes(term);
+            return String(doc.displayName || '').toLowerCase().includes(term) ||
+                String(doc.originalFileName || '').toLowerCase().includes(term) ||
+                String(doc.description || '').toLowerCase().includes(term);
         });
 
         listElement.innerHTML = '';
         emptyElement?.classList.toggle('hidden', filtered.length > 0);
 
-        filtered.forEach(function (document) {
-            var selected = selectedIds.has(document.id);
+        filtered.forEach(function (doc) {
+            var selected = selectedIds.has(doc.id);
             var row = document.createElement('div');
             row.className = 'flex items-center gap-3 rounded-xl border bg-white p-3 shadow-2xs transition ' +
                 (selected ? 'border-[#00509D] ring-1 ring-[#00509D]/30' : 'border-slate-200 hover:border-slate-300');
 
-            var usage = document.isUsed && document.usedInArticleTitle
-                ? ' · En: ' + escapeHtml(document.usedInArticleTitle)
+            var usage = doc.isUsed && doc.usedInArticleTitle
+                ? ' · En: ' + escapeHtml(doc.usedInArticleTitle)
                 : '';
 
             row.innerHTML =
                 '<label class="flex min-w-0 flex-1 cursor-pointer items-center gap-3">' +
                     '<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00296B] focus:ring-[#00296B]" ' +
                         (selected ? 'checked' : '') + ' />' +
-                    documentIcon(document.extension) +
+                    documentIcon(doc.extension) +
                     '<span class="min-w-0">' +
                         '<span class="block truncate text-sm font-bold text-slate-800">' +
-                            escapeHtml(documentLabel(document)) + '</span>' +
+                            escapeHtml(documentLabel(doc)) + '</span>' +
                         '<span class="block truncate text-[11px] text-slate-500">' +
-                            escapeHtml(String(document.extension || '').toUpperCase()) + ' · ' +
-                            escapeHtml(document.sizeLabel || '') + ' · ' +
-                            escapeHtml(document.uploadedAt || '') + usage +
+                            escapeHtml(String(doc.extension || '').toUpperCase()) + ' · ' +
+                            escapeHtml(doc.sizeLabel || '') + ' · ' +
+                            escapeHtml(doc.uploadedAt || '') + usage +
                         '</span>' +
                     '</span>' +
                 '</label>' +
                 '<div class="flex shrink-0 items-center gap-2">' +
-                    '<a href="' + escapeHtml(document.downloadUrl || '#') + '" target="_blank" rel="noopener" ' +
+                    '<a href="' + escapeHtml(doc.downloadUrl || '#') + '" target="_blank" rel="noopener" ' +
                        'class="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">Ver</a>' +
                     '<button type="button" class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100">Eliminar</button>' +
                 '</div>';
 
             row.querySelector('input[type="checkbox"]')?.addEventListener('change', function () {
-                toggleSelection(document.id);
+                toggleSelection(doc.id);
             });
             row.querySelector('button')?.addEventListener('click', function (event) {
                 event.preventDefault();
                 event.stopPropagation();
-                deleteDocument(document.id);
+                deleteDocument(doc.id);
             });
 
             listElement.appendChild(row);
@@ -268,8 +268,8 @@
     }
 
     async function deleteDocument(id) {
-        var document = allDocuments.find(function (item) { return item.id === id; });
-        if (!window.confirm('¿Eliminar "' + documentLabel(document) + '"? Esta acción borra el archivo y lo quita de los artículos que lo usen.')) {
+        var doc = allDocuments.find(function (item) { return item.id === id; });
+        if (!window.confirm('¿Eliminar "' + documentLabel(doc) + '"? Esta acción borra el archivo y lo quita de los artículos que lo usen.')) {
             return;
         }
 
