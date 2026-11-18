@@ -89,3 +89,24 @@
         </div>
     </main>
 </div>
+
+@section StructuredData {
+    @{
+        var structuredDataBaseUrl = SiteUrl.Resolve(Context, Configuration);
+        var breadcrumb = new List<BreadcrumbItem>
+        {
+            new("Inicio", "/"),
+            new(Model.Title, $"/info/{Model.Slug}")
+        };
+
+        var pageJsonLd = StructuredDataBuilder.BuildWebPage(
+            Model.Title,
+            Model.Subtitle,
+            $"/info/{Model.Slug}",
+            Model.UpdatedAt,
+            structuredDataBaseUrl);
+        var breadcrumbJsonLd = StructuredDataBuilder.BuildBreadcrumbList(breadcrumb, structuredDataBaseUrl);
+    }
+    @JsonLd.Render(pageJsonLd)
+    @JsonLd.Render(breadcrumbJsonLd)
+}

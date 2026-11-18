@@ -6,6 +6,10 @@
     ViewData["MetaDescription"] = isSearch
         ? $"Resultados de búsqueda para {Model.Query} en el portal."
         : "Explora todas las publicaciones, noticias, reportajes y coberturas del portal.";
+
+    // Los resultados de búsqueda no aportan contenido propio: no indexar, pero seguir enlaces.
+    if (isSearch)
+        ViewData["Robots"] = "noindex, follow";
 }
 
 
@@ -82,6 +86,29 @@
             }
         </main>
     </div>
+
+    @section StructuredData {
+        @{
+            var structuredDataBaseUrl = SiteUrl.Resolve(Context, Configuration);
+            var pageUrl = Model.CurrentPage > 1 ? $"/publicaciones?page={Model.CurrentPage}" : "/publicaciones";
+            var breadcrumb = new List<BreadcrumbItem> { new("Inicio", "/"), new("Publicaciones", "/publicaciones") };
+
+            var breadcrumbJsonLd = StructuredDataBuilder.BuildBreadcrumbList(breadcrumb, structuredDataBaseUrl);
+            var collectionJsonLd = isSearch
+                ? null
+                : StructuredDataBuilder.BuildCollectionPage(
+                    "Publicaciones",
+                    "Explora todas las publicaciones, noticias y coberturas del portal.",
+                    pageUrl,
+                    Model.Items.Select(a => new ArticleListItem(a.Article.Title, $"/articulos/{a.Article.Slug}")),
+                    structuredDataBaseUrl);
+        }
+        @JsonLd.Render(breadcrumbJsonLd)
+        @if (collectionJsonLd is not null)
+        {
+            @JsonLd.Render(collectionJsonLd)
+        }
+    }
 
     @section Scripts {
         <script src="~/js/reveal.js" asp-append-version="true" defer></script>
