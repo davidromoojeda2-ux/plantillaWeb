@@ -53,6 +53,8 @@ public class ArticleFormViewModel
 
     public List<string> ImageIds { get; set; } = [];
 
+    public List<string> DocumentIds { get; set; } = [];
+
     public bool Featured { get; set; } = false;
 
     public string Status { get; set; } = "Publicado";
@@ -66,6 +68,10 @@ public class ArticleFormViewModel
     public List<ImageMetadataResponseDto> LinkedImages { get; set; } = [];
 
     public List<ImageMetadataResponseDto> AvailableImages { get; set; } = [];
+
+    public List<DocumentResponseDto> LinkedDocuments { get; set; } = [];
+
+    public List<DocumentResponseDto> AvailableDocuments { get; set; } = [];
 
     public ArticleDto ToDto(IReadOnlyList<ContentBlockDto> blocks) => new()
     {
@@ -84,6 +90,7 @@ public class ArticleFormViewModel
         CoverImageId = CoverImageId,
         CoverImageUrl = CoverImageUrl,
         ImageIds = ImageIds,
+        DocumentIds = DocumentIds,
         Featured = Featured,
         Status = Status
     };
@@ -106,6 +113,7 @@ public class ArticleFormViewModel
         CoverImageId = article.CoverImageId,
         CoverImageUrl = coverImageUrl ?? article.CoverImageUrl,
         ImageIds = [.. article.ImageIds],
+        DocumentIds = [.. article.DocumentIds],
         Featured = article.Featured,
         Status = article.Status
     };

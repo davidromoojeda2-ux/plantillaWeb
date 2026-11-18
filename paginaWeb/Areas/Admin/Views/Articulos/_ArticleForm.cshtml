@@ -1,7 +1,16 @@
 ﻿@model paginaWeb.Areas.Admin.Models.ArticleFormViewModel
+@inject IOptions<DocumentsOptions> DocumentsOptionsAccessor
 @{
     var isEdit = ViewData["IsEdit"] as bool? == true;
     var formAction = isEdit ? "Edit" : "Create";
+    var knownDocuments = Model.AvailableDocuments
+        .Concat(Model.LinkedDocuments)
+        .GroupBy(document => document.Id)
+        .ToDictionary(group => group.Key, group => group.First());
+    var selectedDocuments = Model.DocumentIds
+        .Where(id => knownDocuments.ContainsKey(id))
+        .Select(id => knownDocuments[id])
+        .ToList();
 }
 
 <form method="post" asp-area="Admin" asp-controller="Articulos" asp-action="@formAction" asp-route-id="@(isEdit ? Model.Id : null)" class="space-y-8" id="articleForm">
@@ -218,6 +227,59 @@
                 </div>
             </div>
 
+            <!-- Documentos adjuntos -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                        Documentos adjuntos
+                        <button type="button" class="cms-tooltip-icon"
+                                data-tooltip="Documentos descargables que se mostrarán al final del artículo publicado. Puedes reutilizar documentos de la biblioteca."
+                                data-tooltip-position="top"
+                                aria-label="Información sobre los documentos adjuntos">i</button>
+                    </h4>
+                    <span class="text-[11px] font-semibold text-slate-400">
+                        @Model.DocumentIds.Count / @DocumentsOptionsAccessor.Value.MaxPerArticle
+                    </span>
+                </div>
+
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Adjunta PDF, hojas de cálculo, presentaciones o texto. Los documentos se descargan desde una sección accesible del artículo.
+                </p>
+
+                <div id="selectedDocumentChips" class="flex flex-wrap gap-2">
+                    @if (selectedDocuments.Count == 0)
+                    {
+                        <span class="text-[11px] text-slate-400 italic">Sin documentos seleccionados.</span>
+                    }
+                    else
+                    {
+                        @foreach (var document in selectedDocuments)
+                        {
+                            <span class="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                                <span class="truncate max-w-[170px]">@document.DisplayName</span>
+                                <button type="button" onclick="window.removeArticleDocument('@document.Id')"
+                                        class="text-slate-400 hover:text-rose-600" aria-label="Quitar @document.DisplayName">&times;</button>
+                            </span>
+                        }
+                    }
+                </div>
+
+                <div id="articleDocumentIds" class="hidden">
+                    @foreach (var documentId in Model.DocumentIds)
+                    {
+                        <input type="hidden" name="DocumentIds" value="@documentId" />
+                    }
+                </div>
+
+                <button type="button" onclick="window.openDocumentManagerModal(event)"
+                        class="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#00296B] font-bold text-xs transition shadow-2xs">
+                    <svg class="w-4 h-4 text-[#00509D]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Gestionar documentos
+                </button>
+            </div>
+
             <!-- Portada de Imagen (Previsualización Mejorada) -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -362,3 +424,4 @@
 
 <partial name="_CategoryManagerModal" />
 <partial name="_ImageManagerModal" model="@(new ImageManagerModalViewModel { CurrentArticleId = Model.Id })" />
+<partial name="_DocumentManagerModal" model="@(new DocumentManagerModalViewModel { CurrentArticleId = Model.Id, SelectedIds = Model.DocumentIds })" />

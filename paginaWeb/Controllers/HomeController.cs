@@ -1,6 +1,7 @@
 using Aplication.Configuration;
 using Aplication.DTOs;
 using Aplication.DTOs.ContentBlocks;
+using Aplication.Interfaces;
 using Aplication.Services;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc;
@@ -17,19 +18,22 @@ public class HomeController : Controller
     private readonly ICommentService _commentService;
     private readonly IPageService _pageService;
     private readonly ImageService _imageService;
+    private readonly IDocumentService _documentService;
 
     public HomeController(
         IArticleService articleService,
         ICategoryService categoryService,
         ICommentService commentService,
         IPageService pageService,
-        ImageService imageService)
+        ImageService imageService,
+        IDocumentService documentService)
     {
         _articleService = articleService;
         _categoryService = categoryService;
         _commentService = commentService;
         _pageService = pageService;
         _imageService = imageService;
+        _documentService = documentService;
     }
 
     [HttpGet("")]
@@ -103,6 +107,16 @@ public class HomeController : Controller
         var imagesDict = imageIdsToFetch.Count > 0
             ? await _imageService.GetVariantsDictAsync(imageIdsToFetch!)
             : new Dictionary<string, ImageMetadataResponseDto>();
+
+        var articleDocuments = article.DocumentIds.Count > 0
+            ? await _documentService.GetByIdsAsync(article.DocumentIds)
+            : [];
+        var documentsById = articleDocuments.ToDictionary(document => document.Id);
+        ViewBag.Documents = article.DocumentIds
+            .Select(documentId => documentsById.TryGetValue(documentId, out var document) ? document : null)
+            .Where(document => document is not null)
+            .Select(document => document!)
+            .ToList();
 
         ViewBag.Comments = comments;
         ViewBag.Category = category;

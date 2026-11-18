@@ -35,6 +35,7 @@ public class ArticleDto
     public string? CoverImageId { get; set; }
     public string? CoverImageUrl { get; set; }
     public List<string> ImageIds { get; set; } = [];
+    public List<string> DocumentIds { get; set; } = [];
     public bool Featured { get; set; } = false;
 
     /// <summary>"Borrador", "Programado" o "Publicado"</summary>

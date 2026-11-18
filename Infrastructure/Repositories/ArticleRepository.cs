@@ -211,4 +211,9 @@ public class ArticleRepository : IArticleRepository
     public async Task<List<Article>> GetScheduledToPublishAsync(DateTime now) =>
         await _col.Find(a => a.Status == ArticleStatus.Programado && a.ScheduledAt <= now)
                   .ToListAsync();
+
+    public Task<bool> IsDocumentReferencedByPublishedArticleAsync(string documentId, CancellationToken ct = default) =>
+        _col.Find(Builders<Article>.Filter.Eq(a => a.Status, ArticleStatus.Publicado) &
+                  Builders<Article>.Filter.AnyEq(a => a.DocumentIds, documentId))
+            .AnyAsync(ct);
 }

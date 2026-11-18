@@ -23,9 +23,14 @@ services:
       - CloudflareR2__SecretAccessKey=${R2_SECRET_ACCESS_KEY:-}
       - CloudflareR2__BucketName=${R2_BUCKET_NAME:-portal-noticias}
       - CloudflareR2__PublicDomain=${R2_PUBLIC_DOMAIN:-}
+      - Documents__MaxSizeBytes=${DOCUMENTS_MAX_SIZE_BYTES:-26214400}
+      - Documents__LocalPath=${DOCUMENTS_LOCAL_PATH:-/app/storage/documents}
     volumes:
-      # Persistencia de imágenes subidas cuando se usa almacenamiento local
+      # Persistencia de imágenes y documentos cuando se usa almacenamiento local.
+      # En el VPS los documentos viven en /opt/portal-noticias/documents.
+      # Para desarrollo local se puede sobrescribir con DOCUMENTS_HOST_PATH=./storage/documents
       - ./uploads:/app/wwwroot/uploads
+      - ${DOCUMENTS_HOST_PATH:-/opt/portal-noticias/documents}:/app/storage/documents
     networks:
       - app_network
 
