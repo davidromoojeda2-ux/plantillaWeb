@@ -47,6 +47,19 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Google Tag Manager -->
+    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PMSZK9SR"></script>
+    <!-- End Google Tag Manager -->
+
+    <!-- Google Analytics -->
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+    </script>
+    <!-- End Google Analytics -->
+
     <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - {SiteBrand.Name}" : $"{SiteBrand.Name} - Energía solar, baterías y autoconsumo")</title>
     <meta name="description"
           content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo para producir y aprovechar tu propia energía.")" />
