@@ -8,6 +8,7 @@ using Domine.Exceptions;
 using Infrastructure.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using Moq;
 
 namespace ContenidoBloques.Tests;
@@ -125,6 +126,19 @@ public class DocumentServiceTests
     }
 
     [Fact]
+    public async Task InvalidDocumentId_ReturnsNotFoundWithoutQueryingRepository()
+    {
+        var repo = Repository();
+        var service = BuildService(LocalStorage(), repo, Articles());
+
+        Assert.Null(await service.GetByIdAsync("no-existe"));
+        Assert.False(await service.CanDownloadPublicAsync("no-existe"));
+        Assert.Null(await service.OpenDownloadAsync("no-existe", requirePublic: true));
+
+        repo.Verify(r => r.GetByIdAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task GetPaged_PassesFiltersToRepository()
     {
         var repo = Repository();
@@ -196,28 +210,33 @@ public class DocumentServiceTests
     [Fact]
     public async Task CanDownloadPublic_AllowsPublicAndPublishedArticleDocuments()
     {
-        var publicDocument = new DocumentMetadata { Id = "public", IsPublic = true };
-        var linkedDocument = new DocumentMetadata { Id = "linked", IsPublic = false };
-        var draftDocument = new DocumentMetadata { Id = "draft", IsPublic = false };
+        var publicId = ObjectId.GenerateNewId().ToString();
+        var linkedId = ObjectId.GenerateNewId().ToString();
+        var draftId = ObjectId.GenerateNewId().ToString();
+        var missingId = ObjectId.GenerateNewId().ToString();
+
+        var publicDocument = new DocumentMetadata { Id = publicId, IsPublic = true };
+        var linkedDocument = new DocumentMetadata { Id = linkedId, IsPublic = false };
+        var draftDocument = new DocumentMetadata { Id = draftId, IsPublic = false };
 
         var repo = Repository();
-        repo.Setup(r => r.GetByIdAsync("public")).ReturnsAsync(publicDocument);
-        repo.Setup(r => r.GetByIdAsync("linked")).ReturnsAsync(linkedDocument);
-        repo.Setup(r => r.GetByIdAsync("draft")).ReturnsAsync(draftDocument);
-        repo.Setup(r => r.GetByIdAsync("missing")).ReturnsAsync((DocumentMetadata?)null);
+        repo.Setup(r => r.GetByIdAsync(publicId)).ReturnsAsync(publicDocument);
+        repo.Setup(r => r.GetByIdAsync(linkedId)).ReturnsAsync(linkedDocument);
+        repo.Setup(r => r.GetByIdAsync(draftId)).ReturnsAsync(draftDocument);
+        repo.Setup(r => r.GetByIdAsync(missingId)).ReturnsAsync((DocumentMetadata?)null);
 
         var articles = Articles();
-        articles.Setup(r => r.IsDocumentReferencedByPublishedArticleAsync("linked", It.IsAny<CancellationToken>()))
+        articles.Setup(r => r.IsDocumentReferencedByPublishedArticleAsync(linkedId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        articles.Setup(r => r.IsDocumentReferencedByPublishedArticleAsync("draft", It.IsAny<CancellationToken>()))
+        articles.Setup(r => r.IsDocumentReferencedByPublishedArticleAsync(draftId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var service = BuildService(LocalStorage(), repo, articles);
 
-        Assert.True(await service.CanDownloadPublicAsync("public"));
-        Assert.True(await service.CanDownloadPublicAsync("linked"));
-        Assert.False(await service.CanDownloadPublicAsync("draft"));
-        Assert.False(await service.CanDownloadPublicAsync("missing"));
+        Assert.True(await service.CanDownloadPublicAsync(publicId));
+        Assert.True(await service.CanDownloadPublicAsync(linkedId));
+        Assert.False(await service.CanDownloadPublicAsync(draftId));
+        Assert.False(await service.CanDownloadPublicAsync(missingId));
     }
 
     [Fact]
