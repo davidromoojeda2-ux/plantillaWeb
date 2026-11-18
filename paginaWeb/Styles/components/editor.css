@@ -215,15 +215,26 @@
   .cbe-inserter-menu {
     position: fixed;
     z-index: 120;
-    width: 14.5rem;
-    max-height: 20rem;
+    width: min(18rem, calc(100vw - 1rem));
+    max-height: min(24rem, calc(100dvh - 2rem));
     overflow-y: auto;
     overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
     padding: 0.35rem;
     border: 1px solid var(--cbe-line, #e7eaf0);
     border-radius: 12px;
     background: #ffffff;
     box-shadow: 0 18px 40px -12px rgb(15 23 42 / 0.35), 0 2px 6px rgb(15 23 42 / 0.06);
+  }
+
+  .cbe-inserter-menu::-webkit-scrollbar {
+    width: 0.45rem;
+  }
+
+  .cbe-inserter-menu::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #cbd5e1;
   }
 
   .cbe-menu-heading {

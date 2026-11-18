@@ -13,12 +13,12 @@
     const BLOCK_TYPES = [
         { type: 'paragraph', label: 'Párrafo' },
         { type: 'heading', label: 'Encabezado' },
+        { type: 'document', label: 'Documento' },
         { type: 'ordered-list', label: 'Lista numerada' },
         { type: 'bullet-list', label: 'Lista con viñetas' },
         { type: 'quote', label: 'Cita' },
         { type: 'callout', label: 'Callout' },
         { type: 'image', label: 'Imagen' },
-        { type: 'document', label: 'Documento' },
         { type: 'table', label: 'Tabla' },
         { type: 'code', label: 'Código' },
         { type: 'divider', label: 'Separador' }
@@ -489,17 +489,20 @@
             document.body.appendChild(menu);
 
             const rect = anchor.getBoundingClientRect();
+            const viewportWidth = window.visualViewport?.width || window.innerWidth;
+            const viewportHeight = window.visualViewport?.height || window.innerHeight;
             const width = menu.offsetWidth;
             const left = Math.min(
                 Math.max(8, rect.left - width / 2),
-                Math.max(8, window.innerWidth - width - 8));
+                Math.max(8, viewportWidth - width - 8));
             menu.style.left = `${left}px`;
 
             const menuHeight = menu.offsetHeight;
             const below = rect.bottom + 6;
-            const top = below + menuHeight > window.innerHeight - 8
-                ? Math.max(8, rect.top - menuHeight - 6)
+            let top = below + menuHeight > viewportHeight - 8
+                ? rect.top - menuHeight - 6
                 : below;
+            top = Math.max(8, Math.min(top, viewportHeight - menuHeight - 8));
             menu.style.top = `${top}px`;
 
             const onPointerDown = event => {
