@@ -15,5 +15,6 @@
     <Project Path="tests/ContenidoBloques.Tests/ContenidoBloques.Tests.csproj" />
     <Project Path="tests/ArticleAutomation.Tests/ArticleAutomation.Tests.csproj" />
     <Project Path="tests/ImageOptimization.Tests/ImageOptimization.Tests.csproj" />
+    <Project Path="tests/Seo.Tests/Seo.Tests.csproj" />
   </Folder>
 </Solution>
