@@ -21,15 +21,18 @@
 }
 <!DOCTYPE html>
 <html lang="es" class="h-full scroll-smooth">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - {SiteBrand.Name}" : $"{SiteBrand.Name} - Energía solar, baterías y autoconsumo")</title>
-    <meta name="description" content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo para producir y aprovechar tu propia energía.")" />
+    <meta name="description"
+          content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo para producir y aprovechar tu propia energía.")" />
     <link rel="icon" type="image/svg+xml" href="~/img/logos/logo.svg" />
 
     <meta property="og:title" content="@(ViewData["Title"] ?? SiteBrand.Name)" />
-    <meta property="og:description" content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo.")" />
+    <meta property="og:description"
+          content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo.")" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="@SiteBrand.Name" />
     @if (!string.IsNullOrWhiteSpace(ogImage))
@@ -44,11 +47,21 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700&display=swap" rel="stylesheet">
+    <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700&display=swap"
+    rel="stylesheet">
     <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
+
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7782482501198229"
+            crossorigin="anonymous"></script>
+
+     
+
 </head>
-<body class="min-h-full flex flex-col font-sans text-slate-800 bg-[#F5F6F8] antialiased selection:bg-[#FDC500] selection:text-[#00296B]">
+
+<body
+    class="min-h-full flex flex-col font-sans text-slate-800 bg-[#F5F6F8] antialiased selection:bg-[#FDC500] selection:text-[#00296B]">
 
     <!-- ─── Barra Superior de Navegación Unificada ───────────────────────────── -->
     @await Component.InvokeAsync("Navbar")
@@ -59,164 +72,160 @@
     </main>
 
     <!-- ─── Pie de Página Dinámico de 5 Columnas Unificado ───────────────────── -->
-    <partial name="Partials/_Footer" model="(Sections: footerSections, Pages: footerPages, SocialProfiles: socialProfiles)" />
+    <partial name="Partials/_Footer"
+             model="(Sections: footerSections, Pages: footerPages, SocialProfiles: socialProfiles)" />
 
     <!-- ─── Botón flotante de WhatsApp (solo pantallas chicas) ────────────────── -->
     <div id="whatsAppFloat" class="min-[900px]:hidden fixed bottom-24 right-5 z-40 flex items-center gap-1.5">
         <button type="button" id="btnToggleWhatsAppFloat"
                 class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/95 border border-slate-200 text-slate-500 shadow-sm backdrop-blur-xs transition-colors hover:text-[#128C7E]"
-                aria-expanded="true" aria-controls="btnWhatsAppFloat"
-                aria-label="Ocultar botón de WhatsApp" title="Ocultar WhatsApp">
-            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                aria-expanded="true" aria-controls="btnWhatsAppFloat" aria-label="Ocultar botón de WhatsApp"
+                title="Ocultar WhatsApp">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                 aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
             </svg>
         </button>
 
-        <button type="button" id="btnWhatsAppFloat"
-                data-open-whatsapp-groups
-                aria-haspopup="dialog"
-                aria-controls="whatsAppGroupsPublicModal"
-                aria-label="Únete a nuestros grupos de WhatsApp"
+        <button type="button" id="btnWhatsAppFloat" data-open-whatsapp-groups aria-haspopup="dialog"
+                aria-controls="whatsAppGroupsPublicModal" aria-label="Únete a nuestros grupos de WhatsApp"
                 class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20BD5C] text-white shadow-[0_8px_24px_rgba(37,211,102,0.45)] ring-4 ring-white/30 transition-all duration-200 hover:scale-105 active:scale-95">
             <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                <path
+                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
             </svg>
         </button>
     </div>
 
     <!-- ─── Aviso y preferencias de cookies ─────────────────────────────────── -->
-@*
+    @*
     Aviso de cookies y panel de preferencias.
     El estado se guarda en el navegador y se puede cambiar desde el pie de página.
 *@
-<section id="siteNotice"
-         class="site-notice"
-         role="region"
-         aria-labelledby="siteNoticeTitle"
-         aria-describedby="siteNoticeText"
-         hidden>
-    <div class="site-notice__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v5.2c0 4.4-2.9 8.2-7 9.8-4.1-1.6-7-5.4-7-9.8V6l7-3z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.3 12.2l1.8 1.8 3.7-3.8" />
-        </svg>
-    </div>
-
-    <div class="site-notice__body">
-        <h2 id="siteNoticeTitle" class="site-notice__title">Tu privacidad, bajo control</h2>
-        <p id="siteNoticeText" class="site-notice__text">
-            En unautonomo.com usamos cookies técnicas necesarias para que el portal funcione y para recordar tu
-            decisión. Si nos das permiso, también guardaremos tus preferencias de interfaz y podremos activar en el
-            futuro una medición agregada. No hay analítica activa ni publicidad.
-        </p>
-        <a asp-controller="Home" asp-action="Info" asp-route-slug="politica-de-cookies"
-           class="site-notice__policy">
-            Política de cookies
-        </a>
-
-        <div class="site-notice__actions">
-            <button type="button" class="pref-btn pref-btn--ghost" data-preferences-necessary>
-                Solo necesarias
-            </button>
-            <button type="button" class="pref-btn pref-btn--primary" data-preferences-accept-all>
-                Aceptar todas
-            </button>
-            <button type="button" class="pref-btn pref-btn--link" data-site-preferences>
-                Configurar
-            </button>
+    <section id="siteNotice" class="site-notice" role="region" aria-labelledby="siteNoticeTitle"
+             aria-describedby="siteNoticeText" hidden>
+        <div class="site-notice__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 3l7 3v5.2c0 4.4-2.9 8.2-7 9.8-4.1-1.6-7-5.4-7-9.8V6l7-3z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.3 12.2l1.8 1.8 3.7-3.8" />
+            </svg>
         </div>
-    </div>
-</section>
 
-<div id="sitePreferences" class="site-preferences" hidden>
-    <div class="site-preferences__dialog"
-         role="dialog"
-         aria-modal="true"
-         aria-labelledby="sitePreferencesTitle"
-         aria-describedby="sitePreferencesIntro"
-         tabindex="-1">
-        <div class="site-preferences__header">
-            <div>
-                <h2 id="sitePreferencesTitle" class="site-preferences__title">Preferencias de cookies</h2>
+        <div class="site-notice__body">
+            <h2 id="siteNoticeTitle" class="site-notice__title">Tu privacidad, bajo control</h2>
+            <p id="siteNoticeText" class="site-notice__text">
+                En unautonomo.com usamos cookies técnicas necesarias para que el portal funcione y para recordar tu
+                decisión. Si nos das permiso, también guardaremos tus preferencias de interfaz y podremos activar en el
+                futuro una medición agregada. No hay analítica activa ni publicidad.
+            </p>
+            <a asp-controller="Home" asp-action="Info" asp-route-slug="politica-de-cookies" class="site-notice__policy">
+                Política de cookies
+            </a>
+
+            <div class="site-notice__actions">
+                <button type="button" class="pref-btn pref-btn--ghost" data-preferences-necessary>
+                    Solo necesarias
+                </button>
+                <button type="button" class="pref-btn pref-btn--primary" data-preferences-accept-all>
+                    Aceptar todas
+                </button>
+                <button type="button" class="pref-btn pref-btn--link" data-site-preferences>
+                    Configurar
+                </button>
             </div>
-            <button type="button" class="site-preferences__close" data-preferences-close aria-label="Cerrar preferencias">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-                </svg>
-            </button>
         </div>
+    </section>
 
-        <p id="sitePreferencesIntro" class="site-preferences__intro">
-            Tú decides qué datos de navegación podemos guardar en este dispositivo. Las cookies necesarias no se
-            pueden desactivar porque sin ellas el portal y los formularios no funcionan.
-        </p>
+    <div id="sitePreferences" class="site-preferences" hidden>
+        <div class="site-preferences__dialog" role="dialog" aria-modal="true" aria-labelledby="sitePreferencesTitle"
+             aria-describedby="sitePreferencesIntro" tabindex="-1">
+            <div class="site-preferences__header">
+                <div>
+                    <h2 id="sitePreferencesTitle" class="site-preferences__title">Preferencias de cookies</h2>
+                </div>
+                <button type="button" class="site-preferences__close" data-preferences-close
+                        aria-label="Cerrar preferencias">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                         aria-hidden="true">
+                        <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                </button>
+            </div>
 
-        <div class="pref-category">
-            <div>
-                <h3 class="pref-category__title">Técnicas necesarias</h3>
-                <p class="pref-category__text">
-                    Seguridad, protección de formularios frente a envíos fraudulentos y registro de tu elección de
-                    cookies. No identifican ni perfilan al usuario.
+            <p id="sitePreferencesIntro" class="site-preferences__intro">
+                Tú decides qué datos de navegación podemos guardar en este dispositivo. Las cookies necesarias no se
+                pueden desactivar porque sin ellas el portal y los formularios no funcionan.
+            </p>
+
+            <div class="pref-category">
+                <div>
+                    <h3 class="pref-category__title">Técnicas necesarias</h3>
+                    <p class="pref-category__text">
+                        Seguridad, protección de formularios frente a envíos fraudulentos y registro de tu elección de
+                        cookies. No identifican ni perfilan al usuario.
+                    </p>
+                </div>
+                <span class="pref-category__always">Siempre activas</span>
+            </div>
+
+            <div class="pref-category">
+                <div>
+                    <h3 class="pref-category__title">Preferencias</h3>
+                    <p class="pref-category__text">
+                        Recuerdan tus elecciones de interfaz, como el estado del botón flotante de WhatsApp. Si no las
+                        aceptas, esas preferencias no se guardan entre visitas.
+                    </p>
+                </div>
+                <label class="pref-toggle">
+                    <span class="sr-only">Permitir cookies de preferencias</span>
+                    <input type="checkbox" data-preference-category="preferences" />
+                    <span class="pref-toggle__track" aria-hidden="true"></span>
+                </label>
+            </div>
+
+            <div class="pref-category">
+                <div>
+                    <h3 class="pref-category__title">Analítica</h3>
+                    <p class="pref-category__text">
+                        Medición agregada para saber qué contenidos son útiles. Está desactivada por defecto y
+                        actualmente no hay ningún proveedor de analítica activo; si se incorpora, solo se cargará con tu
+                        permiso.
+                    </p>
+                </div>
+                <label class="pref-toggle">
+                    <span class="sr-only">Permitir cookies de analítica</span>
+                    <input type="checkbox" data-preference-category="analytics" />
+                    <span class="pref-toggle__track" aria-hidden="true"></span>
+                </label>
+            </div>
+
+            <p class="site-preferences__note">
+                No utilizamos cookies publicitarias ni de elaboración de perfiles. Puedes cambiar tu elección en
+                cualquier momento desde <strong>Configurar cookies</strong> en el pie de página.
+                <a asp-controller="Home" asp-action="Info" asp-route-slug="politica-de-cookies">Ver la política
+                    completa</a>.
                 </p>
+
+                <div class="site-preferences__actions">
+                    <button type="button" class="pref-btn pref-btn--ghost" data-preferences-necessary>
+                        Solo necesarias
+                    </button>
+                    <button type="button" class="pref-btn pref-btn--primary" data-preferences-save>
+                        Guardar preferencias
+                    </button>
+                    <button type="button" class="pref-btn pref-btn--ghost" data-preferences-accept-all>
+                        Aceptar todas
+                    </button>
+                </div>
             </div>
-            <span class="pref-category__always">Siempre activas</span>
         </div>
 
-        <div class="pref-category">
-            <div>
-                <h3 class="pref-category__title">Preferencias</h3>
-                <p class="pref-category__text">
-                    Recuerdan tus elecciones de interfaz, como el estado del botón flotante de WhatsApp. Si no las
-                    aceptas, esas preferencias no se guardan entre visitas.
-                </p>
-            </div>
-            <label class="pref-toggle">
-                <span class="sr-only">Permitir cookies de preferencias</span>
-                <input type="checkbox" data-preference-category="preferences" />
-                <span class="pref-toggle__track" aria-hidden="true"></span>
-            </label>
-        </div>
+        <p id="siteNoticeStatus" class="sr-only" role="status" aria-live="polite"></p>
 
-        <div class="pref-category">
-            <div>
-                <h3 class="pref-category__title">Analítica</h3>
-                <p class="pref-category__text">
-                    Medición agregada para saber qué contenidos son útiles. Está desactivada por defecto y
-                    actualmente no hay ningún proveedor de analítica activo; si se incorpora, solo se cargará con tu
-                    permiso.
-                </p>
-            </div>
-            <label class="pref-toggle">
-                <span class="sr-only">Permitir cookies de analítica</span>
-                <input type="checkbox" data-preference-category="analytics" />
-                <span class="pref-toggle__track" aria-hidden="true"></span>
-            </label>
-        </div>
+        <script src="~/js/site-preferences.js" asp-append-version="true" defer></script>
+        <script src="~/js/site.js" asp-append-version="true" defer></script>
+        @await RenderSectionAsync("Scripts", required: false)
+    </body>
 
-        <p class="site-preferences__note">
-            No utilizamos cookies publicitarias ni de elaboración de perfiles. Puedes cambiar tu elección en
-            cualquier momento desde <strong>Configurar cookies</strong> en el pie de página.
-            <a asp-controller="Home" asp-action="Info" asp-route-slug="politica-de-cookies">Ver la política completa</a>.
-        </p>
-
-        <div class="site-preferences__actions">
-            <button type="button" class="pref-btn pref-btn--ghost" data-preferences-necessary>
-                Solo necesarias
-            </button>
-            <button type="button" class="pref-btn pref-btn--primary" data-preferences-save>
-                Guardar preferencias
-            </button>
-            <button type="button" class="pref-btn pref-btn--ghost" data-preferences-accept-all>
-                Aceptar todas
-            </button>
-        </div>
-    </div>
-</div>
-
-<p id="siteNoticeStatus" class="sr-only" role="status" aria-live="polite"></p>
-
-    <script src="~/js/site-preferences.js" asp-append-version="true" defer></script>
-    <script src="~/js/site.js" asp-append-version="true" defer></script>
-    @await RenderSectionAsync("Scripts", required: false)
-</body>
 </html>

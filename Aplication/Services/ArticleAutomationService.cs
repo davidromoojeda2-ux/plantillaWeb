@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aplication.Content;
 using Aplication.DTOs;
 using Aplication.DTOs.Automation;
 using Aplication.Exceptions;
@@ -28,8 +29,6 @@ public interface IAutomationService
 /// </summary>
 public sealed class ArticleAutomationService : IAutomationService
 {
-    private const string DefaultAuthor = "Redacción Automática";
-
     private readonly ITopicDiscoveryService _discovery;
     private readonly IAiArticleGenerator _ai;
     private readonly ITopicCountryValidator _countryValidator;
@@ -712,7 +711,8 @@ public sealed class ArticleAutomationService : IAutomationService
         var slug = SlugGenerator.Slugify(generated.Title);
         if (string.IsNullOrEmpty(slug)) return null;
 
-        var categoryId = await ResolveCategoryAsync(generated.CategorySuggestion, settings);
+        var category = await ResolveCategoryAsync(generated.CategorySuggestion, settings);
+        var author = EditorialAuthors.Resolve(category?.Slug, category?.Name);
 
         var summary = new[] { generated.Summary, generated.MetaDescription, generated.Title }
             .First(s => !string.IsNullOrWhiteSpace(s));
@@ -725,9 +725,12 @@ public sealed class ArticleAutomationService : IAutomationService
             Slug = slug,
             Summary = Truncate(summary.Trim(), 500),
             Blocks = generated.Blocks,
-            Author = DefaultAuthor,
-            AuthorRole = DefaultAuthor,
-            CategoryId = categoryId,
+            Author = author.Name,
+            AuthorRole = author.Role,
+            AuthorBio = author.Bio,
+            AuthorAvatarUrl = author.AvatarUrl,
+            AuthorSocialUrl = author.SocialUrl,
+            CategoryId = category?.Id,
             Tags = generated.Tags.Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToList(),
             Status = status,
             ScheduledAt = scheduledAtFinal
@@ -742,7 +745,7 @@ public sealed class ArticleAutomationService : IAutomationService
         };
     }
 
-    private async Task<string?> ResolveCategoryAsync(string? suggestion, AutomationSettings settings)
+    private async Task<CategoryResponseDto?> ResolveCategoryAsync(string? suggestion, AutomationSettings settings)
     {
         var categories = await _categoryService.GetAllAsync();
         if (categories.Count == 0) return null;
@@ -752,12 +755,13 @@ public sealed class ArticleAutomationService : IAutomationService
             var match = categories.FirstOrDefault(c =>
                 string.Equals(c.Name, suggestion, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(c.Slug, suggestion, StringComparison.OrdinalIgnoreCase));
-            if (match is not null) return match.Id;
+            if (match is not null) return match;
         }
 
         foreach (var id in settings.CategoryIds)
         {
-            if (categories.Any(c => c.Id == id)) return id;
+            var selected = categories.FirstOrDefault(c => c.Id == id);
+            if (selected is not null) return selected;
         }
 
         return null;
