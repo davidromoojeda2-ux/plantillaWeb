@@ -6,6 +6,7 @@ using Aplication.Services;
 using Domine.Entities;
 using Infrastructure.Security;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 
 namespace ContenidoBloques.Tests;
 
@@ -71,6 +72,33 @@ public class ContentServiceTests
                 Status = "Borrador",
                 DocumentIds = ["doc-1", "doc-2"],
                 Blocks = [new ContentParagraphBlockDto { Text = "Contenido" }]
+            }));
+    }
+
+    [Fact]
+    public async Task ArticleService_RejectsMoreDocumentBlocksThanConfigured()
+    {
+        var repo = new FakeArticleRepository();
+        var service = new ArticleService(
+            repo,
+            new FakeCategoryRepository(),
+            Sanitizer(),
+            documentsOptions: Options.Create(new DocumentsOptions { MaxPerArticle = 1 }));
+
+        await Assert.ThrowsAsync<Domine.Exceptions.DomainValidationException>(() =>
+            service.CreateAsync(new ArticleDto
+            {
+                Title = "Artículo con demasiados bloques de documento",
+                Slug = "articulo-con-demasiados-bloques-de-documento",
+                Summary = "Resumen de prueba con longitud suficiente.",
+                Author = "Autora",
+                Status = "Borrador",
+                Blocks =
+                [
+                    new ContentParagraphBlockDto { Text = "Contenido" },
+                    new ContentDocumentBlockDto { DocumentId = ObjectId.GenerateNewId().ToString() },
+                    new ContentDocumentBlockDto { DocumentId = ObjectId.GenerateNewId().ToString() }
+                ]
             }));
     }
 

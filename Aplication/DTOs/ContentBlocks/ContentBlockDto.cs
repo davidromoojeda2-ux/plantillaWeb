@@ -14,6 +14,7 @@ namespace Aplication.DTOs.ContentBlocks;
 [JsonDerivedType(typeof(ContentQuoteBlockDto), "quote")]
 [JsonDerivedType(typeof(ContentCalloutBlockDto), "callout")]
 [JsonDerivedType(typeof(ContentImageBlockDto), "image")]
+[JsonDerivedType(typeof(ContentDocumentBlockDto), "document")]
 [JsonDerivedType(typeof(ContentTableBlockDto), "table")]
 [JsonDerivedType(typeof(ContentCodeBlockDto), "code")]
 [JsonDerivedType(typeof(ContentDividerBlockDto), "divider")]
@@ -73,6 +74,14 @@ public sealed class ContentImageBlockDto : ContentBlockDto
     public string? Credit { get; set; }
     public int? Width { get; set; }
     public int? Height { get; set; }
+}
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed class ContentDocumentBlockDto : ContentBlockDto
+{
+    public string? DocumentId { get; set; }
+    public string? Title { get; set; }
+    public string? Description { get; set; }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

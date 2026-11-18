@@ -6,6 +6,7 @@ using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 using Aplication.Realtime;
+using Domine.ContentBlocks;
 using Domine.Exceptions;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -107,10 +108,10 @@ public class ArticleService : IArticleService
 
     public async Task<ArticleResponseDto> CreateAsync(ArticleDto dto)
     {
-        EnforceDocumentLimit(dto.DocumentIds);
         await EnforceCategoryIntegrityAsync(dto);
 
         var blocks = _contentSanitizer.Sanitize(dto.Blocks);
+        EnforceDocumentLimit(dto.DocumentIds, blocks);
         var article = ArticleMapper.ToEntity(dto, blocks);
         ApplyDerivedFields(article);
         article.ValidarInvariantes();
@@ -125,13 +126,13 @@ public class ArticleService : IArticleService
 
     public async Task<ArticleResponseDto> UpdateAsync(string id, ArticleDto dto)
     {
-        EnforceDocumentLimit(dto.DocumentIds);
         await EnforceCategoryIntegrityAsync(dto);
 
         var existing = await _repo.GetByIdAsync(id)
             ?? throw new NotFoundException("Artículo", id);
 
         var blocks = _contentSanitizer.Sanitize(dto.Blocks);
+        EnforceDocumentLimit(dto.DocumentIds, blocks);
         ArticleMapper.ApplyUpdate(existing, dto, blocks);
         ApplyDerivedFields(existing);
         existing.ValidarInvariantes();
@@ -172,13 +173,16 @@ public class ArticleService : IArticleService
         return (true, willBeFeatured, null);
     }
 
-    private void EnforceDocumentLimit(IReadOnlyCollection<string>? documentIds)
+    private void EnforceDocumentLimit(
+        IEnumerable<string>? documentIds,
+        IEnumerable<ContentBlock>? blocks)
     {
-        var normalizedIds = documentIds?
+        var normalizedIds = (documentIds ?? [])
+            .Concat(blocks?.OfType<ContentDocumentBlock>().Select(block => block.DocumentId) ?? [])
             .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id.Trim())
+            .Select(id => id!.Trim())
             .Distinct()
-            .ToList() ?? [];
+            .ToList();
 
         if (normalizedIds.Count > _documentsOptions.MaxPerArticle)
         {

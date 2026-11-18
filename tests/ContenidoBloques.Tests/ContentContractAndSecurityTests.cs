@@ -14,6 +14,7 @@ public class ContentContractAndSecurityTests
         [
           { "type": "paragraph", "text": "<strong>Hola</strong>" },
           { "type": "heading", "level": 3, "text": "Título" },
+          { "type": "document", "documentId": "6aecb717937b82fc9bf68586", "title": "Informe" },
           { "type": "table", "headers": ["A"], "rows": [["1"]] }
         ]
         """;
@@ -24,6 +25,12 @@ public class ContentContractAndSecurityTests
             blocks,
             b => Assert.Equal("<strong>Hola</strong>", Assert.IsType<ContentParagraphBlockDto>(b).Text),
             b => Assert.Equal(3, Assert.IsType<ContentHeadingBlockDto>(b).Level),
+            b =>
+            {
+                var documentBlock = Assert.IsType<ContentDocumentBlockDto>(b);
+                Assert.Equal("6aecb717937b82fc9bf68586", documentBlock.DocumentId);
+                Assert.Equal("Informe", documentBlock.Title);
+            },
             b => Assert.Single(Assert.IsType<ContentTableBlockDto>(b).Rows));
     }
 

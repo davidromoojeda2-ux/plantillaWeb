@@ -128,6 +128,10 @@ public class Article
                     if (image.Caption is not null) parts.Add(image.Caption.Value);
                     if (image.Credit is not null) parts.Add(image.Credit.Value);
                     break;
+                case ContentDocumentBlock document:
+                    if (document.Title is not null) parts.Add(document.Title.Value);
+                    if (document.Description is not null) parts.Add(document.Description.Value);
+                    break;
                 case ContentTableBlock table:
                     parts.AddRange(table.Headers.Select(h => h.Value));
                     if (table.Caption is not null) parts.Add(table.Caption.Value);

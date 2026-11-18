@@ -51,6 +51,12 @@ public static class ContentBlockMapper
             Width = image.Width,
             Height = image.Height
         },
+        ContentDocumentBlock document => new ContentDocumentBlockDto
+        {
+            DocumentId = document.DocumentId,
+            Title = document.Title?.Value,
+            Description = document.Description?.Value
+        },
         ContentTableBlock table => new ContentTableBlockDto
         {
             Headers = table.Headers.Select(h => h.Value).ToList(),

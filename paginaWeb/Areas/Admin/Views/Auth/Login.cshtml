@@ -5,7 +5,7 @@
 }
 
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-slate-900">
+<html lang="es" class="h-full">
 
 <head>
     <meta charset="utf-8" />
@@ -15,87 +15,189 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap"
-    rel="stylesheet">
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,300&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+
+        /* Fondo animado con gradiente */
+        .login-bg {
+            min-height: 100dvh;
+            background: linear-gradient(135deg, #001233 0%, #001D4A 40%, #003F88 100%);
+        }
+
+        /* Panel derecho — branding decorativo */
+        .login-brand-panel {
+            background: linear-gradient(160deg, rgba(0,80,157,0.55) 0%, rgba(0,41,107,0.3) 100%);
+            backdrop-filter: blur(2px);
+        }
+
+        /* Orbes decorativos */
+        .orb {
+            position: absolute;
+            border-radius: 9999px;
+            filter: blur(80px);
+            pointer-events: none;
+        }
+
+        /* Inputs */
+        .login-input {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: 0.875rem;
+            color: #1e293b;
+            transition: border-color 160ms, box-shadow 160ms, background 160ms;
+            outline: none;
+        }
+        .login-input:focus {
+            border-color: #00509D;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgb(0 80 157 / 0.12);
+        }
+        .login-input::placeholder { color: #94a3b8; }
+
+        /* Label */
+        .login-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 0.4rem;
+        }
+
+        /* Botón submit */
+        .login-btn {
+            width: 100%;
+            padding: 0.8rem 1.25rem;
+            border-radius: 0.85rem;
+            border: none;
+            background: #FDC500;
+            color: #00296B;
+            font-weight: 700;
+            font-size: 0.875rem;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            transition: background 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+            box-shadow: 0 4px 14px rgb(253 197 0 / 0.35);
+        }
+        .login-btn:hover {
+            background: #FFD500;
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgb(253 197 0 / 0.45);
+        }
+        .login-btn:active { transform: scale(0.98); }
+
+        /* Checkbox custom */
+        .login-check { accent-color: #00296B; width: 1rem; height: 1rem; cursor: pointer; }
+    </style>
 </head>
 
-<body
-    class="h-full font-sans antialiased flex items-center justify-center p-4 bg-gradient-to-br from-[#001D4A] via-[#00296B] to-[#003F88]">
+<body class="login-bg flex items-stretch">
 
-    <div class="w-full max-w-md">
-        <!-- Logo / Marca -->
-        <div class="text-center mb-8">
-            <div class="flex items-center justify-center mb-4">
-                <img src="~/img/logos/logo-dark.svg" alt="Logo" width="64" height="64"
-                     decoding="async" class="w-16 h-16 object-contain" />
-            </div>
-            <p class="text-sm text-blue-200 mt-1">Gestiona el contenido del portal</p>
-        </div>
+    <!-- ══════════════════════════════════════════════════
+         COLUMNA IZQUIERDA — Formulario
+    ══════════════════════════════════════════════════ -->
+    <div class="relative z-10 flex flex-col justify-center w-full max-w-sm lg:max-w-md px-8 py-12 bg-white lg:min-h-screen shadow-2xl">
 
-        <!-- Tarjeta de Login -->
-        <div class="bg-white rounded-2xl shadow-2xl p-8 border border-white/20">
-            <h2 class="text-xl font-bold text-slate-800 mb-6 text-center">Iniciar Sesión</h2>
-
-            @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
-            {
-                <div
-                    class="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>@ViewData.ModelState[string.Empty]?.Errors[0].ErrorMessage</span>
-                </div>
-            }
-
-            <form method="post" asp-area="Admin" asp-controller="Auth" asp-action="Login" class="space-y-5">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
-
-                <div>
-                    <label asp-for="Username"
-                           class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Usuario</label>
-                    <input asp-for="Username" type="text" autocomplete="username"
-                           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] focus:border-transparent transition-all text-sm"
-                           placeholder="ej: admin" />
-                    <span asp-validation-for="Username" class="text-xs text-rose-600 mt-1 block"></span>
-                </div>
-
-                <div>
-                    <label asp-for="Password"
-                           class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Contraseña</label>
-                    <input asp-for="Password" type="password" autocomplete="current-password"
-                           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00509D] focus:border-transparent transition-all text-sm"
-                           placeholder="••••••••" />
-                    <span asp-validation-for="Password" class="text-xs text-rose-600 mt-1 block"></span>
-                </div>
-
-                <div class="flex items-center justify-between text-sm">
-                    <label class="flex items-center gap-2 text-slate-600 cursor-pointer">
-                        <input asp-for="RememberMe" type="checkbox"
-                               class="rounded border-slate-300 text-[#00296B] focus:ring-[#00296B]" />
-                        <span>Recordarme</span>
-                    </label>
-                </div>
-
-                <button type="submit"
-                        class="w-full py-3 px-4 rounded-xl bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-sm shadow-md hover:shadow-lg transition-all duration-200">
-                    Acceder al Panel
-                </button>
-            </form>
-
-            <div class="mt-6 pt-6 border-t border-slate-100 text-center text-xs text-slate-500">
-                <span class="block text-slate-400 mb-1">Credenciales predeterminadas para entorno local:</span>
-                <span class="font-mono bg-slate-100 px-2 py-1 rounded text-slate-700">admin / Admin123!</span>
-            </div>
-        </div>
-
-        <div class="text-center mt-6">
+        <!-- Back link (top) -->
+        <div class="mb-8">
             <a asp-area="" asp-controller="Home" asp-action="Index"
-               class="text-xs text-blue-200 hover:text-white transition-colors">
-                <partial name="_SvgIcon" model="@(new SvgIcon("arrow-left", "w-3.5 h-3.5"))" /> Volver al portal público
+               class="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium">
+                <partial name="_SvgIcon" model="@(new SvgIcon("arrow-left", "w-3.5 h-3.5"))" />
+                Portal público
             </a>
+        </div>
+
+        <!-- Encabezado del formulario -->
+        <div class="mb-8">
+            <p class="text-xs font-bold tracking-widest uppercase text-blue-500 mb-2">Panel Administrativo</p>
+            <h1 class="text-2xl font-bold text-slate-800 leading-tight">Bienvenido de nuevo</h1>
+            <p class="text-sm text-slate-500 mt-1">Ingresa tus credenciales para continuar.</p>
+        </div>
+
+        <!-- Error global -->
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+        {
+            <div class="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>@ViewData.ModelState[string.Empty]?.Errors[0].ErrorMessage</span>
+            </div>
+        }
+
+        <!-- Formulario -->
+        <form method="post" asp-area="Admin" asp-controller="Auth" asp-action="Login" class="space-y-5">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+            <div>
+                <label asp-for="Username" class="login-label">Usuario</label>
+                <input asp-for="Username" type="text" autocomplete="username"
+                       class="login-input" placeholder="Nombre de usuario" />
+                <span asp-validation-for="Username" class="text-xs text-rose-500 mt-1 block"></span>
+            </div>
+
+            <div>
+                <label asp-for="Password" class="login-label">Contraseña</label>
+                <input asp-for="Password" type="password" autocomplete="current-password"
+                       class="login-input" placeholder="••••••••" />
+                <span asp-validation-for="Password" class="text-xs text-rose-500 mt-1 block"></span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input asp-for="RememberMe" type="checkbox" class="login-check" />
+                <label asp-for="RememberMe" class="text-sm text-slate-600 cursor-pointer select-none">Recordarme</label>
+            </div>
+
+            <button type="submit" class="login-btn">
+                Acceder al Panel
+            </button>
+        </form>
+
+        <!-- Footer del panel -->
+        <p class="mt-10 text-xs text-slate-400 text-center">
+            &copy; @DateTime.Now.Year @SiteBrand.Name
+        </p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         COLUMNA DERECHA — Branding (solo desktop)
+    ══════════════════════════════════════════════════ -->
+    <div class="login-brand-panel hidden lg:flex flex-1 relative flex-col items-center justify-center overflow-hidden px-16">
+
+        <!-- Orbes de fondo -->
+        <div class="orb w-96 h-96 bg-blue-500/20 top-[-8rem] right-[-6rem]"></div>
+        <div class="orb w-72 h-72 bg-yellow-400/15 bottom-[-4rem] left-[-4rem]"></div>
+        <div class="orb w-48 h-48 bg-blue-300/10 top-1/2 left-1/3"></div>
+
+        <!-- Contenido de marca -->
+        <div class="relative z-10 text-center max-w-md">
+            <img src="~/img/logos/logo-dark.svg" alt="@SiteBrand.Name"
+                 class="w-24 h-24 mx-auto mb-8 drop-shadow-xl" decoding="async" />
+
+            <h2 class="text-3xl font-bold text-white leading-tight mb-4">
+                @SiteBrand.Name
+            </h2>
+            <p class="text-blue-200 text-base leading-relaxed">
+                Gestiona publicaciones, documentos e imágenes del portal desde un solo lugar.
+            </p>
+
+            <!-- Decoración puntillada -->
+            <div class="mt-10 flex items-center justify-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                <span class="w-8 h-0.5 bg-blue-400/40 rounded"></span>
+                <span class="w-2 h-2 rounded-full bg-blue-300/60"></span>
+                <span class="w-8 h-0.5 bg-blue-400/40 rounded"></span>
+                <span class="w-2 h-2 rounded-full bg-yellow-400/60"></span>
+            </div>
         </div>
     </div>
 

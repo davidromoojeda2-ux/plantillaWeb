@@ -108,15 +108,32 @@ public class HomeController : Controller
             ? await _imageService.GetVariantsDictAsync(imageIdsToFetch!)
             : new Dictionary<string, ImageMetadataResponseDto>();
 
-        var articleDocuments = article.DocumentIds.Count > 0
-            ? await _documentService.GetByIdsAsync(article.DocumentIds)
+        var blockDocumentIds = article.Blocks
+            .OfType<ContentDocumentBlockDto>()
+            .Select(block => block.DocumentId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var documentIdsToFetch = article.DocumentIds
+            .Concat(blockDocumentIds)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var articleDocuments = documentIdsToFetch.Count > 0
+            ? await _documentService.GetByIdsAsync(documentIdsToFetch)
             : [];
-        var documentsById = articleDocuments.ToDictionary(document => document.Id);
+        var documentsById = articleDocuments.ToDictionary(document => document.Id, StringComparer.OrdinalIgnoreCase);
+        var blockDocumentIdSet = blockDocumentIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         ViewBag.Documents = article.DocumentIds
+            .Where(documentId => !blockDocumentIdSet.Contains(documentId))
             .Select(documentId => documentsById.TryGetValue(documentId, out var document) ? document : null)
             .Where(document => document is not null)
             .Select(document => document!)
             .ToList();
+        ViewBag.BodyDocuments = documentsById;
 
         ViewBag.Comments = comments;
         ViewBag.Category = category;

@@ -16,6 +16,7 @@ namespace Domine.ContentBlocks;
     typeof(ContentQuoteBlock),
     typeof(ContentCalloutBlock),
     typeof(ContentImageBlock),
+    typeof(ContentDocumentBlock),
     typeof(ContentTableBlock),
     typeof(ContentCodeBlock),
     typeof(ContentDividerBlock))]
@@ -100,6 +101,21 @@ public sealed class ContentImageBlock : ContentBlock
     public int? Height { get; set; }
 
     public override string Type => "image";
+}
+
+[BsonDiscriminator("document")]
+public sealed class ContentDocumentBlock : ContentBlock
+{
+    /// <summary>Id del documento en la colección documents.</summary>
+    public string? DocumentId { get; set; }
+
+    /// <summary>Título visible opcional; si falta se usa el nombre del documento.</summary>
+    public PlainText? Title { get; set; }
+
+    /// <summary>Descripción visible opcional.</summary>
+    public PlainText? Description { get; set; }
+
+    public override string Type => "document";
 }
 
 [BsonDiscriminator("table")]

@@ -7,6 +7,7 @@
      data-input-id="BlocksJsonInput"
      data-upload-url="@Url.Action("UploadInline", "Articulos", new { area = "Admin" })"
      data-article-id="@Model.Id"
+     data-document-block-enabled="@Model.EnableDocumentBlock.ToString().ToLowerInvariant()"
      data-allowed-image-hosts="@string.Join(",", ContentSecurity.Value.AllowedImageHosts)"
      data-max-blocks="@ContentSecurity.Value.MaxBlocks"
      data-max-list-items="@ContentSecurity.Value.MaxListItems"
