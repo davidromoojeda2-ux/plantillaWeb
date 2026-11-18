@@ -116,6 +116,30 @@
         </main>
     </div>
 
+    @section StructuredData {
+        @{
+            var structuredDataBaseUrl = SiteUrl.Resolve(Context, Configuration);
+            var pageUrl = Model.CurrentPage > 1
+                ? $"/categoria/{Model.Category.Slug}?page={Model.CurrentPage}"
+                : $"/categoria/{Model.Category.Slug}";
+
+            var breadcrumb = new List<BreadcrumbItem> { new("Inicio", "/") };
+            if (Model.ParentCategory != null)
+                breadcrumb.Add(new(Model.ParentCategory.Name, $"/categoria/{Model.ParentCategory.Slug}"));
+            breadcrumb.Add(new(Model.Category.Name, $"/categoria/{Model.Category.Slug}"));
+
+            var collectionJsonLd = StructuredDataBuilder.BuildCollectionPage(
+                Model.Category.Name,
+                Model.Category.Description,
+                pageUrl,
+                Model.Articles.Select(a => new ArticleListItem(a.Article.Title, $"/articulos/{a.Article.Slug}")),
+                structuredDataBaseUrl);
+            var breadcrumbJsonLd = StructuredDataBuilder.BuildBreadcrumbList(breadcrumb, structuredDataBaseUrl);
+        }
+        @JsonLd.Render(collectionJsonLd)
+        @JsonLd.Render(breadcrumbJsonLd)
+    }
+
     @section Scripts {
         <script src="~/js/reveal.js" asp-append-version="true" defer></script>
     }

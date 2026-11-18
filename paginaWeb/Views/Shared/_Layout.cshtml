@@ -10,6 +10,28 @@
         .OrderBy(p => p.Order)
         .ToList();
 
+    // Datos estructurados site-wide (Organization + WebSite).
+    var structuredDataBaseUrl = SiteUrl.Resolve(Context, Configuration);
+    var organizationJsonLd = StructuredDataBuilder.BuildOrganization(
+        structuredDataBaseUrl,
+        SiteBrand.Name,
+        SiteBrand.LogoPath,
+        SiteBrand.LogoWidth,
+        SiteBrand.LogoHeight,
+        socialProfiles.Select(p => p.Url));
+    var websiteJsonLd = StructuredDataBuilder.BuildWebSite(structuredDataBaseUrl, SiteBrand.Name);
+
+    // URL canónica: ruta actual sin parámetros de seguimiento (conserva la paginación).
+    // Cualquier vista puede sobrescribirla con ViewData["CanonicalUrl"].
+    var canonicalUrl = ViewData["CanonicalUrl"] as string;
+    canonicalUrl = string.IsNullOrWhiteSpace(canonicalUrl)
+        ? CanonicalUrl.Build(
+            structuredDataBaseUrl,
+            Context.Request.Path,
+            Context.Request.Query.Select(pair =>
+                new KeyValuePair<string, string?>(pair.Key, pair.Value.FirstOrDefault())))
+        : SitemapDocumentBuilder.ToAbsoluteUrl(structuredDataBaseUrl, canonicalUrl);
+
     // Imagen para compartir en redes sociales (Open Graph / Twitter Cards)
     var ogImage = ViewData["OgImage"] as string;
     if (!string.IsNullOrWhiteSpace(ogImage)
@@ -27,6 +49,14 @@
     <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} - {SiteBrand.Name}" : $"{SiteBrand.Name} - Energía solar, baterías y autoconsumo")</title>
     <meta name="description" content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo para producir y aprovechar tu propia energía.")" />
     <link rel="icon" type="image/svg+xml" href="~/img/logos/logo.svg" />
+    @if (Context.Response.StatusCode == 200)
+    {
+        <link rel="canonical" href="@canonicalUrl" />
+    }
+    @if (ViewData["Robots"] is string robots && !string.IsNullOrWhiteSpace(robots))
+    {
+        <meta name="robots" content="@robots" />
+    }
 
     <meta property="og:title" content="@(ViewData["Title"] ?? SiteBrand.Name)" />
     <meta property="og:description" content="@(ViewData["MetaDescription"] ?? "Noticias y guías sobre energía solar, baterías y autoconsumo.")" />
@@ -47,6 +77,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
+
+    @* JSON-LD al final del <head>: no retrasa el descubrimiento del preload del LCP. *@
+    @JsonLd.Render(organizationJsonLd)
+    @JsonLd.Render(websiteJsonLd)
+    @await RenderSectionAsync("StructuredData", required: false)
 </head>
 <body class="min-h-full flex flex-col font-sans text-slate-800 bg-[#F5F6F8] antialiased selection:bg-[#FDC500] selection:text-[#00296B]">
 
