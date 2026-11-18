@@ -14,6 +14,7 @@ using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
@@ -168,6 +169,17 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ─── Pipeline HTTP ────────────────────────────────────────────────────────────
+// El proxy de Dokploy termina el TLS y reenvía X-Forwarded-Proto/For. Sin esto,
+// Request.Scheme es "http" y las URLs absolutas (canonical, JSON-LD, og:image)
+// se generan con el esquema equivocado.
+var forwardedHeaders = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor
+};
+forwardedHeaders.KnownIPNetworks.Clear();
+forwardedHeaders.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeaders);
+
 if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
 
