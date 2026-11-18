@@ -314,6 +314,28 @@ ImageMapper.GetBestUrl(coverImage);
     }
 }
 
+@section StructuredData {
+    @{
+        var structuredDataBaseUrl = SiteUrl.Resolve(Context, Configuration);
+        var breadcrumbItems = new List<BreadcrumbItem> { new("Inicio", "/") };
+
+        if (category != null)
+            breadcrumbItems.Add(new(category.Name, $"/categoria/{category.Slug}"));
+        if (subcategory != null)
+            breadcrumbItems.Add(new(subcategory.Name, $"/categoria/{subcategory.Slug}"));
+
+        breadcrumbItems.Add(new(Model.Title, $"/articulos/{Model.Slug}"));
+
+        var articleJsonLd = StructuredDataBuilder.BuildNewsArticle(
+            Model, coverImage, category, subcategory,
+            structuredDataBaseUrl, SiteBrand.Name,
+            SiteBrand.LogoPath, SiteBrand.LogoWidth, SiteBrand.LogoHeight);
+        var breadcrumbJsonLd = StructuredDataBuilder.BuildBreadcrumbList(breadcrumbItems, structuredDataBaseUrl);
+    }
+    @JsonLd.Render(articleJsonLd)
+    @JsonLd.Render(breadcrumbJsonLd)
+}
+
 @section Scripts {
     <script src="~/js/article.js" asp-append-version="true" defer></script>
 }
