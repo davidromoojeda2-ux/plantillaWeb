@@ -1080,9 +1080,11 @@
   }
 
   .cbe-document-name {
-    color: #0f172a;
+    color: var(--color-brand-900, #00296b);
+    font-family: var(--font-heading, "Inter", system-ui, sans-serif);
     font-size: 0.88rem;
-    font-weight: 700;
+    font-weight: 900;
+    letter-spacing: -0.01em;
     line-height: 1.3;
     overflow-wrap: anywhere;
   }
