@@ -83,6 +83,7 @@ public class AdminViewModelTests
             Tags = ["uno", "dos"],
             CoverImageId = "cover-1",
             ImageIds = ["cover-1", "body-1"],
+            DocumentIds = ["doc-1", "doc-2"],
             Featured = true,
             Status = "Publicado",
             Blocks =
@@ -102,6 +103,8 @@ public class AdminViewModelTests
         Assert.Equal(article.Summary, model.Summary);
         Assert.Equal("https://cdn.example.com/cover.webp", model.CoverImageUrl);
         Assert.Equal(article.ImageIds, model.ImageIds);
+        Assert.Equal(article.DocumentIds, model.DocumentIds);
+        Assert.Equal(article.DocumentIds, dto.DocumentIds);
         Assert.Equal(2, dto.Blocks.Count);
         Assert.Equal("<strong>Hola</strong>", Assert.IsType<ContentParagraphBlockDto>(dto.Blocks[0]).Text);
         Assert.Equal("body-1", Assert.IsType<ContentImageBlockDto>(dto.Blocks[1]).ImageId);

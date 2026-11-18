@@ -66,6 +66,8 @@ docker-compose.override.yml
 # ─── Almacenamiento de Archivos y Subidas de Usuarios ─────────────────────────
 **/wwwroot/uploads/*
 !**/wwwroot/uploads/.gitkeep
+**/storage/documents/*
+!**/storage/documents/.gitkeep
 
 # ─── Editores e IDEs ──────────────────────────────────────────────────────────
 # Visual Studio Code

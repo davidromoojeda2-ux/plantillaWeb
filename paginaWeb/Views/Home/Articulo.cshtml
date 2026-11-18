@@ -20,6 +20,7 @@ ImageMapper.GetBestUrl(coverImage);
     var badgeCategory = subcategory ?? category;
     var shareNetworks = (await SiteSettingsService.GetAsync()).EnabledShareNetworks;
     var tocHeader = new CollapsibleMenuHeaderViewModel("En esta página");
+    var documents = (List<DocumentResponseDto>?)ViewBag.Documents ?? new();
 }
 
 
@@ -260,6 +261,8 @@ ImageMapper.GetBestUrl(coverImage);
                         }
                     </div>
                 }
+
+                <partial name="Partials/_ArticleDocuments" model="documents" />
 
                 <!-- ─── Ficha Extendida del Autor (Componente Modular) ───────────── -->
                 <div class="mt-12 pt-8 border-t border-slate-200">

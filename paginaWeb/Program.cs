@@ -13,7 +13,9 @@ using Infrastructure.Serper;
 using Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using paginaWeb.Realtime;
 using paginaWeb.Workers;
@@ -44,6 +46,7 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
 builder.Services.AddScoped<IInformativePageRepository, InformativePageRepository>();
 builder.Services.AddScoped<IImageMetadataRepository, ImageMetadataRepository>();
+builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 builder.Services.AddScoped<IAutomationStateRepository, AutomationStateRepository>();
 builder.Services.AddScoped<ISiteSettingsRepository, SiteSettingsRepository>();
@@ -51,6 +54,8 @@ builder.Services.AddScoped<ISiteSettingsRepository, SiteSettingsRepository>();
 // ─── Seguridad del contenido editorial ────────────────────────────────────────
 builder.Services.Configure<ContentSecurityOptions>(
     builder.Configuration.GetSection(ContentSecurityOptions.SectionName));
+builder.Services.Configure<DocumentsOptions>(
+    builder.Configuration.GetSection(DocumentsOptions.SectionName));
 builder.Services.AddSingleton<IHtmlSanitizer, GanssHtmlSanitizer>();
 builder.Services.AddScoped<ContentBodySanitizer>();
 
@@ -81,6 +86,13 @@ builder.Services.AddScoped<S3Storage>();
 builder.Services.AddScoped<CloudflareR2Storage>();
 builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<S3Storage>());
 builder.Services.AddScoped<ImageService>();
+
+// ─── Almacenamiento y servicio de documentos ─────────────────────────────────
+builder.Services.AddScoped<LocalDocumentStorage>();
+builder.Services.AddScoped<IDocumentStorage>(sp => sp.GetRequiredService<LocalDocumentStorage>());
+builder.Services.AddScoped<IDocumentStorage>(sp => sp.GetRequiredService<S3Storage>());
+builder.Services.AddScoped<DocumentValidator>();
+builder.Services.AddScoped<IDocumentService, DocumentService>();
 
 // ─── Automatización: Serper + IA ─────────────────────────────────────────────
 builder.Services.AddHttpClient<ITopicDiscoveryService, SerperTopicDiscoveryService>();
@@ -118,6 +130,22 @@ builder.Services.AddAntiforgery();
 // ─── Configuración de appsettings ─────────────────────────────────────────────
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDB"));
+
+// Kestrel limita el cuerpo a ~30 MB por defecto. Si la configuración de
+// documentos supera ese valor, se amplía el límite de la petición y del
+// formulario multipart de forma coordinada.
+var documentsOptions = builder.Configuration
+    .GetSection(DocumentsOptions.SectionName)
+    .Get<DocumentsOptions>() ?? new DocumentsOptions();
+
+if (documentsOptions.MaxSizeBytes > 30_000_000)
+{
+    var requestLimit = documentsOptions.MaxSizeBytes + 1_048_576;
+    builder.Services.Configure<KestrelServerOptions>(options =>
+        options.Limits.MaxRequestBodySize = requestLimit);
+    builder.Services.Configure<FormOptions>(options =>
+        options.MultipartBodyLengthLimit = requestLimit);
+}
 
 var app = builder.Build();
 

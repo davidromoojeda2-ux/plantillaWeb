@@ -8,7 +8,8 @@ server {
     listen 80;
     server_name tudominio.com www.tudominio.com; # Reemplazar con tu dominio o IP
 
-    # Límite máximo para subida de imágenes
+    # Límite máximo para subida de imágenes y documentos
+    # Debe ser igual o superior a Documents:MaxSizeBytes (25 MB por defecto).
     client_max_body_size 50M;
 
     location / {

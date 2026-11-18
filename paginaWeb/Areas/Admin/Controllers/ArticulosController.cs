@@ -26,6 +26,7 @@ public class ArticulosController : Controller
     private readonly IArticleService _articleService;
     private readonly ICategoryService _categoryService;
     private readonly ImageService _imageService;
+    private readonly IDocumentService _documentService;
     private readonly IMenuService _menuService;
     private readonly IAiArticleRewriter _rewriter;
     private readonly IAutomationService _automation;
@@ -36,6 +37,7 @@ public class ArticulosController : Controller
         IArticleService articleService,
         ICategoryService categoryService,
         ImageService imageService,
+        IDocumentService documentService,
         IMenuService menuService,
         IAiArticleRewriter rewriter,
         IAutomationService automation,
@@ -45,6 +47,7 @@ public class ArticulosController : Controller
         _articleService = articleService;
         _categoryService = categoryService;
         _imageService = imageService;
+        _documentService = documentService;
         _menuService = menuService;
         _rewriter = rewriter;
         _automation = automation;
@@ -423,6 +426,15 @@ public class ArticulosController : Controller
         model.SubCategories = allCategories.Where(c => c.ParentId is not null).OrderBy(c => c.Order).ToList();
         model.LinkedImages = !string.IsNullOrEmpty(id) ? await _imageService.GetByArticleIdAsync(id) : [];
         model.AvailableImages = await GetImagesWithArticleUsageAsync();
+
+        var allDocuments = await _documentService.GetAllAsync(0, 500);
+        var documentsById = allDocuments.ToDictionary(document => document.Id);
+        model.AvailableDocuments = allDocuments;
+        model.LinkedDocuments = model.DocumentIds
+            .Select(documentId => documentsById.TryGetValue(documentId, out var document) ? document : null)
+            .Where(document => document is not null)
+            .Select(document => document!)
+            .ToList();
 
         var siteSettings = await _siteSettingsService.GetAsync();
         ViewBag.EnabledShareNetworks = siteSettings.EnabledShareNetworks;

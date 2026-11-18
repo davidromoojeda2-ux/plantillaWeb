@@ -67,6 +67,10 @@ public class Article
     [BsonRepresentation(BsonType.ObjectId)]
     public List<string> ImageIds { get; set; } = [];
 
+    /// <summary>Ids de documentos descargables asociados al artículo.</summary>
+    [BsonRepresentation(BsonType.ObjectId)]
+    public List<string> DocumentIds { get; set; } = [];
+
     /// <summary>Si es true, aparece en la sección de destacados de la portada.</summary>
     public bool Featured { get; set; } = false;
 

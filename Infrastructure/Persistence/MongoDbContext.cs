@@ -46,6 +46,9 @@ public class MongoDbContext
     public IMongoCollection<ImageMetadata> Images =>
         _database.GetCollection<ImageMetadata>("images");
 
+    public IMongoCollection<DocumentMetadata> Documents =>
+        _database.GetCollection<DocumentMetadata>("documents");
+
     public IMongoCollection<AdminUser> Users =>
         _database.GetCollection<AdminUser>("users");
 

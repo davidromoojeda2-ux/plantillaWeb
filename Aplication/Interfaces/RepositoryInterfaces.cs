@@ -45,6 +45,7 @@ public interface IArticleRepository
     Task<List<CategoryArticleSignalDto>> GetPublishedCategorySignalsAsync();
     Task<(Article? Previous, Article? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt);
     Task<List<Article>> GetScheduledToPublishAsync(DateTime now);
+    Task<bool> IsDocumentReferencedByPublishedArticleAsync(string documentId, CancellationToken ct = default);
 }
 
 // ─── Comment Repository Interface ─────────────────────────────────────────────
@@ -102,6 +103,33 @@ public interface IImageMetadataRepository
     Task DeleteAsync(string id);
 }
 
+
+// ─── DocumentMetadata Repository Interface ───────────────────────────────────
+
+public interface IDocumentRepository
+{
+    Task<List<DocumentMetadata>> GetAllAsync(int skip = 0, int take = 50);
+    Task<List<DocumentMetadata>> GetByIdsAsync(IEnumerable<string> ids);
+    Task<DocumentMetadata?> GetByIdAsync(string id);
+    Task<long> CountAsync(
+        string? search = null,
+        string? storage = null,
+        string? extension = null,
+        string? articleFilter = null,
+        CancellationToken ct = default);
+    Task<List<DocumentMetadata>> GetPagedAsync(
+        int skip,
+        int take,
+        string? search = null,
+        string? storage = null,
+        string? extension = null,
+        string? articleFilter = null,
+        CancellationToken ct = default);
+    Task InsertAsync(DocumentMetadata document);
+    Task UpdateMetadataAsync(string id, string displayName, string? description, bool isPublic);
+    Task IncrementDownloadCountAsync(string id);
+    Task DeleteAsync(string id);
+}
 
 // ─── AdminUser Repository Interface ───────────────────────────────────────────
 

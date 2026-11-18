@@ -10,7 +10,7 @@ namespace Infrastructure.Storage;
 /// Proveedor de almacenamiento S3 compatible (AWS S3, Cloudflare R2, MinIO).
 /// Verifica disponibilidad antes de operaciones y prioriza la nube frente al almacenamiento local.
 /// </summary>
-public class S3Storage : IImageStorage
+public class S3Storage : IImageStorage, IDocumentStorage
 {
     private readonly AmazonS3Client? _s3;
     private readonly string _bucket;
@@ -184,5 +184,55 @@ public class S3Storage : IImageStorage
             return $"{_publicDomain}/{cleanKey}";
         }
         return $"/uploads/{cleanKey}";
+    }
+
+    async Task IDocumentStorage.UploadAsync(string key, Stream stream, string contentType, CancellationToken ct)
+    {
+        if (!_isConfigured || _s3 == null)
+            throw new InvalidOperationException("No se puede subir al servicio S3 porque no está configurado.");
+
+        var request = new PutObjectRequest
+        {
+            BucketName = _bucket,
+            Key = key,
+            InputStream = stream,
+            ContentType = contentType,
+            CannedACL = S3CannedACL.Private
+        };
+
+        await _s3.PutObjectAsync(request, ct);
+    }
+
+    public async Task<Stream?> OpenReadAsync(
+        string key,
+        long? offset = null,
+        long? length = null,
+        CancellationToken ct = default)
+    {
+        if (!_isConfigured || _s3 == null) return null;
+
+        var request = new GetObjectRequest
+        {
+            BucketName = _bucket,
+            Key = key
+        };
+
+        if (offset.HasValue)
+        {
+            if (!length.HasValue || offset.Value < 0 || length.Value <= 0)
+                throw new ArgumentException("Para abrir un rango de S3 se requieren offset y length válidos.");
+
+            request.ByteRange = new ByteRange(offset.Value, offset.Value + length.Value - 1);
+        }
+
+        try
+        {
+            var response = await _s3.GetObjectAsync(request, ct);
+            return new OwnedStream(response.ResponseStream, response);
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 }

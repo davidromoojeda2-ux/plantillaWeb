@@ -52,6 +52,29 @@ public class ContentServiceTests
     }
 
     [Fact]
+    public async Task ArticleService_RejectsMoreDocumentsThanConfigured()
+    {
+        var repo = new FakeArticleRepository();
+        var service = new ArticleService(
+            repo,
+            new FakeCategoryRepository(),
+            Sanitizer(),
+            documentsOptions: Options.Create(new DocumentsOptions { MaxPerArticle = 1 }));
+
+        await Assert.ThrowsAsync<Domine.Exceptions.DomainValidationException>(() =>
+            service.CreateAsync(new ArticleDto
+            {
+                Title = "Artículo con demasiados documentos",
+                Slug = "articulo-con-demasiados-documentos",
+                Summary = "Resumen de prueba con longitud suficiente.",
+                Author = "Autora",
+                Status = "Borrador",
+                DocumentIds = ["doc-1", "doc-2"],
+                Blocks = [new ContentParagraphBlockDto { Text = "Contenido" }]
+            }));
+    }
+
+    [Fact]
     public async Task PageService_CreateSanitizesBlocksAndRequiresBody()
     {
         var repo = new FakePageRepository();
@@ -104,6 +127,7 @@ public class ContentServiceTests
         public Task<List<CategoryArticleSignalDto>> GetPublishedCategorySignalsAsync() => throw new NotImplementedException();
         public Task<(Article? Previous, Article? Next)> GetAdjacentArticlesAsync(string currentArticleId, DateTime? publishedAt) => throw new NotImplementedException();
         public Task<List<Article>> GetScheduledToPublishAsync(DateTime now) => throw new NotImplementedException();
+        public Task<bool> IsDocumentReferencedByPublishedArticleAsync(string documentId, CancellationToken ct = default) => Task.FromResult(false);
     }
 
     private sealed class FakeCategoryRepository : ICategoryRepository

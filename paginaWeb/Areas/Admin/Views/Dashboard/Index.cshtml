@@ -64,9 +64,11 @@
 
         <div class="bg-white p-6 rounded-2xl border border-slate-200/80 flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Acción Rápida</p>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones Rápidas</p>
                 <a asp-area="Admin" asp-controller="Imagenes" asp-action="Index"
                    class="text-sm font-semibold text-[#00509D] hover:underline mt-1 block">Subir Imágenes <partial name="_SvgIcon" model="@(new SvgIcon("arrow-right", "w-3.5 h-3.5"))" /></a>
+                <a asp-area="Admin" asp-controller="Documentos" asp-action="Index"
+                   class="text-sm font-semibold text-[#00509D] hover:underline mt-1 block">Gestionar Documentos <partial name="_SvgIcon" model="@(new SvgIcon("arrow-right", "w-3.5 h-3.5"))" /></a>
             </div>
             <div class="text-slate-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

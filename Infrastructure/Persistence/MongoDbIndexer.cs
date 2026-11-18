@@ -57,7 +57,13 @@ public static class MongoDbIndexer
 
             new CreateIndexModel<Domine.Entities.Article>(
                 Builders<Domine.Entities.Article>.IndexKeys.Text(a => a.SearchText),
-                new CreateIndexOptions { Name = "tx_articles_search" })
+                new CreateIndexOptions { Name = "tx_articles_search" }),
+
+            new CreateIndexModel<Domine.Entities.Article>(
+                Builders<Domine.Entities.Article>.IndexKeys
+                    .Ascending(a => a.DocumentIds)
+                    .Ascending(a => a.Status),
+                new CreateIndexOptions { Name = "ix_articles_documents_status" })
         ]);
 
         // ─── comments ─────────────────────────────────────────────────────────
@@ -104,6 +110,23 @@ public static class MongoDbIndexer
             new CreateIndexModel<Domine.Entities.ImageMetadata>(
                 Builders<Domine.Entities.ImageMetadata>.IndexKeys.Ascending(i => i.ArticleId),
                 new CreateIndexOptions { Name = "ix_images_article_id" })
+        ]);
+
+        // ─── documents ────────────────────────────────────────────────────────
+        await EnsureCollectionExistsAsync(context.Database, "documents");
+        await context.Documents.Indexes.CreateManyAsync(
+        [
+            new CreateIndexModel<Domine.Entities.DocumentMetadata>(
+                Builders<Domine.Entities.DocumentMetadata>.IndexKeys.Descending(d => d.UploadedAt),
+                new CreateIndexOptions { Name = "ix_documents_uploaded" }),
+
+            new CreateIndexModel<Domine.Entities.DocumentMetadata>(
+                Builders<Domine.Entities.DocumentMetadata>.IndexKeys.Ascending(d => d.IsPublic),
+                new CreateIndexOptions { Name = "ix_documents_public" }),
+
+            new CreateIndexModel<Domine.Entities.DocumentMetadata>(
+                Builders<Domine.Entities.DocumentMetadata>.IndexKeys.Ascending(d => d.Storage),
+                new CreateIndexOptions { Name = "ix_documents_storage" })
         ]);
 
         // ─── automation_runs ──────────────────────────────────────────────────

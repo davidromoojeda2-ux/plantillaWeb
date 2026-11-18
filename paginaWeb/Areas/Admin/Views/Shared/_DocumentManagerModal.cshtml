@@ -1,0 +1,86 @@
+@model DocumentManagerModalViewModel
+@inject IOptions<DocumentsOptions> DocumentsOptionsAccessor
+@{
+    var acceptedExtensions = string.Join(",", DocumentsOptionsAccessor.Value.NormalizedExtensions());
+}
+
+<div id="documentManagerModal"
+     class="fixed inset-0 z-[80] hidden bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4"
+     data-list-url="@Url.Action("List", "Documentos", new { area = "Admin" })"
+     data-upload-url="@Url.Action("UploadAjax", "Documentos", new { area = "Admin" })"
+     data-delete-url="/admin/documentos/eliminar-ajax"
+     data-current-article-id="@Model.CurrentArticleId"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="documentManagerTitle">
+
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full flex flex-col max-h-[92vh] overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/70">
+            <div>
+                <h3 id="documentManagerTitle" class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-[#00509D]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    @Model.Title
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">@Model.Subtitle</p>
+            </div>
+            <button type="button" id="documentManagerClose"
+                    class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition"
+                    aria-label="Cerrar gestor de documentos">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <div class="p-4 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="relative w-full sm:w-80">
+                <input type="text" id="documentManagerSearch" placeholder="Buscar por nombre o descripción..."
+                       class="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#00509D] focus:outline-none" />
+                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="file" id="documentManagerFileInput" accept="@acceptedExtensions" class="sr-only" tabindex="-1" />
+                <button type="button" id="documentManagerUploadButton"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FDC500] hover:bg-[#FFD500] text-[#00296B] font-bold text-xs transition shadow-2xs disabled:opacity-60 disabled:cursor-wait">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    <span id="documentManagerUploadLabel">Subir documento</span>
+                </button>
+            </div>
+        </div>
+
+        <p id="documentManagerUploadError" class="hidden px-4 pb-2 text-[11px] font-semibold text-rose-600"></p>
+
+        <div class="flex-1 overflow-y-auto p-4 bg-slate-50/50 min-h-[280px]">
+            <div id="documentManagerList" class="space-y-2"></div>
+
+            <div id="documentManagerEmpty" class="hidden py-16 text-center text-slate-400">
+                <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <p class="text-sm font-semibold text-slate-600">No hay documentos disponibles</p>
+                <p class="text-xs text-slate-400 mt-0.5">Sube el primero con el botón superior.</p>
+            </div>
+
+            <div id="documentManagerLoading" class="hidden py-16 text-center text-slate-400">
+                <svg class="animate-spin h-6 w-6 mx-auto text-[#00509D]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <p class="text-xs font-semibold mt-2">Cargando documentos...</p>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p id="documentManagerSelectionSummary" class="text-xs text-slate-500">0 documentos seleccionados</p>
+            <div class="flex items-center gap-2">
+                <button type="button" id="documentManagerCancel"
+                        class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition">
+                    Cancelar
+                </button>
+                <button type="button" id="documentManagerConfirm"
+                        class="px-5 py-2 rounded-xl bg-[#00296B] hover:bg-[#003F88] text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-[#FDC500]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                    Usar selección
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @Html.AntiForgeryToken()
+</div>

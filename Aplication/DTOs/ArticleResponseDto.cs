@@ -21,6 +21,7 @@ public class ArticleResponseDto
     public string? CoverImageId { get; set; }
     public string? CoverImageUrl { get; set; }
     public List<string> ImageIds { get; set; } = [];
+    public List<string> DocumentIds { get; set; } = [];
     public bool Featured { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime? PublishedAt { get; set; }

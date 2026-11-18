@@ -6,6 +6,9 @@ using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 using Aplication.Realtime;
+using Domine.Exceptions;
+using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 
 namespace Aplication.Services;
 
@@ -38,17 +41,20 @@ public class ArticleService : IArticleService
     private readonly ICategoryRepository _categoryRepo;
     private readonly ContentBodySanitizer _contentSanitizer;
     private readonly ICmsChangePublisher? _changes;
+    private readonly DocumentsOptions _documentsOptions;
 
     public ArticleService(
         IArticleRepository repo,
         ICategoryRepository categoryRepo,
         ContentBodySanitizer contentSanitizer,
-        ICmsChangePublisher? changes = null)
+        ICmsChangePublisher? changes = null,
+        IOptions<DocumentsOptions>? documentsOptions = null)
     {
         _repo = repo;
         _categoryRepo = categoryRepo;
         _contentSanitizer = contentSanitizer;
         _changes = changes;
+        _documentsOptions = documentsOptions?.Value ?? new DocumentsOptions();
     }
 
     public Task<HashSet<string>> GetCategoriesWithPublishedArticlesAsync() =>
@@ -101,6 +107,7 @@ public class ArticleService : IArticleService
 
     public async Task<ArticleResponseDto> CreateAsync(ArticleDto dto)
     {
+        EnforceDocumentLimit(dto.DocumentIds);
         await EnforceCategoryIntegrityAsync(dto);
 
         var blocks = _contentSanitizer.Sanitize(dto.Blocks);
@@ -118,6 +125,7 @@ public class ArticleService : IArticleService
 
     public async Task<ArticleResponseDto> UpdateAsync(string id, ArticleDto dto)
     {
+        EnforceDocumentLimit(dto.DocumentIds);
         await EnforceCategoryIntegrityAsync(dto);
 
         var existing = await _repo.GetByIdAsync(id)
@@ -162,6 +170,32 @@ public class ArticleService : IArticleService
         dto.Featured = willBeFeatured;
         await UpdateAsync(id, dto);
         return (true, willBeFeatured, null);
+    }
+
+    private void EnforceDocumentLimit(IReadOnlyCollection<string>? documentIds)
+    {
+        var normalizedIds = documentIds?
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct()
+            .ToList() ?? [];
+
+        if (normalizedIds.Count > _documentsOptions.MaxPerArticle)
+        {
+            throw new DomainValidationException(
+                $"El artículo no puede tener más de {_documentsOptions.MaxPerArticle} documentos adjuntos.",
+                nameof(ArticleDto.DocumentIds));
+        }
+
+        foreach (var documentId in normalizedIds)
+        {
+            if (!ObjectId.TryParse(documentId, out _))
+            {
+                throw new DomainValidationException(
+                    "El identificador de documento adjunto no es válido.",
+                    nameof(ArticleDto.DocumentIds));
+            }
+        }
     }
 
     private static void ApplyDerivedFields(Domine.Entities.Article article)

@@ -67,7 +67,7 @@ EXPOSE 8080
 # Copiar la aplicación publicada
 COPY --from=build /app/publish .
 
-# Crear directorio para almacenamiento de imágenes local si no se usa S3/R2
-RUN mkdir -p /app/wwwroot/uploads
+# Crear directorios para almacenamiento local de imágenes y documentos
+RUN mkdir -p /app/wwwroot/uploads /app/storage/documents
 
 ENTRYPOINT ["dotnet", "paginaWeb.dll"]
