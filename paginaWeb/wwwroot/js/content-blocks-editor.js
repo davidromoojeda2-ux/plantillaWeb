@@ -18,6 +18,7 @@
         { type: 'quote', label: 'Cita' },
         { type: 'callout', label: 'Callout' },
         { type: 'image', label: 'Imagen' },
+        { type: 'document', label: 'Documento' },
         { type: 'table', label: 'Tabla' },
         { type: 'code', label: 'Código' },
         { type: 'divider', label: 'Separador' }
@@ -42,6 +43,7 @@
         highlight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.5 14.5L15 9l4 4-5.5 5.5H9.5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 21h12"/></svg>',
         link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>',
         image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
+        document: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
         upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>'
     };
 
@@ -176,6 +178,8 @@
                     imageId: null, url: null, alt: '', caption: null, credit: null,
                     width: null, height: null
                 };
+            case 'document':
+                return { documentId: null, title: null, description: null };
             case 'table':
                 return {
                     headers: ['Columna 1', 'Columna 2', 'Columna 3'],
@@ -214,6 +218,8 @@
                 .split(',').map(host => host.trim().toLowerCase()).filter(Boolean);
             this.uploadUrl = root.dataset.uploadUrl || '/admin/articulos/upload-inline';
             this.articleId = root.dataset.articleId || '';
+            this.enableDocumentBlock = root.dataset.documentBlockEnabled === 'true';
+            this.documentsById = new Map();
             this.maxBlocks = toInt(root.dataset.maxBlocks, 100);
             this.maxListItems = toInt(root.dataset.maxListItems, 50);
             this.maxTableRows = toInt(root.dataset.maxTableRows, 50);
@@ -241,6 +247,7 @@
 
             this.sync();
             this.initialized = true;
+            this.loadDocumentCatalog();
 
             const form = this.input.closest('form');
             form?.addEventListener('submit', () => {
@@ -364,15 +371,17 @@
 
         blockTypeOptions() {
             const options = [];
-            BLOCK_TYPES.forEach(item => {
-                if (item.type === 'heading') {
-                    [2, 3].forEach(level => {
-                        options.push({ type: 'heading', level, label: `Encabezado H${level}` });
-                    });
-                } else {
-                    options.push({ type: item.type, level: null, label: item.label });
-                }
-            });
+            BLOCK_TYPES
+                .filter(item => item.type !== 'document' || this.enableDocumentBlock)
+                .forEach(item => {
+                    if (item.type === 'heading') {
+                        [2, 3].forEach(level => {
+                            options.push({ type: 'heading', level, label: `Encabezado H${level}` });
+                        });
+                    } else {
+                        options.push({ type: item.type, level: null, label: item.label });
+                    }
+                });
             return options;
         }
 
@@ -669,6 +678,8 @@
                     return '<span class="cbe-type-glyph">!</span>';
                 case 'image':
                     return ICONS.image;
+                case 'document':
+                    return ICONS.document;
                 case 'table':
                     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><path stroke-linecap="round" d="M3 10h18M9 4v16M15 4v16"/></svg>';
                 case 'code':
@@ -693,6 +704,8 @@
                     return this.buildCalloutBody(data);
                 case 'image':
                     return this.buildImageBody(data);
+                case 'document':
+                    return this.buildDocumentBody(data);
                 case 'table':
                     return this.buildTableBody(data);
                 case 'code':
@@ -949,6 +962,132 @@
             this.updateImagePreview(body);
             this.validateImage(body);
             return body;
+        }
+
+        buildDocumentBody(data) {
+            const body = element('div', 'cbe-block-body cbe-document-body');
+            body.dataset.documentBody = 'true';
+
+            const documentId = document.createElement('input');
+            documentId.type = 'hidden';
+            documentId.dataset.field = 'documentId';
+            documentId.value = data.documentId || '';
+
+            const card = element('div', 'cbe-document-card is-empty');
+            card.innerHTML =
+                '<div class="cbe-document-main">' +
+                    '<span class="cbe-document-icon" data-document-icon>DOC</span>' +
+                    '<span class="cbe-document-copy">' +
+                        '<span class="cbe-document-name" data-document-name>Selecciona un documento</span>' +
+                        '<span class="cbe-document-meta" data-document-meta>PDF, DOCX, XLSX...</span>' +
+                    '</span>' +
+                '</div>' +
+                '<div class="cbe-document-actions">' +
+                    '<button type="button" class="cbe-btn cbe-btn-small cbe-btn-primary" data-document-pick>' +
+                        ICONS.document + '<span>Elegir documento</span></button>' +
+                    '<button type="button" class="cbe-btn cbe-btn-small cbe-btn-muted" data-document-clear>Quitar</button>' +
+                '</div>';
+
+            const title = this.createPlainInput(
+                data.title || '', 'Título opcional', 'title');
+            const description = this.createPlainInput(
+                data.description || '', 'Descripción opcional', 'description');
+
+            const fields = element('div', 'cbe-row cbe-row-2');
+            fields.append(
+                this.fieldGroup('Título visible (opcional)', title),
+                this.fieldGroup('Descripción (opcional)', description));
+
+            body.append(card, fields, documentId);
+            this.bindDocumentEvents(body);
+            this.updateDocumentPreview(body);
+            return body;
+        }
+
+        bindDocumentEvents(body) {
+            const input = body.querySelector('[data-field="documentId"]');
+            const pick = body.querySelector('[data-document-pick]');
+            const clear = body.querySelector('[data-document-clear]');
+
+            pick?.addEventListener('click', () => {
+                this.openDocumentLibrary(selected => {
+                    if (!selected?.id || !input) return;
+
+                    input.value = selected.id;
+                    this.documentsById.set(selected.id, selected);
+                    this.updateDocumentPreview(body);
+                    this.sync();
+                });
+            });
+
+            clear?.addEventListener('click', () => {
+                if (input) input.value = '';
+                this.updateDocumentPreview(body);
+                this.sync();
+            });
+        }
+
+        updateDocumentPreview(body) {
+            const input = body.querySelector('[data-field="documentId"]');
+            const card = body.querySelector('.cbe-document-card');
+            const icon = body.querySelector('[data-document-icon]');
+            const name = body.querySelector('[data-document-name]');
+            const meta = body.querySelector('[data-document-meta]');
+            const clear = body.querySelector('[data-document-clear]');
+            const pick = body.querySelector('[data-document-pick]');
+            const id = String(input?.value || '').trim();
+            const doc = id ? this.documentsById.get(id) : null;
+
+            let label = 'DOC';
+            let title = 'Selecciona un documento';
+            let detail = 'PDF, DOCX, XLSX...';
+
+            if (id && doc) {
+                label = String(doc.extension || '').replace('.', '').toUpperCase() || 'DOC';
+                title = doc.displayName || doc.originalFileName || 'Documento';
+                detail = `${label}${doc.sizeLabel ? ' · ' + doc.sizeLabel : ''}`;
+            } else if (id) {
+                title = 'Documento no disponible';
+                detail = 'Eliminado o sin acceso';
+            }
+
+            if (icon) icon.textContent = label;
+            if (name) name.textContent = title;
+            if (meta) meta.textContent = detail;
+            card?.classList.toggle('is-empty', !id || !doc);
+            if (clear) clear.disabled = !id;
+            if (pick) {
+                pick.innerHTML = ICONS.document + '<span>' + (id ? 'Cambiar' : 'Elegir documento') + '</span>';
+            }
+        }
+
+        openDocumentLibrary(callback) {
+            if (typeof window.openDocumentPicker === 'function') {
+                window.openDocumentPicker(callback);
+                return;
+            }
+
+            this.notify('El selector de documentos no está disponible.');
+        }
+
+        async loadDocumentCatalog() {
+            if (!this.enableDocumentBlock) return;
+
+            try {
+                const response = await fetch(
+                    `/admin/documentos/listado?currentArticleId=${encodeURIComponent(this.articleId)}`,
+                    { headers: { Accept: 'application/json' } });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const documents = Array.isArray(data) ? data : [];
+                this.documentsById = new Map(documents.map(doc => [doc.id, doc]));
+                this.canvas?.querySelectorAll('[data-document-body]')
+                    .forEach(body => this.updateDocumentPreview(body));
+            } catch (error) {
+                console.warn('No se pudo cargar la biblioteca de documentos', error);
+            }
         }
 
         bindImageEvents(body) {
@@ -1656,6 +1795,13 @@
                         width: oldData.width || null,
                         height: oldData.height || null
                     };
+                case 'document':
+                    return {
+                        type: newType,
+                        documentId: oldData.documentId || null,
+                        title: oldData.title || null,
+                        description: oldData.description || null
+                    };
                 case 'table':
                     return Array.isArray(oldData.headers) && oldData.headers.length
                         ? {
@@ -1730,6 +1876,13 @@
                         width: this.optionalNumber(inputValue('[data-field="width"]')),
                         height: this.optionalNumber(inputValue('[data-field="height"]'))
                     };
+                case 'document':
+                    return {
+                        type,
+                        documentId: inputValue('[data-field="documentId"]') || null,
+                        title: inputValue('[data-field="title"]') || null,
+                        description: inputValue('[data-field="description"]') || null
+                    };
                 case 'table': {
                     const headers = Array.from(card.querySelectorAll('thead input'))
                         .map(input => input.value.trim());
@@ -1788,6 +1941,10 @@
                 merged.credit = merged.credit || null;
                 merged.width = Number.isFinite(Number(merged.width)) ? Number(merged.width) : null;
                 merged.height = Number.isFinite(Number(merged.height)) ? Number(merged.height) : null;
+            } else if (type === 'document') {
+                merged.documentId = merged.documentId || null;
+                merged.title = merged.title || null;
+                merged.description = merged.description || null;
             } else if (type === 'table') {
                 merged.headers = Array.isArray(merged.headers) && merged.headers.length
                     ? merged.headers.slice(0, this.maxTableColumns).map(value => String(value ?? ''))

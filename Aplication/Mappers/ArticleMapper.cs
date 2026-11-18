@@ -31,7 +31,7 @@ public static class ArticleMapper
             CoverImageId = NullIfEmpty(dto.CoverImageId),
             CoverImageUrl = NullIfEmpty(dto.CoverImageUrl),
             ImageIds = MergeImageIds(dto.ImageIds, blocks),
-            DocumentIds = MergeDocumentIds(dto.DocumentIds),
+            DocumentIds = MergeDocumentIds(dto.DocumentIds, blocks),
             Featured = dto.Featured,
             Status = status,
             PublishedAt = status == ArticleStatus.Publicado ? DateTime.UtcNow : null,
@@ -59,7 +59,7 @@ public static class ArticleMapper
         existing.CoverImageId = NullIfEmpty(dto.CoverImageId);
         existing.CoverImageUrl = NullIfEmpty(dto.CoverImageUrl);
         existing.ImageIds = MergeImageIds(dto.ImageIds, blocks);
-        existing.DocumentIds = MergeDocumentIds(dto.DocumentIds);
+        existing.DocumentIds = MergeDocumentIds(dto.DocumentIds, blocks);
         existing.Featured = dto.Featured;
         existing.Status = status;
         existing.UpdatedAt = DateTime.UtcNow;
@@ -116,10 +116,13 @@ public static class ArticleMapper
             .Distinct()
             .ToList();
 
-    private static List<string> MergeDocumentIds(IEnumerable<string>? documentIds) =>
+    private static List<string> MergeDocumentIds(
+        IEnumerable<string>? documentIds,
+        IEnumerable<ContentBlock>? blocks) =>
         (documentIds ?? [])
+            .Concat(blocks?.OfType<ContentDocumentBlock>().Select(block => block.DocumentId) ?? [])
             .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => id.Trim())
+            .Select(id => id!.Trim())
             .Distinct()
             .ToList();
 

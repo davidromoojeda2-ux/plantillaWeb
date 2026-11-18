@@ -30,13 +30,21 @@
     var selectedIds = new Set();
     var searchTerm = '';
     var loading = false;
+    var pickerMode = false;
+    var pickerCallback = null;
+    var confirmLabel = document.getElementById('documentManagerConfirmLabel');
 
-    if (hiddenContainer) {
+    function loadArticleSelection() {
+        selectedIds.clear();
+        if (!hiddenContainer) return;
+
         Array.from(hiddenContainer.querySelectorAll('input[name="DocumentIds"]'))
             .map(function (input) { return input.value; })
             .filter(Boolean)
             .forEach(function (id) { selectedIds.add(id); });
     }
+
+    loadArticleSelection();
 
     function getToken() {
         return modal.querySelector('input[name="__RequestVerificationToken"]')?.value ||
@@ -116,6 +124,11 @@
             summaryElement.textContent = selectedIds.size +
                 (selectedIds.size === 1 ? ' documento seleccionado' : ' documentos seleccionados');
         }
+
+        var confirmButton = document.getElementById('documentManagerConfirm');
+        if (confirmButton) {
+            confirmButton.disabled = pickerMode && selectedIds.size === 0;
+        }
     }
 
     function render() {
@@ -169,7 +182,9 @@
                 '<div class="flex shrink-0 items-center gap-2">' +
                     '<a href="' + escapeHtml(doc.downloadUrl || '#') + '" target="_blank" rel="noopener" ' +
                        'class="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">Ver</a>' +
-                    '<button type="button" class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100">Eliminar</button>' +
+                    (pickerMode
+                        ? ''
+                        : '<button type="button" class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100">Eliminar</button>') +
                 '</div>';
 
             row.querySelector('input[type="checkbox"]')?.addEventListener('change', function () {
@@ -188,6 +203,13 @@
     }
 
     function toggleSelection(id) {
+        if (pickerMode) {
+            selectedIds.clear();
+            selectedIds.add(id);
+            render();
+            return;
+        }
+
         if (selectedIds.has(id)) selectedIds.delete(id);
         else selectedIds.add(id);
 
@@ -208,7 +230,7 @@
 
             var data = await response.json();
             allDocuments = Array.isArray(data) ? data : [];
-            renderChips();
+            if (!pickerMode) renderChips();
         } catch (error) {
             console.error(error);
             if (uploadError) {
@@ -252,8 +274,13 @@
             });
 
             allDocuments.unshift(uploaded);
-            selectedIds.add(uploaded.id);
-            syncHiddenInputs();
+            if (pickerMode) {
+                selectedIds.clear();
+                selectedIds.add(uploaded.id);
+            } else {
+                selectedIds.add(uploaded.id);
+                syncHiddenInputs();
+            }
             render();
         } catch (error) {
             if (uploadError) {
@@ -286,7 +313,7 @@
 
             allDocuments = allDocuments.filter(function (item) { return item.id !== id; });
             selectedIds.delete(id);
-            syncHiddenInputs();
+            if (!pickerMode) syncHiddenInputs();
             render();
         } catch (error) {
             if (uploadError) {
@@ -297,6 +324,7 @@
     }
 
     function open() {
+        if (!pickerMode) loadArticleSelection();
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         document.body.classList.add('overflow-hidden');
@@ -304,14 +332,45 @@
     }
 
     function close() {
+        var wasPickerMode = pickerMode;
+
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         document.body.classList.remove('overflow-hidden');
+        pickerMode = false;
+        pickerCallback = null;
+        if (confirmLabel) confirmLabel.textContent = 'Usar selección';
+
+        if (wasPickerMode) {
+            loadArticleSelection();
+            renderChips();
+        }
+
+        updateSummary();
+    }
+
+    function openDocumentPicker(callback) {
+        pickerMode = true;
+        pickerCallback = typeof callback === 'function' ? callback : null;
+        selectedIds.clear();
+        if (confirmLabel) confirmLabel.textContent = 'Usar documento';
+        updateSummary();
+        open();
     }
 
     document.getElementById('documentManagerClose')?.addEventListener('click', close);
     document.getElementById('documentManagerCancel')?.addEventListener('click', close);
     document.getElementById('documentManagerConfirm')?.addEventListener('click', function () {
+        if (pickerMode) {
+            var selected = allDocuments.find(function (item) { return selectedIds.has(item.id); });
+            if (!selected) return;
+
+            var callback = pickerCallback;
+            close();
+            callback?.(selected);
+            return;
+        }
+
         syncHiddenInputs();
         close();
     });
@@ -334,6 +393,10 @@
     window.openDocumentManagerModal = function (event) {
         if (event) event.preventDefault();
         open();
+    };
+
+    window.openDocumentPicker = function (callback) {
+        openDocumentPicker(callback);
     };
 
     window.removeArticleDocument = function (id) {

@@ -1,7 +1,9 @@
 using Aplication.Configuration;
 using Aplication.DTOs;
 using Aplication.Mappers;
+using Domine.ContentBlocks;
 using Domine.Entities;
+using Domine.ValueObjects;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -25,6 +27,34 @@ public class DocumentDomainTests
         var restored = BsonSerializer.Deserialize<Article>(bson);
 
         Assert.Equal([documentId], restored.DocumentIds);
+    }
+
+    [Fact]
+    public void ArticleMapper_MergesDocumentBlocksIntoArticleDocumentIds()
+    {
+        var documentId = ObjectId.GenerateNewId().ToString();
+        var dto = new ArticleDto
+        {
+            Title = "Artículo con documento en el cuerpo",
+            Slug = "articulo-con-documento-en-el-cuerpo",
+            Summary = "Resumen de prueba con longitud suficiente.",
+            Author = "Redactora",
+            Status = "Borrador"
+        };
+
+        var entity = ArticleMapper.ToEntity(dto,
+        [
+            new ContentDocumentBlock
+            {
+                DocumentId = documentId,
+                Title = PlainText.Create("Informe")
+            }
+        ]);
+
+        Assert.Contains(documentId, entity.DocumentIds);
+
+        var response = ArticleMapper.ToDto(entity);
+        Assert.Contains(documentId, response.DocumentIds);
     }
 
     [Fact]

@@ -1,0 +1,51 @@
+@model ContentDocumentBlockDto
+@{
+    var documents = ViewData["BodyDocuments"] as Dictionary<string, DocumentResponseDto>;
+    DocumentResponseDto? metadata = null;
+    if (!string.IsNullOrWhiteSpace(Model.DocumentId) && documents is not null)
+    {
+        documents.TryGetValue(Model.DocumentId, out metadata);
+    }
+
+    if (metadata is null)
+    {
+        return;
+    }
+
+    var title = !string.IsNullOrWhiteSpace(Model.Title) ? Model.Title : metadata.DisplayName;
+    var description = !string.IsNullOrWhiteSpace(Model.Description) ? Model.Description : metadata.Description;
+    var extensionLabel = metadata.Extension.TrimStart('.').ToUpperInvariant();
+    var iconClass = metadata.Extension.ToLowerInvariant() switch
+    {
+        ".pdf" => "article-document-icon--pdf",
+        ".doc" or ".docx" or ".odt" or ".rtf" => "article-document-icon--doc",
+        ".xls" or ".xlsx" or ".ods" or ".csv" => "article-document-icon--sheet",
+        ".ppt" or ".pptx" or ".odp" => "article-document-icon--slides",
+        _ => "article-document-icon--default"
+    };
+}
+
+<div class="article-document-card">
+    <div class="article-document-card-main">
+        <span class="article-document-icon @iconClass" aria-hidden="true">@extensionLabel</span>
+        <span class="article-document-card-copy">
+            <span class="article-document-card-name">@title</span>
+            @if (!string.IsNullOrWhiteSpace(description))
+            {
+                <span class="article-document-card-description">@description</span>
+            }
+            <span class="article-document-card-meta">@extensionLabel · @DocumentMapper.FormatSize(metadata.SizeBytes)</span>
+        </span>
+    </div>
+    <a class="article-document-card-action"
+       asp-controller="Descargas"
+       asp-action="Download"
+       asp-route-id="@metadata.Id"
+       aria-label="Descargar @title (@extensionLabel)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        <span>Descargar</span>
+    </a>
+</div>

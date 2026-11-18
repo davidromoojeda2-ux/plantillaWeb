@@ -33,6 +33,10 @@
     {
         <partial name="Partials/ContentBlocks/_ImageBlock" model="image" />
     }
+    else if (block is ContentDocumentBlockDto documentBlock)
+    {
+        <partial name="Partials/ContentBlocks/_DocumentBlock" model="documentBlock" />
+    }
     else if (block is ContentTableBlockDto table)
     {
         <partial name="Partials/ContentBlocks/_TableBlock" model="table" />

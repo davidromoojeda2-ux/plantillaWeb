@@ -73,6 +73,7 @@ public sealed class ContentBodySanitizer
         },
         ContentCalloutBlockDto callout => SanitizeCallout(callout, index),
         ContentImageBlockDto image => SanitizeImage(image, index),
+        ContentDocumentBlockDto document => SanitizeDocument(document, index),
         ContentTableBlockDto table => SanitizeTable(table, index),
         ContentCodeBlockDto code => SanitizeCode(code, index),
         ContentDividerBlockDto => new ContentDividerBlock(),
@@ -156,6 +157,20 @@ public sealed class ContentBodySanitizer
             Credit = OptionalPlainText(dto.Credit),
             Width = dto.Width,
             Height = dto.Height
+        };
+    }
+
+    private ContentDocumentBlock SanitizeDocument(ContentDocumentBlockDto dto, int index)
+    {
+        var documentId = string.IsNullOrWhiteSpace(dto.DocumentId) ? null : dto.DocumentId.Trim();
+        if (documentId is null || !ObjectId.TryParse(documentId, out _))
+            throw BlockError(index, "El documento debe tener un identificador válido.");
+
+        return new ContentDocumentBlock
+        {
+            DocumentId = documentId,
+            Title = OptionalPlainText(dto.Title),
+            Description = OptionalPlainText(dto.Description)
         };
     }
 

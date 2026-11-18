@@ -21,6 +21,12 @@ public class DomainContentTests
             new ContentQuoteBlock { Text = RichText.Create("Cita", "Cita") },
             new ContentCalloutBlock { Variant = CalloutVariant.Tip, Text = RichText.Create("Nota", "Nota") },
             new ContentImageBlock { Url = SafeUrl.CreateImageUrl("/uploads/foto.webp"), Alt = PlainText.Create("Foto") },
+            new ContentDocumentBlock
+            {
+                DocumentId = ObjectId.GenerateNewId().ToString(),
+                Title = PlainText.Create("Informe"),
+                Description = PlainText.Create("Documento de prueba")
+            },
             new ContentTableBlock
             {
                 Headers = [PlainText.Create("A"), PlainText.Create("B")],
@@ -31,7 +37,7 @@ public class DomainContentTests
         };
 
         Assert.Equal(
-            ["paragraph", "heading", "ordered-list", "bullet-list", "quote", "callout", "image", "table", "code", "divider"],
+            ["paragraph", "heading", "ordered-list", "bullet-list", "quote", "callout", "image", "document", "table", "code", "divider"],
             blocks.Select(b => b.Type));
     }
 
@@ -62,6 +68,12 @@ public class DomainContentTests
             [
                 new ContentHeadingBlock { Level = 2, Text = PlainText.Create("Sección") },
                 new ContentParagraphBlock { Text = RichText.Create("<strong>palabra</strong> clave", "palabra clave") },
+                new ContentDocumentBlock
+                {
+                    DocumentId = ObjectId.GenerateNewId().ToString(),
+                    Title = PlainText.Create("Informe anual"),
+                    Description = PlainText.Create("Memoria del ejercicio")
+                },
                 new ContentTableBlock
                 {
                     Headers = [PlainText.Create("Columna")],
@@ -75,6 +87,8 @@ public class DomainContentTests
         Assert.Contains("palabra clave", searchText);
         Assert.Contains("Sección", searchText);
         Assert.Contains("Celda", searchText);
+        Assert.Contains("Informe anual", searchText);
+        Assert.Contains("Memoria del ejercicio", searchText);
         Assert.DoesNotContain("<strong>", searchText);
         Assert.DoesNotContain("<", searchText);
     }
@@ -112,6 +126,12 @@ public class DomainContentTests
                 new ContentParagraphBlock { Text = RichText.Create("<p>Hola</p>", "Hola") },
                 new ContentOrderedListBlock { Items = [RichText.Create("Uno", "Uno"), RichText.Create("Dos", "Dos")] },
                 new ContentImageBlock { Url = SafeUrl.CreateImageUrl("/uploads/foto.webp"), Alt = PlainText.Create("Foto") },
+                new ContentDocumentBlock
+                {
+                    DocumentId = ObjectId.GenerateNewId().ToString(),
+                    Title = PlainText.Create("Informe"),
+                    Description = PlainText.Create("Documento de prueba")
+                },
                 new ContentTableBlock
                 {
                     Headers = [PlainText.Create("A"), PlainText.Create("B")],
@@ -129,7 +149,10 @@ public class DomainContentTests
         Assert.Equal("Hola", ((ContentParagraphBlock)restored.Blocks[0]).Text.Text);
         Assert.Equal("Uno", ((ContentOrderedListBlock)restored.Blocks[1]).Items[0].Text);
         Assert.Equal("/uploads/foto.webp", ((ContentImageBlock)restored.Blocks[2]).Url!.Value);
-        Assert.Equal("2", ((ContentTableBlock)restored.Blocks[3]).Rows[0][1].Value);
+        var documentBlock = Assert.IsType<ContentDocumentBlock>(restored.Blocks[3]);
+        Assert.Equal("Informe", documentBlock.Title!.Value);
+        Assert.Equal("Documento de prueba", documentBlock.Description!.Value);
+        Assert.Equal("2", ((ContentTableBlock)restored.Blocks[4]).Rows[0][1].Value);
     }
 
     [Fact]

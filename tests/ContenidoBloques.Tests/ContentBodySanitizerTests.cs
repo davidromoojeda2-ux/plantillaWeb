@@ -8,6 +8,7 @@ using Domine.ContentBlocks;
 using Domine.Exceptions;
 using Infrastructure.Security;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 
 namespace ContenidoBloques.Tests;
 
@@ -65,6 +66,38 @@ public class ContentBodySanitizerTests
         var paragraph = Assert.IsType<ContentParagraphBlock>(Assert.Single(blocks));
         Assert.Equal("<mark>resaltado</mark>", paragraph.Text.Html);
         Assert.Equal("resaltado", paragraph.Text.Text);
+    }
+
+    [Fact]
+    public void Sanitize_AcceptsDocumentBlockAndSanitizesOptionalTexts()
+    {
+        var documentId = ObjectId.GenerateNewId().ToString();
+        var sanitizer = CreateSanitizer();
+
+        var block = Assert.IsType<ContentDocumentBlock>(Assert.Single(sanitizer.Sanitize(
+        [
+            new ContentDocumentBlockDto
+            {
+                DocumentId = documentId,
+                Title = "  Informe anual  ",
+                Description = "  Memoria del ejercicio  "
+            }
+        ])));
+
+        Assert.Equal(documentId, block.DocumentId);
+        Assert.Equal("Informe anual", block.Title!.Value);
+        Assert.Equal("Memoria del ejercicio", block.Description!.Value);
+    }
+
+    [Fact]
+    public void Sanitize_RejectsDocumentBlockWithoutValidId()
+    {
+        var sanitizer = CreateSanitizer();
+
+        Assert.Throws<DomainValidationException>(() => sanitizer.Sanitize(
+        [
+            new ContentDocumentBlockDto { DocumentId = "no-es-un-objectid" }
+        ]));
     }
 
     [Fact]

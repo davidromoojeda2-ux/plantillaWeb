@@ -52,6 +52,19 @@ Si se aumenta `MaxSizeBytes` por encima de ~30 MB, `Program.cs` amplía automát
 
 Los documentos marcados como **públicos** pueden descargarse sin artículo. Los documentos privados solo se descargan si están vinculados a un artículo con estado **Publicado**.
 
+## Bloque Documento dentro del artículo
+
+El editor de bloques permite insertar un bloque **Documento** en cualquier parte del cuerpo:
+
+1. **Añadir bloque → Documento**.
+2. Pulsar **Elegir documento** y seleccionar uno de la biblioteca.
+3. Opcionalmente, personalizar el título y la descripción.
+4. Guardar el artículo.
+
+El bloque se renderiza como una tarjeta de descarga con icono, tipo, tamaño y botón **Descargar**. En pantallas pequeñas la tarjeta se apila verticalmente y el botón ocupa todo el ancho, con un área táctil mínima de 44 px.
+
+El documento usado en un bloque se añade automáticamente a la asociación del artículo, por lo que las reglas de visibilidad y el control de descargas siguen funcionando. La sección final **Documentos adjuntos** muestra los documentos que no estén ya representados por un bloque.
+
 ## Descarga pública
 
 Ruta:
