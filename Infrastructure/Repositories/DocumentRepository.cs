@@ -33,14 +33,22 @@ public class DocumentRepository : IDocumentRepository
 
     public async Task<List<DocumentMetadata>> GetByIdsAsync(IEnumerable<string> ids)
     {
-        var idList = ids.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList();
+        var idList = ids
+            .Where(id => !string.IsNullOrWhiteSpace(id) && ObjectId.TryParse(id, out _))
+            .Distinct()
+            .ToList();
         if (idList.Count == 0) return [];
 
         return await _col.Find(d => idList.Contains(d.Id)).ToListAsync();
     }
 
-    public async Task<DocumentMetadata?> GetByIdAsync(string id) =>
-        await _col.Find(d => d.Id == id).FirstOrDefaultAsync();
+    public async Task<DocumentMetadata?> GetByIdAsync(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id) || !ObjectId.TryParse(id, out _))
+            return null;
+
+        return await _col.Find(d => d.Id == id).FirstOrDefaultAsync();
+    }
 
     public async Task<long> CountAsync(
         string? search = null,
@@ -84,8 +92,13 @@ public class DocumentRepository : IDocumentRepository
         await _col.UpdateOneAsync(d => d.Id == id,
             Builders<DocumentMetadata>.Update.Inc(d => d.DownloadCount, 1));
 
-    public async Task DeleteAsync(string id) =>
+    public async Task DeleteAsync(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id) || !ObjectId.TryParse(id, out _))
+            return;
+
         await _col.DeleteOneAsync(d => d.Id == id);
+    }
 
     private async Task<FilterDefinition<DocumentMetadata>> BuildFilterAsync(
         string? search,

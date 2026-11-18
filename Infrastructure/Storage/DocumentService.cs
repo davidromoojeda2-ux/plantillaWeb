@@ -137,6 +137,9 @@ public class DocumentService : IDocumentService
 
     public async Task<DocumentResponseDto?> GetByIdAsync(string id, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(id) || !MongoDB.Bson.ObjectId.TryParse(id, out _))
+            return null;
+
         var document = await _repository.GetByIdAsync(id);
         return document is null ? null : DocumentMapper.ToDto(document);
     }
@@ -232,6 +235,9 @@ public class DocumentService : IDocumentService
 
     public async Task<bool> CanDownloadPublicAsync(string id, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(id) || !MongoDB.Bson.ObjectId.TryParse(id, out _))
+            return false;
+
         var document = await _repository.GetByIdAsync(id);
         if (document is null) return false;
         if (document.IsPublic) return true;
@@ -246,6 +252,9 @@ public class DocumentService : IDocumentService
         long? length = null,
         CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(id) || !MongoDB.Bson.ObjectId.TryParse(id, out _))
+            return null;
+
         var document = await _repository.GetByIdAsync(id);
         if (document is null) return null;
 
