@@ -278,7 +278,7 @@ public class ArticulosController : Controller
                     "link",
                     $"Enlace caído: {link.Url} ({link.Detail ?? link.Status}).",
                     isCover ? "coverImageUrlInput" : null,
-                    isCover ? null : ArticleFormValidator.FindBlocksWithLink(blocks, link.Url),
+                    isCover ? null : ArticleFormValidator.FindBlocksWithLink(blocks, link.Url, baseUri),
                     link.Url));
             }
             else if (link.IsWarning)
@@ -288,7 +288,7 @@ public class ArticulosController : Controller
                     "link",
                     $"Enlace restringido: {link.Url} ({link.StatusCode}).",
                     isCover ? "coverImageUrlInput" : null,
-                    isCover ? null : ArticleFormValidator.FindBlocksWithLink(blocks, link.Url),
+                    isCover ? null : ArticleFormValidator.FindBlocksWithLink(blocks, link.Url, baseUri),
                     link.Url));
             }
         }
@@ -383,13 +383,38 @@ public class ArticulosController : Controller
                 Model = settings.AiModel
             }, HttpContext.RequestAborted);
 
+            // El modelo puede conservar enlaces caídos aunque se le indiquen: se
+            // eliminan de forma determinista para que la revalidación no los repita.
+            var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
+            var correctedLinks = ArticleFormValidator.ExtractLinks(corrected.Blocks);
+            var removedLinks = 0;
+            if (correctedLinks.Count > 0)
+            {
+                var checkedLinks = await _linkChecker.CheckAsync(
+                    correctedLinks, baseUri, HttpContext.RequestAborted);
+
+                // Solo se eliminan los 404/410 confirmados; un tiempo de espera o un
+                // error temporal del servidor no debe borrar un enlace válido.
+                var brokenLinks = checkedLinks
+                    .Where(link => link.Status == "caido")
+                    .Select(link => link.Url)
+                    .ToList();
+
+                if (brokenLinks.Count > 0)
+                {
+                    ArticleFormValidator.RemoveLinks(corrected.Blocks, brokenLinks, baseUri);
+                    removedLinks = brokenLinks.Count;
+                }
+            }
+
             return Json(new
             {
                 title = corrected.Title,
                 summary = corrected.Summary,
                 metaDescription = corrected.MetaDescription,
                 tags = corrected.Tags,
-                blocksJson = ContentBlockJson.Serialize(corrected.Blocks)
+                blocksJson = ContentBlockJson.Serialize(corrected.Blocks),
+                removedLinks
             });
         }
         catch (Exception ex)

@@ -20,6 +20,10 @@ public static class ArticleFormValidator
         "<a\\b[^>]*\\bhref\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    private static readonly Regex AnchorRegex = new(
+        "<a\\b[^>]*\\bhref\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))[^>]*>(.*?)</a\\s*>",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
     public static ArticleFormValidationResult Validate(
         string? title,
         string? summary,
@@ -84,17 +88,73 @@ public static class ArticleFormValidator
 
     /// <summary>Bloques que contienen un enlace con la URL indicada.</summary>
     public static IReadOnlyList<int> FindBlocksWithLink(
-        IReadOnlyList<ContentBlockDto> blocks, string? url)
+        IReadOnlyList<ContentBlockDto> blocks, string? url, Uri? baseUri = null)
     {
         if (string.IsNullOrWhiteSpace(url)) return [];
 
         var indexes = new List<int>();
         for (var i = 0; i < blocks.Count; i++)
         {
-            if (BlockContainsLink(blocks[i], url)) indexes.Add(i);
+            if (BlockContainsLink(blocks[i], url, baseUri)) indexes.Add(i);
         }
 
         return indexes;
+    }
+
+    /// <summary>
+    /// Elimina los enlaces a las URL indicadas conservando el texto visible. Se usa
+    /// después de una corrección con IA para garantizar que no queden enlaces caídos
+    /// aunque el modelo los haya conservado.
+    /// </summary>
+    public static void RemoveLinks(
+        IReadOnlyList<ContentBlockDto> blocks,
+        IReadOnlyCollection<string> brokenUrls,
+        Uri? baseUri = null)
+    {
+        if (brokenUrls.Count == 0) return;
+
+        var broken = brokenUrls
+            .Select(url => CanonicalLink(url, baseUri))
+            .Where(url => url is not null)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (broken.Count == 0) return;
+
+        foreach (var block in blocks)
+        {
+            switch (block)
+            {
+                case ContentParagraphBlockDto p:
+                    p.Text = RemoveBrokenAnchors(p.Text, broken, baseUri);
+                    break;
+                case ContentHeadingBlockDto h:
+                    h.Text = RemoveBrokenAnchors(h.Text, broken, baseUri);
+                    break;
+                case ContentQuoteBlockDto q:
+                    q.Text = RemoveBrokenAnchors(q.Text, broken, baseUri);
+                    if (q.Attribution is not null)
+                        q.Attribution = RemoveBrokenAnchors(q.Attribution, broken, baseUri);
+                    break;
+                case ContentCalloutBlockDto c:
+                    if (c.Title is not null)
+                        c.Title = RemoveBrokenAnchors(c.Title, broken, baseUri);
+                    c.Text = RemoveBrokenAnchors(c.Text, broken, baseUri);
+                    break;
+                case ContentBulletListBlockDto l:
+                    RewriteItems(l.Items, broken, baseUri);
+                    break;
+                case ContentOrderedListBlockDto l:
+                    RewriteItems(l.Items, broken, baseUri);
+                    break;
+                case ContentTableBlockDto t:
+                    for (var i = 0; i < t.Headers.Count; i++)
+                        t.Headers[i] = RemoveBrokenAnchors(t.Headers[i], broken, baseUri);
+                    foreach (var row in t.Rows)
+                        for (var i = 0; i < row.Count; i++)
+                            row[i] = RemoveBrokenAnchors(row[i], broken, baseUri);
+                    break;
+            }
+        }
     }
 
     private static void ValidateRequiredText(
@@ -253,17 +313,77 @@ public static class ArticleFormValidator
         _ => false
     };
 
-    private static bool BlockContainsLink(ContentBlockDto block, string url)
+    private static bool BlockContainsLink(ContentBlockDto block, string url, Uri? baseUri)
     {
+        var target = CanonicalLink(url, baseUri);
+
         foreach (var html in EnumerateHtml([block]))
         {
             foreach (var candidate in ExtractHrefs(html))
             {
                 if (string.Equals(candidate, url, StringComparison.Ordinal)) return true;
+                if (target is not null &&
+                    string.Equals(CanonicalLink(candidate, baseUri), target, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
         }
 
         return false;
+    }
+
+    private static void RewriteItems(
+        List<string> items, HashSet<string> broken, Uri? baseUri)
+    {
+        for (var i = 0; i < items.Count; i++)
+            items[i] = RemoveBrokenAnchors(items[i], broken, baseUri);
+    }
+
+    private static string RemoveBrokenAnchors(
+        string? html, HashSet<string> broken, Uri? baseUri)
+    {
+        if (string.IsNullOrWhiteSpace(html) || broken.Count == 0) return html ?? string.Empty;
+
+        return AnchorRegex.Replace(html, match =>
+        {
+            var raw = match.Groups[1].Success
+                ? match.Groups[1].Value
+                : match.Groups[2].Success
+                    ? match.Groups[2].Value
+                    : match.Groups[3].Value;
+
+            var canonical = CanonicalLink(WebUtility.HtmlDecode(raw).Trim(), baseUri);
+            return canonical is not null && broken.Contains(canonical)
+                ? match.Groups[4].Value
+                : match.Value;
+        });
+    }
+
+    /// <summary>
+    /// Forma canónica de un enlace para comparar el href del contenido con la URL
+    /// normalizada que devuelve el comprobador (sin fragmento ni barra final).
+    /// </summary>
+    private static string? CanonicalLink(string? link, Uri? baseUri)
+    {
+        if (string.IsNullOrWhiteSpace(link)) return null;
+
+        var raw = WebUtility.HtmlDecode(link.Trim());
+        if (raw.StartsWith('#')) return null;
+
+        if (raw.StartsWith("//", StringComparison.Ordinal) && baseUri is not null)
+            raw = $"{baseUri.Scheme}:{raw}";
+        else if (raw.StartsWith("~/", StringComparison.Ordinal))
+            raw = raw[1..];
+
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri) &&
+            (baseUri is null || !Uri.TryCreate(baseUri, raw, out uri)))
+        {
+            return raw.TrimEnd('/');
+        }
+
+        return $"{uri.Scheme.ToLowerInvariant()}://{uri.Host.ToLowerInvariant()}:{uri.Port}" +
+               $"{uri.AbsolutePath.TrimEnd('/')}{uri.Query}";
     }
 
     private static IEnumerable<string> ExtractHrefs(string html)

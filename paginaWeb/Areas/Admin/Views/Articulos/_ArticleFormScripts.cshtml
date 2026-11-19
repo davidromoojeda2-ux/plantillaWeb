@@ -337,6 +337,7 @@
             button.disabled = true;
             const originalLabel = label.textContent;
             label.textContent = 'Validando…';
+            window.contentBlocksEditor?.clearIssueMarks?.();
 
             try {
                 const response = await fetch(validateUrl, {
@@ -373,6 +374,7 @@
                 renderIssues(errorsBox, 'Errores', errorIssues);
                 renderIssues(warningsBox, 'Avisos', warningIssues);
                 renderLinks(data.links);
+                window.contentBlocksEditor?.markIssues?.(lastIssues);
 
                 aiButton?.classList.toggle('hidden', correctableIssues().length === 0);
                 cleanBox.classList.toggle('hidden', lastIssues.length > 0);
@@ -388,6 +390,7 @@
                 results.classList.remove('hidden');
                 lastIssues = [];
                 aiButton?.classList.add('hidden');
+                window.contentBlocksEditor?.clearIssueMarks?.();
                 renderList(errorsBox, 'No se pudo validar', [error.message || 'Inténtalo de nuevo.']);
                 warningsBox.classList.add('hidden');
                 linksSection.classList.add('hidden');
@@ -400,6 +403,16 @@
         }
 
         function applyCorrection(data) {
+            let correctedBlocks = null;
+            if (typeof data.blocksJson === 'string') {
+                try {
+                    correctedBlocks = JSON.parse(data.blocksJson);
+                } catch (error) {
+                    console.warn('El cuerpo corregido no es JSON válido', error);
+                    throw new Error('La IA devolvió un cuerpo no válido. Inténtalo de nuevo.');
+                }
+            }
+
             const title = document.getElementById('titleInput');
             if (title && typeof data.title === 'string') {
                 title.value = data.title;
@@ -412,11 +425,14 @@
                 summary.dispatchEvent(new Event('input', { bubbles: true }));
             }
 
-            if (typeof data.blocksJson === 'string' && window.contentBlocksEditor?.replaceBlocks) {
-                try {
-                    window.contentBlocksEditor.replaceBlocks(JSON.parse(data.blocksJson));
-                } catch (error) {
-                    console.warn('No se pudo aplicar el cuerpo corregido', error);
+            if (correctedBlocks) {
+                if (window.contentBlocksEditor?.replaceBlocks) {
+                    window.contentBlocksEditor.replaceBlocks(correctedBlocks);
+                } else {
+                    // Respaldo si el navegador conserva una versión antigua del editor:
+                    // al menos el cuerpo corregido se guarda con el formulario.
+                    const input = document.getElementById('BlocksJsonInput');
+                    if (input) input.value = data.blocksJson;
                 }
             }
         }
@@ -465,7 +481,10 @@
 
                 applyCorrection(data);
                 if (window.showToast) {
-                    window.showToast('Corrección aplicada. Revisa los cambios antes de guardar.', 'success');
+                    const removed = Number(data.removedLinks) || 0;
+                    window.showToast(removed > 0
+                        ? 'Corrección aplicada. Se quitaron ' + removed + ' enlace(s) caído(s). Revisa los cambios antes de guardar.'
+                        : 'Corrección aplicada. Revisa los cambios antes de guardar.', 'success');
                 }
                 await validateArticle();
             } catch (error) {

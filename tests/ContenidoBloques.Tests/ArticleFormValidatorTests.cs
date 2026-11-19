@@ -191,6 +191,48 @@ public class ArticleFormValidatorTests
         Assert.Equal([1], indexes);
     }
 
+    [Fact]
+    public void Localiza_el_enlace_aunque_cambie_la_barra_final()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Ver <a href=\"http://localhost:5034/articulos/roto\">artículo</a>."
+            }
+        };
+
+        var indexes = ArticleFormValidator.FindBlocksWithLink(
+            blocks, "http://localhost:5034/articulos/roto/",
+            new Uri("http://localhost:5034"));
+
+        Assert.Equal([0], indexes);
+    }
+
+    [Fact]
+    public void Quita_los_enlaces_caidos_y_conserva_el_texto()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Mira <a href=\"http://localhost:5034/articulos/roto\">esto</a> " +
+                       "y <a href=\"/articulos/ok\">aquello</a>."
+            }
+        };
+
+        ArticleFormValidator.RemoveLinks(
+            blocks,
+            ["http://localhost:5034/articulos/roto/"],
+            new Uri("http://localhost:5034"));
+
+        var text = ((ContentParagraphBlockDto)blocks[0]).Text;
+
+        Assert.Contains("Mira esto", text);
+        Assert.DoesNotContain("articulos/roto", text);
+        Assert.Contains("/articulos/ok", text);
+    }
+
     private static List<ContentBlockDto> ValidBlocks() =>
     [
         new ContentParagraphBlockDto

@@ -592,6 +592,42 @@
             this.dirty = true;
         }
 
+        /**
+         * Marca con rojo (errores) o ámbar (avisos) los bloques señalados por la
+         * validación. Reemplaza las marcas de la validación anterior.
+         *
+         * @param {Array<{severity?: string, blockIndexes?: number[]}>} issues
+         */
+        markIssues(issues) {
+            this.clearIssueMarks();
+            if (!Array.isArray(issues)) return;
+
+            const severityByIndex = new Map();
+            issues.forEach(issue => {
+                const indexes = Array.isArray(issue.blockIndexes) ? issue.blockIndexes : [];
+                const severity = issue.severity === 'error' ? 'error' : 'warning';
+                indexes.forEach(index => {
+                    if (severityByIndex.get(index) !== 'error') {
+                        severityByIndex.set(index, severity);
+                    }
+                });
+            });
+
+            severityByIndex.forEach((severity, index) => {
+                const block = this.blocks[index];
+                if (!block || !block.el) return;
+                block.el.classList.add(
+                    severity === 'error' ? 'has-issue-error' : 'has-issue-warning');
+            });
+        }
+
+        /** Quita las marcas de validación de todos los bloques. */
+        clearIssueMarks() {
+            this.blocks.forEach(block => {
+                block.el?.classList.remove('has-issue-error', 'has-issue-warning');
+            });
+        }
+
         selectBlock(block) {
             if (!block || this.selectedBlock === block) return;
             this.selectedBlock?.el.classList.remove('is-selected');
