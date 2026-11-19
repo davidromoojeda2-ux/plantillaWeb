@@ -94,6 +94,12 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
                   (issue, index) => $"{index + 1}. {issue}")) + "\n"
             : "No hay observaciones: devuelve el artículo tal cual, sin cambios de sentido.\n";
 
+        var links = request.InternalLinks.Count > 0
+            ? "Enlaces internos disponibles para proponer reemplazos:\n" +
+              string.Join("\n", request.InternalLinks.Select(
+                  link => $"- {link.Title} → /articulos/{link.Slug}")) + "\n"
+            : string.Empty;
+
         var rules =
             $"- Cada \"paragraph\" debe tener entre {profile.MinWords} y {profile.MaxWords} palabras. " +
             $"Si supera {profile.MaxWords}, divídelo en dos o más párrafos; si no llega a {profile.MinWords}, amplíalo con información concreta.\n" +
@@ -107,14 +113,16 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
             "Reglas obligatorias:\n" + rules +
             issues +
             ParagraphStyle.DescribeForPrompt(profile) + "\n" +
-            "Conserva todas las etiquetas <a> y sus href exactamente como están: no elimines, sustituyas ni inventes enlaces. La gestión de enlaces se hace aparte con confirmación del usuario.\n" +
+            links +
+            "No modifiques los href de las etiquetas <a> dentro de los bloques: los cambios de enlaces se proponen aparte en \"linkActions\" y el usuario los confirmará.\n" +
+            "Para cada enlace caído propone UNA acción: \"replace\" con un enlace interno disponible o una URL válida que conozcas, o \"remove\" si no hay un reemplazo fiable. Indica el motivo y no inventes URLs.\n" +
             "Puedes dividir, fusionar o añadir párrafos y añadir encabezados, listas o citas para cumplir las reglas; conserva el orden lógico y la información relevante.\n" +
             "En el texto cada bloque aparece precedido por su número (por ejemplo, [Bloque 7]); usa esa referencia para localizar cada observación.\n" +
             "No copies las marcas [Bloque N] en los textos del JSON de salida: son solo referencias internas.\n" +
             "Artículo actual:\n" +
             $"Título: {request.Title}\nResumen: {request.Summary}\n\n{source}\n" +
             "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n" +
-            "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ]\n}\n" +
+            "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ],\n  \"linkActions\": [ { \"type\": \"replace\", \"url\": \"https://roto\", \"replacement\": \"/articulos/valido\", \"reason\": \"...\" }, { \"type\": \"remove\", \"url\": \"https://roto\", \"reason\": \"...\" } ]\n}\n" +
             "Antes de responder, cuenta las palabras de cada \"paragraph\" y comprueba que está entre " +
             $"{profile.MinWords} y {profile.MaxWords}; divide los largos y amplía los cortos. " +
             "Reglas: primer bloque \"paragraph\"; sin encabezados de nivel 1; sin dos encabezados seguidos; tipos permitidos heading (2/3), paragraph, bullet-list, ordered-list, quote, callout, table y code. " +

@@ -233,6 +233,59 @@ public class ArticleFormValidatorTests
         Assert.Contains("/articulos/ok", text);
     }
 
+    [Fact]
+    public void Reemplaza_el_href_conservando_texto_y_atributos()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Mira <a href=\"http://localhost:5034/articulos/roto\" class=\"x\">esto</a>."
+            }
+        };
+
+        var count = ArticleFormValidator.ReplaceLinks(
+            blocks,
+            new Dictionary<string, string>
+            {
+                ["http://localhost:5034/articulos/roto/"] = "/articulos/valido"
+            },
+            new Uri("http://localhost:5034"));
+
+        var text = ((ContentParagraphBlockDto)blocks[0]).Text;
+
+        Assert.Equal(1, count);
+        Assert.Contains("href=\"/articulos/valido\"", text);
+        Assert.Contains("class=\"x\"", text);
+        Assert.Contains(">esto</a>", text);
+    }
+
+    [Fact]
+    public void Restaura_el_href_original_si_la_ia_lo_cambio()
+    {
+        var original = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Ver <a href=\"/articulos/original\">fuente</a>."
+            }
+        };
+        var corrected = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Ver <a href=\"/articulos/inventado\">fuente</a>."
+            }
+        };
+
+        var count = ArticleFormValidator.RestoreLinkHrefs(corrected, original);
+        var text = ((ContentParagraphBlockDto)corrected[0]).Text;
+
+        Assert.Equal(1, count);
+        Assert.Contains("/articulos/original", text);
+        Assert.DoesNotContain("/articulos/inventado", text);
+    }
+
     private static List<ContentBlockDto> ValidBlocks() =>
     [
         new ContentParagraphBlockDto

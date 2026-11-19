@@ -12,6 +12,10 @@ public class ArticleCorrectionPipelineTests
     {
         var source = Article("Párrafo inicial correcto para el artículo de prueba.");
         var shortParagraph = Article(Words(20));
+        shortParagraph.LinkActions =
+        [
+            new ArticleLinkAction("replace", "https://example.com/roto", "/articulos/ok", "Mejor enlace")
+        ];
         var corrected = Article(
             "Esta es la respuesta breve que abre el artículo. " + Words(50));
 
@@ -34,6 +38,11 @@ public class ArticleCorrectionPipelineTests
             corrector.Requests[1].Issues,
             issue => issue.Contains("Bloque 1", StringComparison.Ordinal)
                      && issue.Contains("mínimo", StringComparison.Ordinal));
+        Assert.Contains(
+            outcome.Article.LinkActions,
+            action => action.Type == "replace"
+                      && action.Url == "https://example.com/roto"
+                      && action.Replacement == "/articulos/ok");
     }
 
     [Fact]

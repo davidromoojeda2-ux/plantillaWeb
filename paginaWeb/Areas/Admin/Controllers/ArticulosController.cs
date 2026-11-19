@@ -355,14 +355,13 @@ public class ArticulosController : Controller
         }
 
         var plan = ArticleGenerationPlanner.FromSettings(settings);
+        var internalLinks = await _articleService
+            .GetInternalLinkCandidatesAsync(request.Title ?? string.Empty) ?? [];
 
         var issues = (request.Issues ?? [])
             // El panel agrupa el estilo en mensajes sin bloque; el pipeline los
             // regenera con el índice y el detalle exactos.
             .Where(issue => !(issue.Code?.StartsWith("style-", StringComparison.Ordinal) ?? false))
-            // Los enlaces se gestionan aparte y solo se quitan con confirmación:
-            // el corrector no debe tocarlos ni recibirlos como instrucción.
-            .Where(issue => !string.Equals(issue.Code, "link", StringComparison.OrdinalIgnoreCase))
             .Select(issue => issue.Message?.Trim())
             .Where(message => !string.IsNullOrWhiteSpace(message))
             .Select(message => message!)
@@ -381,6 +380,7 @@ public class ArticulosController : Controller
                 plan,
                 new ArticleCorrectionRequest
                 {
+                    InternalLinks = internalLinks,
                     Temperature = plan.Temperature,
                     MaxTokens = plan.MaxTokens,
                     ApiKey = settings.AiApiKey,
@@ -392,22 +392,148 @@ public class ArticulosController : Controller
 
             var corrected = outcome.Article;
 
-            // Los enlaces caídos no se eliminan automáticamente: se devuelven para
-            // que el usuario confirme antes de quitar las etiquetas.
+            // La IA propone cambios, pero no se aplican aquí: se validan y se
+            // devuelven para que el usuario los confirme. Antes de mostrarla, se
+            // restauran los href originales por si el modelo los cambió por su cuenta.
             var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
+            ArticleFormValidator.RestoreLinkHrefs(corrected.Blocks, blocks, baseUri);
             var correctedLinks = ArticleFormValidator.ExtractLinks(corrected.Blocks);
-            var brokenLinks = new List<string>();
-            if (correctedLinks.Count > 0)
-            {
-                var checkedLinks = await _linkChecker.CheckAsync(
-                    correctedLinks, baseUri, HttpContext.RequestAborted);
 
-                brokenLinks = checkedLinks
-                    .Where(link => link.Status == "caido")
-                    .Select(link => link.Url)
-                    .Distinct(StringComparer.Ordinal)
-                    .ToList();
+            var urlsToCheck = corrected.LinkActions
+                .SelectMany(action => new[] { action.Url, action.Replacement })
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Select(url => url!)
+                .Concat(correctedLinks)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            var checkedLinks = urlsToCheck.Count > 0
+                ? await _linkChecker.CheckAsync(urlsToCheck, baseUri, HttpContext.RequestAborted)
+                : [];
+
+            var checksByCanonical = checkedLinks
+                .Select(link => (
+                    Canonical: ArticleFormValidator.CanonicalizeLink(link.Url, baseUri),
+                    Link: link))
+                .Where(item => item.Canonical is not null)
+                .GroupBy(item => item.Canonical!, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First().Link,
+                    StringComparer.OrdinalIgnoreCase);
+
+            ArticleLinkCheckResult? FindCheck(string? url)
+            {
+                var canonical = ArticleFormValidator.CanonicalizeLink(url, baseUri);
+                return canonical is not null && checksByCanonical.TryGetValue(canonical, out var check)
+                    ? check
+                    : null;
             }
+
+            bool ExistsInBody(string? url)
+            {
+                var canonical = ArticleFormValidator.CanonicalizeLink(url, baseUri);
+                return canonical is not null && correctedLinks.Any(link =>
+                    string.Equals(
+                        ArticleFormValidator.CanonicalizeLink(link, baseUri),
+                        canonical,
+                        StringComparison.OrdinalIgnoreCase));
+            }
+
+            var proposed = new List<(
+                string Type, string Url, string? Replacement, string? Reason,
+                bool Verified, string Validation)>();
+
+            foreach (var action in corrected.LinkActions)
+            {
+                var type = action.Type.Trim().ToLowerInvariant();
+
+                if (type == "replace")
+                {
+                    var replacement = action.Replacement?.Trim();
+                    if (string.IsNullOrWhiteSpace(replacement))
+                    {
+                        proposed.Add(("replace", action.Url, null, action.Reason, false,
+                            "Falta la URL de reemplazo."));
+                        continue;
+                    }
+
+                    var check = FindCheck(replacement);
+                    var exists = ExistsInBody(action.Url);
+                    var verified = exists && check is not null && !check.IsBroken;
+                    var validation = !exists
+                        ? "El enlace original ya no está en el artículo."
+                        : check is null
+                            ? "No se pudo comprobar el reemplazo."
+                            : check.IsBroken
+                                ? "El reemplazo no responde."
+                                : $"Reemplazo verificado ({check.StatusCode?.ToString() ?? check.Status}).";
+
+                    proposed.Add(("replace", action.Url, replacement, action.Reason, verified, validation));
+                }
+                else if (type == "remove")
+                {
+                    var check = FindCheck(action.Url);
+                    var exists = ExistsInBody(action.Url);
+                    var verified = exists && check?.Status == "caido";
+                    var validation = !exists
+                        ? "El enlace original ya no está en el artículo."
+                        : verified
+                            ? "Enlace caído confirmado."
+                            : "El enlace no está caído; no se quitará.";
+
+                    proposed.Add(("remove", action.Url, null, action.Reason, verified, validation));
+                }
+            }
+
+            // Ningún enlace caído se queda sin propuesta: si la IA no lo cubrió,
+            // se ofrece quitarlo, pero el usuario decide.
+            foreach (var link in correctedLinks)
+            {
+                if (FindCheck(link)?.Status != "caido") continue;
+
+                var canonical = ArticleFormValidator.CanonicalizeLink(link, baseUri);
+                var covered = proposed.Any(action =>
+                    action.Verified
+                    && string.Equals(
+                        ArticleFormValidator.CanonicalizeLink(action.Url, baseUri),
+                        canonical,
+                        StringComparison.OrdinalIgnoreCase));
+
+                if (covered) continue;
+
+                proposed.Add(("remove", link, null,
+                    "Enlace caído detectado en la validación.", true,
+                    "Enlace caído confirmado."));
+            }
+
+            var preferred = new List<(
+                string Type, string Url, string? Replacement, string? Reason,
+                bool Verified, string Validation)>();
+
+            foreach (var group in proposed.GroupBy(action =>
+                ArticleFormValidator.CanonicalizeLink(action.Url, baseUri)))
+            {
+                var replace = group.FirstOrDefault(action =>
+                    action.Type == "replace" && action.Verified);
+
+                if (replace.Url is not null)
+                {
+                    preferred.Add(replace);
+                    continue;
+                }
+
+                preferred.AddRange(group);
+            }
+
+            var linkActions = preferred
+                .GroupBy(action => (
+                    action.Type,
+                    Url: ArticleFormValidator.CanonicalizeLink(action.Url, baseUri),
+                    Replacement: ArticleFormValidator.CanonicalizeLink(action.Replacement, baseUri)))
+                .Select(group => group.OrderByDescending(action => action.Verified).First())
+                .Take(10)
+                .ToList();
 
             return Json(new
             {
@@ -420,7 +546,15 @@ public class ArticulosController : Controller
                 metaDescription = corrected.MetaDescription,
                 tags = corrected.Tags,
                 blocksJson = ContentBlockJson.Serialize(corrected.Blocks),
-                brokenLinks,
+                linkActions = linkActions.Select(action => new
+                {
+                    type = action.Type,
+                    url = action.Url,
+                    replacement = action.Replacement,
+                    reason = action.Reason,
+                    verified = action.Verified,
+                    validation = action.Validation
+                }),
                 remainingStyleIssues = outcome.RemainingFindings.Count,
                 attempts = outcome.Attempts
             });
@@ -483,6 +617,134 @@ public class ArticulosController : Controller
         {
             blocksJson = ContentBlockJson.Serialize(blocks),
             removed = broken.Count
+        });
+    }
+
+    [HttpPost("aplicar-cambios-enlaces")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AplicarCambiosEnlaces(
+        [FromBody] ArticleLinkActionsApplyInput request)
+    {
+        if (request is null)
+            return BadRequest(new { message = "Solicitud no válida." });
+
+        if (!request.Confirmed)
+        {
+            return BadRequest(new
+            {
+                message = "Los cambios de enlaces requieren confirmación explícita del usuario."
+            });
+        }
+
+        List<ContentBlockDto> blocks;
+        try
+        {
+            blocks = ContentBlockJson.Deserialize(request.BlocksJson);
+        }
+        catch (JsonException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+
+        var actions = (request.Actions ?? [])
+            .Where(action => !string.IsNullOrWhiteSpace(action.Url))
+            .Select(action => new ArticleLinkActionInput(
+                (action.Type ?? string.Empty).Trim().ToLowerInvariant(),
+                action.Url!.Trim(),
+                string.IsNullOrWhiteSpace(action.Replacement) ? null : action.Replacement.Trim()))
+            .ToList();
+
+        if (actions.Count == 0)
+        {
+            return Json(new
+            {
+                blocksJson = ContentBlockJson.Serialize(blocks),
+                applied = 0,
+                skipped = 0
+            });
+        }
+
+        var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
+        var urls = actions
+            .SelectMany(action => new[] { action.Url, action.Replacement })
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .Select(url => url!)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var checkedLinks = await _linkChecker.CheckAsync(
+            urls, baseUri, HttpContext.RequestAborted);
+
+        var checksByCanonical = checkedLinks
+            .Select(link => (
+                Canonical: ArticleFormValidator.CanonicalizeLink(link.Url, baseUri),
+                Link: link))
+            .Where(item => item.Canonical is not null)
+            .GroupBy(item => item.Canonical!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Link,
+                StringComparer.OrdinalIgnoreCase);
+
+        ArticleLinkCheckResult? FindCheck(string? url)
+        {
+            var canonical = ArticleFormValidator.CanonicalizeLink(url, baseUri);
+            return canonical is not null && checksByCanonical.TryGetValue(canonical, out var check)
+                ? check
+                : null;
+        }
+
+        var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var removals = new List<string>();
+        var applied = 0;
+        var skipped = 0;
+
+        foreach (var action in actions)
+        {
+            if (action.Type == "replace")
+            {
+                var check = FindCheck(action.Replacement);
+                if (!string.IsNullOrWhiteSpace(action.Replacement)
+                    && check is not null
+                    && !check.IsBroken)
+                {
+                    replacements[action.Url] = action.Replacement!;
+                    applied++;
+                }
+                else
+                {
+                    skipped++;
+                }
+            }
+            else if (action.Type == "remove")
+            {
+                if (FindCheck(action.Url)?.Status == "caido")
+                {
+                    removals.Add(action.Url);
+                    applied++;
+                }
+                else
+                {
+                    skipped++;
+                }
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+
+        if (replacements.Count > 0)
+            ArticleFormValidator.ReplaceLinks(blocks, replacements, baseUri);
+
+        if (removals.Count > 0)
+            ArticleFormValidator.RemoveLinks(blocks, removals, baseUri);
+
+        return Json(new
+        {
+            blocksJson = ContentBlockJson.Serialize(blocks),
+            applied,
+            skipped
         });
     }
 

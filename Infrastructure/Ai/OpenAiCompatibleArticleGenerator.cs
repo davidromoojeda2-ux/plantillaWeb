@@ -111,6 +111,16 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
                 Tags = (article.Tags ?? []).Select(t => t.Trim()).Where(t => t.Length > 0).ToList(),
                 CategorySuggestion = article.CategorySuggestion,
                 MetaDescription = article.MetaDescription?.Trim() ?? string.Empty,
+                LinkActions = (article.LinkActions ?? [])
+                    .Where(action => !string.IsNullOrWhiteSpace(action.Url))
+                    .Select(action => new ArticleLinkAction(
+                        (action.Type ?? string.Empty).Trim().ToLowerInvariant(),
+                        action.Url!.Trim(),
+                        string.IsNullOrWhiteSpace(action.Replacement)
+                            ? null
+                            : action.Replacement.Trim(),
+                        action.Reason))
+                    .ToList(),
                 TotalTokens = parsed?.Usage?.TotalTokens
             };
         }
@@ -386,6 +396,15 @@ internal sealed class AiGeneratedArticle
     public string? CategorySuggestion { get; set; }
     public List<string>? Tags { get; set; }
     public List<AiBlock>? Blocks { get; set; }
+    public List<AiLinkAction>? LinkActions { get; set; }
+}
+
+internal sealed class AiLinkAction
+{
+    public string? Type { get; set; }
+    public string? Url { get; set; }
+    public string? Replacement { get; set; }
+    public string? Reason { get; set; }
 }
 
 internal sealed class AiBlock

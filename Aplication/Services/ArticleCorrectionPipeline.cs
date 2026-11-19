@@ -42,6 +42,7 @@ public static class ArticleCorrectionPipeline
             .ToList();
 
         var current = source;
+        var linkActions = new List<ArticleLinkAction>();
         var instructions = externalIssues
             .Concat(ParagraphStyle.DescribeFindingsForPrompt(
                 ParagraphStyle.Analyze(source.Blocks, profile), source.Blocks, profile))
@@ -79,8 +80,18 @@ public static class ArticleCorrectionPipeline
             ParagraphNormalizer.Apply(corrected.Blocks, profile, mergeShort: true);
 
             var findings = ParagraphStyle.Analyze(corrected.Blocks, profile);
+
+            linkActions = linkActions
+                .Concat(corrected.LinkActions)
+                .GroupBy(action => (action.Type, action.Url, action.Replacement))
+                .Select(group => group.First())
+                .ToList();
+
             if (findings.Count == 0 || attempt >= maxAttempts)
+            {
+                corrected.LinkActions = linkActions;
                 return new ArticleCorrectionOutcome(corrected, findings, attempt);
+            }
 
             current = corrected;
             instructions = ParagraphStyle

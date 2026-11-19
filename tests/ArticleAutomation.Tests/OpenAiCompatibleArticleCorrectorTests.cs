@@ -2,11 +2,58 @@ using Aplication.DTOs.ContentBlocks;
 using Aplication.Interfaces;
 using Infrastructure.Ai;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 
 namespace ArticleAutomation.Tests;
 
 public class OpenAiCompatibleArticleCorrectorTests
 {
+    [Fact]
+    public async Task CorrectAsync_Maps_The_Link_Actions()
+    {
+        var content = JsonSerializer.Serialize(new
+        {
+            title = "Título corregido",
+            summary = "Resumen corregido",
+            metaDescription = "Meta descripción",
+            tags = new[] { "uno", "dos", "tres" },
+            blocks = new object[] { new { type = "paragraph", text = "Texto corregido." } },
+            linkActions = new object[]
+            {
+                new { type = "replace", url = "https://roto", replacement = "/articulos/ok", reason = "Mejor enlace" },
+                new { type = "remove", url = "https://roto2", reason = "No existe" }
+            }
+        });
+        var chat = JsonSerializer.Serialize(new
+        {
+            choices = new[] { new { message = new { content } } },
+            usage = new { total_tokens = 1 }
+        });
+
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(chat, Encoding.UTF8, "application/json")
+        });
+        var corrector = new OpenAiCompatibleArticleCorrector(
+            new HttpClient(handler), NullLogger<OpenAiCompatibleArticleCorrector>.Instance);
+
+        var article = await corrector.CorrectAsync(new ArticleCorrectionRequest
+        {
+            Title = "Original",
+            Summary = "Resumen",
+            Blocks = [new ContentParagraphBlockDto { Text = "Texto." }],
+            ApiKey = "k"
+        });
+
+        Assert.Equal(2, article.LinkActions.Count);
+        Assert.Equal("replace", article.LinkActions[0].Type);
+        Assert.Equal("https://roto", article.LinkActions[0].Url);
+        Assert.Equal("/articulos/ok", article.LinkActions[0].Replacement);
+        Assert.Equal("remove", article.LinkActions[1].Type);
+    }
+
     [Fact]
     public async Task CorrectAsync_Includes_The_Observations_And_The_Paragraph_Rules()
     {
@@ -33,7 +80,8 @@ public class OpenAiCompatibleArticleCorrectorTests
         Assert.Contains("se considerará fallida", prompt);
         Assert.Contains("No cambies el tema", prompt);
         Assert.Contains("entre 40 y 70", prompt);
-        Assert.Contains("no elimines, sustituyas ni inventes enlaces", prompt);
+        Assert.Contains("linkActions", prompt);
+        Assert.Contains("No modifiques los href", prompt);
     }
 
     [Fact]

@@ -34,3 +34,18 @@ public sealed record ArticleLinkRemovalInput(
     string? BlocksJson,
     IReadOnlyList<string>? Urls,
     bool Confirmed = false);
+
+/// <summary>Acción de enlace confirmada por el usuario.</summary>
+public sealed record ArticleLinkActionInput(
+    string? Type,
+    string? Url,
+    string? Replacement);
+
+/// <summary>
+/// Cambios de enlaces que el usuario confirmó. El servidor vuelve a validar las URL
+/// antes de sustituir o quitar las etiquetas.
+/// </summary>
+public sealed record ArticleLinkActionsApplyInput(
+    string? BlocksJson,
+    IReadOnlyList<ArticleLinkActionInput>? Actions,
+    bool Confirmed = false);

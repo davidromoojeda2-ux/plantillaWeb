@@ -24,6 +24,10 @@ public static class ArticleFormValidator
         "<a\\b[^>]*\\bhref\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))[^>]*>(.*?)</a\\s*>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
+    private static readonly Regex HrefValueRegex = new(
+        "(<a\\b[^>]*\\bhref\\s*=\\s*)(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public static ArticleFormValidationResult Validate(
         string? title,
         string? summary,
@@ -156,6 +160,187 @@ public static class ArticleFormValidator
             }
         }
     }
+
+    /// <summary>
+    /// Sustituye el href de los enlaces indicados conservando el resto de la etiqueta
+    /// y el texto visible. Devuelve cuántos enlaces se actualizaron.
+    /// </summary>
+    public static int ReplaceLinks(
+        IReadOnlyList<ContentBlockDto> blocks,
+        IReadOnlyDictionary<string, string> replacements,
+        Uri? baseUri = null)
+    {
+        if (replacements.Count == 0) return 0;
+
+        var map = replacements
+            .Select(pair => (From: CanonicalLink(pair.Key, baseUri), To: pair.Value))
+            .Where(pair => pair.From is not null && !string.IsNullOrWhiteSpace(pair.To))
+            .GroupBy(pair => pair.From!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().To, StringComparer.OrdinalIgnoreCase);
+
+        if (map.Count == 0) return 0;
+
+        var count = 0;
+
+        string Replace(string? html)
+        {
+            if (string.IsNullOrWhiteSpace(html)) return html ?? string.Empty;
+
+            return AnchorRegex.Replace(html, match =>
+            {
+                var raw = ExtractHrefValue(match);
+                var canonical = CanonicalLink(WebUtility.HtmlDecode(raw).Trim(), baseUri);
+                if (canonical is null || !map.TryGetValue(canonical, out var replacement))
+                    return match.Value;
+
+                count++;
+                var encoded = WebUtility.HtmlEncode(replacement);
+                return HrefValueRegex.Replace(
+                    match.Value,
+                    hrefMatch => hrefMatch.Groups[1].Value + "\"" + encoded + "\"",
+                    1);
+            });
+        }
+
+        foreach (var block in blocks)
+        {
+            switch (block)
+            {
+                case ContentParagraphBlockDto p:
+                    p.Text = Replace(p.Text);
+                    break;
+                case ContentHeadingBlockDto h:
+                    h.Text = Replace(h.Text);
+                    break;
+                case ContentQuoteBlockDto q:
+                    q.Text = Replace(q.Text);
+                    if (q.Attribution is not null) q.Attribution = Replace(q.Attribution);
+                    break;
+                case ContentCalloutBlockDto c:
+                    if (c.Title is not null) c.Title = Replace(c.Title);
+                    c.Text = Replace(c.Text);
+                    break;
+                case ContentBulletListBlockDto l:
+                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = Replace(l.Items[i]);
+                    break;
+                case ContentOrderedListBlockDto l:
+                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = Replace(l.Items[i]);
+                    break;
+                case ContentTableBlockDto t:
+                    for (var i = 0; i < t.Headers.Count; i++)
+                        t.Headers[i] = Replace(t.Headers[i]);
+                    foreach (var row in t.Rows)
+                        for (var i = 0; i < row.Count; i++)
+                            row[i] = Replace(row[i]);
+                    break;
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Restaura el href original de los enlaces cuyo texto visible se conservó. Se
+    /// aplica antes de mostrar la corrección: la IA no debe cambiar enlaces por su
+    /// cuenta, solo proponer cambios que el usuario confirmará.
+    /// </summary>
+    public static int RestoreLinkHrefs(
+        IReadOnlyList<ContentBlockDto> corrected,
+        IReadOnlyList<ContentBlockDto> original,
+        Uri? baseUri = null)
+    {
+        var originals = new List<(string Text, string Href)>();
+
+        foreach (var html in EnumerateHtml(original))
+        {
+            foreach (Match match in AnchorRegex.Matches(html))
+            {
+                var href = WebUtility.HtmlDecode(ExtractHrefValue(match)).Trim();
+                var text = ParagraphText.Normalize(
+                    ParagraphText.StripTags(match.Groups[4].Value));
+
+                if (text.Length > 0 && href.Length > 0)
+                    originals.Add((text, href));
+            }
+        }
+
+        if (originals.Count == 0) return 0;
+
+        var byText = originals
+            .GroupBy(item => item.Text, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Href,
+                StringComparer.OrdinalIgnoreCase);
+
+        var count = 0;
+
+        string Restore(string? html)
+        {
+            if (string.IsNullOrWhiteSpace(html)) return html ?? string.Empty;
+
+            return AnchorRegex.Replace(html, match =>
+            {
+                var text = ParagraphText.Normalize(
+                    ParagraphText.StripTags(match.Groups[4].Value));
+
+                if (!byText.TryGetValue(text, out var href)) return match.Value;
+
+                var current = WebUtility.HtmlDecode(ExtractHrefValue(match)).Trim();
+                if (string.Equals(current, href, StringComparison.Ordinal)) return match.Value;
+
+                count++;
+                var encoded = WebUtility.HtmlEncode(href);
+                return HrefValueRegex.Replace(
+                    match.Value,
+                    hrefMatch => hrefMatch.Groups[1].Value + "\"" + encoded + "\"",
+                    1);
+            });
+        }
+
+        foreach (var block in corrected)
+        {
+            switch (block)
+            {
+                case ContentParagraphBlockDto p:
+                    p.Text = Restore(p.Text);
+                    break;
+                case ContentHeadingBlockDto h:
+                    h.Text = Restore(h.Text);
+                    break;
+                case ContentQuoteBlockDto q:
+                    q.Text = Restore(q.Text);
+                    if (q.Attribution is not null) q.Attribution = Restore(q.Attribution);
+                    break;
+                case ContentCalloutBlockDto c:
+                    if (c.Title is not null) c.Title = Restore(c.Title);
+                    c.Text = Restore(c.Text);
+                    break;
+                case ContentBulletListBlockDto l:
+                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = Restore(l.Items[i]);
+                    break;
+                case ContentOrderedListBlockDto l:
+                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = Restore(l.Items[i]);
+                    break;
+                case ContentTableBlockDto t:
+                    for (var i = 0; i < t.Headers.Count; i++)
+                        t.Headers[i] = Restore(t.Headers[i]);
+                    foreach (var row in t.Rows)
+                        for (var i = 0; i < row.Count; i++)
+                            row[i] = Restore(row[i]);
+                    break;
+            }
+        }
+
+        return count;
+    }
+
+    private static string ExtractHrefValue(Match match) =>
+        match.Groups[1].Success
+            ? match.Groups[1].Value
+            : match.Groups[2].Success
+                ? match.Groups[2].Value
+                : match.Groups[3].Value;
 
     private static void ValidateRequiredText(
         string? value, int minLength, int maxLength,
@@ -359,6 +544,10 @@ public static class ArticleFormValidator
                 : match.Value;
         });
     }
+
+    /// <summary>Forma canónica de un enlace para comparar hrefs y URLs normalizadas.</summary>
+    public static string? CanonicalizeLink(string? link, Uri? baseUri = null) =>
+        CanonicalLink(link, baseUri);
 
     /// <summary>
     /// Forma canónica de un enlace para comparar el href del contenido con la URL

@@ -146,6 +146,7 @@
         const validateUrl = card.getAttribute('data-validate-url');
         const correctUrl = card.getAttribute('data-correct-url');
         const removeLinksUrl = card.getAttribute('data-remove-links-url');
+        const applyLinkActionsUrl = card.getAttribute('data-apply-link-actions-url');
         if (!validateUrl) return;
 
         let lastIssues = [];
@@ -493,21 +494,83 @@
             }
         }
 
-        function confirmRemoveLinks(urls) {
-            if (!Array.isArray(urls) || urls.length === 0) return Promise.resolve(false);
+        function shortUrl(url) {
+            const value = String(url || '');
+            return value.length > 90 ? value.slice(0, 87) + '…' : value;
+        }
 
-            const list = urls.slice(0, 5).map(url => '• ' + url).join('\n');
-            const more = urls.length > 5 ? '\n• …y ' + (urls.length - 5) + ' más' : '';
-            const message = 'Se encontraron ' + urls.length + ' enlace(s) caído(s) en el artículo:\n\n' +
-                list + more +
-                '\n\n¿Quieres quitarlos? Se conservará el texto visible y no se borrará contenido.';
+        function describeLinkAction(action) {
+            const mark = action.verified ? '✓' : '✗';
+            const detail = action.validation || (action.verified ? 'Verificado.' : 'No verificado.');
+            const reason = action.reason ? '\n  Motivo: ' + action.reason : '';
 
-            return confirmDialog(message, {
-                title: 'Enlaces caídos',
-                type: 'danger',
-                acceptLabel: 'Quitar enlaces',
-                cancelLabel: 'Rechazar'
+            if (action.type === 'replace') {
+                return '• Reemplazar ' + shortUrl(action.url) + ' → ' + shortUrl(action.replacement || '(sin URL)') +
+                    '\n  ' + mark + ' ' + detail + reason;
+            }
+
+            return '• Quitar ' + shortUrl(action.url) + '\n  ' + mark + ' ' + detail + reason;
+        }
+
+        function confirmLinkActions(actions) {
+            const lines = actions.map(describeLinkAction).join('\n\n');
+            return confirmDialog(
+                'La IA propone estos cambios de enlaces:\n\n' + lines +
+                '\n\nSolo se aplicarán los cambios marcados con ✓. ¿Aplicar los cambios verificados?',
+                {
+                    title: 'Cambios de enlaces',
+                    type: 'warning',
+                    acceptLabel: 'Aplicar cambios',
+                    cancelLabel: 'Rechazar'
+                });
+        }
+
+        async function applyLinkActions(actions) {
+            if (!applyLinkActionsUrl || !Array.isArray(actions) || actions.length === 0) return;
+
+            const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const response = await fetch(applyLinkActionsUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    blocksJson: document.getElementById('BlocksJsonInput')?.value || '[]',
+                    actions: actions.map(action => ({
+                        type: action.type,
+                        url: action.url,
+                        replacement: action.replacement || null
+                    })),
+                    confirmed: true
+                })
             });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.message || 'No se pudieron aplicar los cambios de enlaces (HTTP ' +
+                    response.status + ').');
+            }
+
+            if (typeof data.blocksJson === 'string') {
+                if (window.contentBlocksEditor?.replaceBlocks) {
+                    window.contentBlocksEditor.replaceBlocks(JSON.parse(data.blocksJson));
+                } else {
+                    const input = document.getElementById('BlocksJsonInput');
+                    if (input) input.value = data.blocksJson;
+                }
+            }
+
+            if (window.showToast) {
+                const applied = Number(data.applied) || 0;
+                const skipped = Number(data.skipped) || 0;
+                window.showToast(
+                    'Se aplicaron ' + applied + ' cambio(s) de enlaces.' +
+                    (skipped > 0 ? ' ' + skipped + ' no se pudieron aplicar.' : ''),
+                    skipped > 0 ? 'info' : 'success');
+            }
+
+            await validateArticle();
         }
 
         async function removeBrokenLinks(urls) {
@@ -603,33 +666,41 @@
 
                 applyCorrection(data);
 
-                const brokenLinks = Array.isArray(data.brokenLinks) ? data.brokenLinks : [];
+                const linkActions = Array.isArray(data.linkActions) ? data.linkActions : [];
+                const verifiedActions = linkActions.filter(action => action.verified);
                 const remaining = Number(data.remainingStyleIssues) || 0;
 
-                // La eliminación solo se ejecuta con una confirmación explícita.
-                // Si el usuario rechaza, los enlaces se conservan tal cual.
-                let shouldRemoveLinks = false;
-                if (brokenLinks.length > 0) {
-                    shouldRemoveLinks = await confirmRemoveLinks(brokenLinks);
+                // Los cambios de enlaces solo se aplican con confirmación explícita
+                // y después de que el servidor los haya validado.
+                let appliedLinkChanges = false;
+                if (verifiedActions.length > 0) {
+                    const applyChanges = await confirmLinkActions(linkActions);
+                    if (applyChanges) {
+                        await applyLinkActions(verifiedActions);
+                        appliedLinkChanges = true;
+                    }
+                } else if (linkActions.length > 0) {
+                    await alertDialog(
+                        'La IA propuso cambios de enlaces, pero ninguno se pudo verificar. No se aplicó ningún cambio.',
+                        { title: 'Cambios de enlaces', type: 'warning' });
                 }
 
-                if (shouldRemoveLinks) {
-                    await removeBrokenLinks(brokenLinks);
-                    return;
-                }
+                if (appliedLinkChanges) return;
 
                 if (window.showToast) {
                     const attempts = Number(data.attempts) || 1;
                     let message = 'Corrección aplicada' +
                         (attempts > 1 ? ' tras ' + attempts + ' intentos' : '') + '.';
-                    if (brokenLinks.length > 0) {
-                        message += ' Se mantuvieron ' + brokenLinks.length + ' enlace(s) caído(s).';
+                    if (linkActions.length > 0) {
+                        message += ' Se mantuvieron los cambios de enlaces propuestos (' +
+                            linkActions.length + ').';
                     }
                     if (remaining > 0) {
                         message += ' Quedan ' + remaining + ' aviso(s) de estilo; puedes reintentar la corrección.';
                     }
                     message += ' Revisa los cambios antes de guardar.';
-                    window.showToast(message, brokenLinks.length > 0 || remaining > 0 ? 'info' : 'success');
+                    window.showToast(message,
+                        linkActions.length > 0 || remaining > 0 ? 'info' : 'success');
                 }
                 await validateArticle();
             } catch (error) {

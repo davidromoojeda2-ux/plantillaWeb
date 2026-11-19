@@ -154,7 +154,8 @@
                  class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-3"
                  data-validate-url="@Url.Action("Validar", "Articulos", new { area = "Admin" })"
                  data-correct-url="@Url.Action("Corregir", "Articulos", new { area = "Admin" })"
-                 data-remove-links-url="@Url.Action("QuitarEnlaces", "Articulos", new { area = "Admin" })">
+                 data-remove-links-url="@Url.Action("QuitarEnlaces", "Articulos", new { area = "Admin" })"
+                 data-apply-link-actions-url="@Url.Action("AplicarCambiosEnlaces", "Articulos", new { area = "Admin" })">
                 <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
                     <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
                         Validación
