@@ -145,6 +145,7 @@
 
         const validateUrl = card.getAttribute('data-validate-url');
         const correctUrl = card.getAttribute('data-correct-url');
+        const removeLinksUrl = card.getAttribute('data-remove-links-url');
         if (!validateUrl) return;
 
         let lastIssues = [];
@@ -234,6 +235,31 @@
                 arrow.className = 'ml-1 text-[10px] font-bold opacity-70';
                 arrow.textContent = '→';
                 item.appendChild(arrow);
+
+                if (issue.code === 'link' && issue.severity === 'error' && issue.url
+                    && Array.isArray(issue.blockIndexes) && issue.blockIndexes.length > 0) {
+                    const removeLink = document.createElement('button');
+                    removeLink.type = 'button';
+                    removeLink.className = 'ml-2 text-[10px] font-bold text-rose-700 underline hover:text-rose-900';
+                    removeLink.textContent = 'Quitar enlace';
+                    removeLink.addEventListener('click', async event => {
+                        event.stopPropagation();
+                        if (!window.confirm('¿Quitar el enlace caído?\n\n' + issue.url +
+                            '\n\nSe conservará el texto visible.')) {
+                            return;
+                        }
+
+                        try {
+                            await removeBrokenLinks([issue.url]);
+                        } catch (error) {
+                            if (window.showToast) {
+                                window.showToast(error.message || 'No se pudo quitar el enlace.', 'error');
+                            }
+                        }
+                    });
+                    removeLink.addEventListener('keydown', event => event.stopPropagation());
+                    item.appendChild(removeLink);
+                }
 
                 const activate = () => goToIssue(issue, item);
                 item.addEventListener('click', activate);
@@ -441,6 +467,59 @@
             }
         }
 
+        function confirmRemoveLinks(urls) {
+            if (!Array.isArray(urls) || urls.length === 0) return Promise.resolve(false);
+
+            const list = urls.slice(0, 5).map(url => '• ' + url).join('\n');
+            const more = urls.length > 5 ? '\n• …y ' + (urls.length - 5) + ' más' : '';
+            const message = 'Se encontraron ' + urls.length + ' enlace(s) caído(s) que la IA no pudo sustituir:\n\n' +
+                list + more +
+                '\n\n¿Quieres quitarlos? Se conservará el texto visible y no se borrará contenido.';
+
+            return Promise.resolve(window.confirm(message));
+        }
+
+        async function removeBrokenLinks(urls) {
+            if (!removeLinksUrl || !Array.isArray(urls) || urls.length === 0) return;
+
+            const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const response = await fetch(removeLinksUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    blocksJson: document.getElementById('BlocksJsonInput')?.value || '[]',
+                    urls
+                })
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.message || 'No se pudieron quitar los enlaces (HTTP ' + response.status + ').');
+            }
+
+            if (typeof data.blocksJson === 'string') {
+                if (window.contentBlocksEditor?.replaceBlocks) {
+                    window.contentBlocksEditor.replaceBlocks(JSON.parse(data.blocksJson));
+                } else {
+                    const input = document.getElementById('BlocksJsonInput');
+                    if (input) input.value = data.blocksJson;
+                }
+            }
+
+            if (window.showToast) {
+                window.showToast(
+                    Number(data.removed) > 0
+                        ? 'Se quitaron ' + data.removed + ' enlace(s) caído(s).'
+                        : 'Los enlaces revisados ya no están caídos; no se quitó ninguno.',
+                    'success');
+            }
+
+            await validateArticle();
+        }
+
         async function correctWithAi() {
             if (!correctUrl) return;
 
@@ -484,13 +563,26 @@
                 }
 
                 applyCorrection(data);
-                if (window.showToast) {
-                    const removed = Number(data.removedLinks) || 0;
-                    window.showToast(removed > 0
-                        ? 'Corrección aplicada. Se quitaron ' + removed + ' enlace(s) caído(s). Revisa los cambios antes de guardar.'
-                        : 'Corrección aplicada. Revisa los cambios antes de guardar.', 'success');
+
+                const brokenLinks = Array.isArray(data.brokenLinks) ? data.brokenLinks : [];
+                const remaining = Number(data.remainingStyleIssues) || 0;
+
+                if (brokenLinks.length > 0 && await confirmRemoveLinks(brokenLinks)) {
+                    await removeBrokenLinks(brokenLinks);
+                } else {
+                    if (window.showToast) {
+                        let message = 'Corrección aplicada.';
+                        if (brokenLinks.length > 0) {
+                            message += ' Se mantuvieron ' + brokenLinks.length + ' enlace(s) caído(s).';
+                        }
+                        if (remaining > 0) {
+                            message += ' Quedan ' + remaining + ' aviso(s) de estilo; puedes reintentar la corrección.';
+                        }
+                        message += ' Revisa los cambios antes de guardar.';
+                        window.showToast(message, brokenLinks.length > 0 || remaining > 0 ? 'info' : 'success');
+                    }
+                    await validateArticle();
                 }
-                await validateArticle();
             } catch (error) {
                 if (window.showToast) {
                     window.showToast(error.message || 'No se pudo corregir el artículo.', 'error');

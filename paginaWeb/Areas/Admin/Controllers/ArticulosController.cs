@@ -359,6 +359,9 @@ public class ArticulosController : Controller
             .GetInternalLinkCandidatesAsync(request.Title ?? string.Empty) ?? [];
 
         var issues = (request.Issues ?? [])
+            // El panel agrupa el estilo en mensajes sin bloque; el pipeline los
+            // regenera con el índice y el detalle exactos.
+            .Where(issue => !(issue.Code?.StartsWith("style-", StringComparison.Ordinal) ?? false))
             .Select(issue => issue.Message?.Trim())
             .Where(message => !string.IsNullOrWhiteSpace(message))
             .Select(message => message!)
@@ -366,53 +369,44 @@ public class ArticulosController : Controller
 
         try
         {
-            var corrected = await _corrector.CorrectAsync(new ArticleCorrectionRequest
-            {
-                Title = request.Title ?? string.Empty,
-                Summary = request.Summary ?? string.Empty,
-                Blocks = blocks,
-                Language = settings.Language,
-                Template = plan.Template,
-                ParagraphStyles = plan.ParagraphStyles,
-                Issues = issues,
-                InternalLinks = internalLinks,
-                Temperature = plan.Temperature,
-                MaxTokens = plan.MaxTokens,
-                ApiKey = settings.AiApiKey,
-                BaseUrl = settings.AiBaseUrl,
-                Model = settings.AiModel
-            }, HttpContext.RequestAborted);
-
-            if (corrected.Blocks.Count == 0)
-            {
-                return BadRequest(new
+            var outcome = await ArticleCorrectionPipeline.CorrectAsync(
+                new GeneratedArticle
                 {
-                    message = "La IA no devolvió bloques para el artículo. Inténtalo de nuevo."
-                });
-            }
+                    Title = request.Title ?? string.Empty,
+                    Summary = request.Summary ?? string.Empty,
+                    Blocks = blocks
+                },
+                issues,
+                plan,
+                new ArticleCorrectionRequest
+                {
+                    InternalLinks = internalLinks,
+                    Temperature = plan.Temperature,
+                    MaxTokens = plan.MaxTokens,
+                    ApiKey = settings.AiApiKey,
+                    BaseUrl = settings.AiBaseUrl,
+                    Model = settings.AiModel
+                },
+                _corrector,
+                HttpContext.RequestAborted);
 
-            // El modelo puede conservar enlaces caídos aunque se le indiquen: se
-            // eliminan de forma determinista para que la revalidación no los repita.
+            var corrected = outcome.Article;
+
+            // Los enlaces caídos no se eliminan automáticamente: se devuelven para
+            // que el usuario confirme antes de quitar las etiquetas.
             var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
             var correctedLinks = ArticleFormValidator.ExtractLinks(corrected.Blocks);
-            var removedLinks = 0;
+            var brokenLinks = new List<string>();
             if (correctedLinks.Count > 0)
             {
                 var checkedLinks = await _linkChecker.CheckAsync(
                     correctedLinks, baseUri, HttpContext.RequestAborted);
 
-                // Solo se eliminan los 404/410 confirmados; un tiempo de espera o un
-                // error temporal del servidor no debe borrar un enlace válido.
-                var brokenLinks = checkedLinks
+                brokenLinks = checkedLinks
                     .Where(link => link.Status == "caido")
                     .Select(link => link.Url)
+                    .Distinct(StringComparer.Ordinal)
                     .ToList();
-
-                if (brokenLinks.Count > 0)
-                {
-                    ArticleFormValidator.RemoveLinks(corrected.Blocks, brokenLinks, baseUri);
-                    removedLinks = brokenLinks.Count;
-                }
             }
 
             return Json(new
@@ -426,13 +420,61 @@ public class ArticulosController : Controller
                 metaDescription = corrected.MetaDescription,
                 tags = corrected.Tags,
                 blocksJson = ContentBlockJson.Serialize(corrected.Blocks),
-                removedLinks
+                brokenLinks,
+                remainingStyleIssues = outcome.RemainingFindings.Count
             });
         }
         catch (Exception ex)
         {
             return BadRequest(new { message = $"No se pudo corregir el artículo: {ex.Message}" });
         }
+    }
+
+    [HttpPost("quitar-enlaces")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> QuitarEnlaces([FromBody] ArticleLinkRemovalInput request)
+    {
+        if (request is null)
+            return BadRequest(new { message = "Solicitud no válida." });
+
+        List<ContentBlockDto> blocks;
+        try
+        {
+            blocks = ContentBlockJson.Deserialize(request.BlocksJson);
+        }
+        catch (JsonException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+
+        var urls = (request.Urls ?? [])
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .Select(url => url.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (urls.Count == 0)
+            return Json(new { blocksJson = ContentBlockJson.Serialize(blocks), removed = 0 });
+
+        var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
+        var checkedLinks = await _linkChecker.CheckAsync(
+            urls, baseUri, HttpContext.RequestAborted);
+
+        // Solo se quitan los 404/410 confirmados en este momento.
+        var broken = checkedLinks
+            .Where(link => link.Status == "caido")
+            .Select(link => link.Url)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (broken.Count > 0)
+            ArticleFormValidator.RemoveLinks(blocks, broken, baseUri);
+
+        return Json(new
+        {
+            blocksJson = ContentBlockJson.Serialize(blocks),
+            removed = broken.Count
+        });
     }
 
     [HttpPost("eliminar/{id}")]

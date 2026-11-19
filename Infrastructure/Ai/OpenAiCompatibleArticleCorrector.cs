@@ -83,12 +83,13 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
     internal static string BuildPrompt(ArticleCorrectionRequest request)
     {
         var language = OpenAiCompatibleArticleGenerator.DescribeLanguage(request.Language);
-        var source = OpenAiCompatibleArticleRewriter.RenderBlocks(request.Blocks);
+        var source = OpenAiCompatibleArticleRewriter.RenderBlocks(
+            request.Blocks, includeBlockNumbers: true);
         var profile = ParagraphStyleProfile.Resolve(
             request.Template, request.ParagraphStyles, request.Language);
 
         var issues = request.Issues.Count > 0
-            ? "Observaciones que debes corregir (y solo estas):\n" +
+            ? "Observaciones concretas (corrige todas; cada una indica el bloque afectado):\n" +
               string.Join("\n", request.Issues.Select(
                   (issue, index) => $"{index + 1}. {issue}")) + "\n"
             : "No hay observaciones: devuelve el artículo tal cual, sin cambios de sentido.\n";
@@ -99,18 +100,29 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
                   link => $"- {link.Title} → /articulos/{link.Slug}")) + "\n"
             : string.Empty;
 
+        var rules =
+            $"- Cada \"paragraph\" debe tener entre {profile.MinWords} y {profile.MaxWords} palabras. " +
+            $"Si supera {profile.MaxWords}, divídelo en dos o más párrafos; si no llega a {profile.MinWords}, amplíalo con información concreta.\n" +
+            $"- No encadenes más de {profile.MaxConsecutive} párrafos seguidos sin un \"heading\", lista, tabla o cita.\n" +
+            $"- La primera frase de cada sección debe responder al encabezado en {profile.MaxFirstSentenceWords} palabras o menos y sin fórmulas de relleno.\n";
+
         return
-            $"Corrige el siguiente artículo en {language} aplicando únicamente las observaciones indicadas.\n" +
-            $"Idioma de salida obligatorio: {language}. No cambies el tema ni reescribas lo que ya es correcto.\n" +
+            $"Reescribe el artículo completo en {language} para corregir TODAS las observaciones. " +
+            "No cambies el tema ni inventes información; conserva los datos y las fuentes.\n" +
+            "La corrección se valida automáticamente: si un párrafo queda fuera del rango de palabras o se incumple una regla, se considerará fallida.\n" +
+            "Reglas obligatorias:\n" + rules +
             issues +
             ParagraphStyle.DescribeForPrompt(profile) + "\n" +
             links +
-            "Si una observación indica un enlace caído, elimina el enlace dejando el texto visible o sustitúyelo por uno de los enlaces internos disponibles. No inventes URLs.\n" +
-            "Conserva la estructura y el orden de los bloques; solo divide, amplía o reescribe los párrafos necesarios.\n" +
+            "Si una observación indica un enlace caído, sustitúyelo por uno de los enlaces internos disponibles si encaja; si no, conserva el enlace tal cual y no lo elimines: el editor pedirá confirmación al usuario antes de quitarlo. No inventes URLs.\n" +
+            "Puedes dividir, fusionar o añadir párrafos y añadir encabezados, listas o citas para cumplir las reglas; conserva el orden lógico y la información relevante.\n" +
+            "En el texto cada bloque aparece precedido por su número (por ejemplo, [Bloque 7]); usa esa referencia para localizar cada observación.\n" +
             "Artículo actual:\n" +
             $"Título: {request.Title}\nResumen: {request.Summary}\n\n{source}\n" +
             "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n" +
             "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ]\n}\n" +
+            "Antes de responder, cuenta las palabras de cada \"paragraph\" y comprueba que está entre " +
+            $"{profile.MinWords} y {profile.MaxWords}; divide los largos y amplía los cortos. " +
             "Reglas: primer bloque \"paragraph\"; sin encabezados de nivel 1; sin dos encabezados seguidos; tipos permitidos heading (2/3), paragraph, bullet-list, ordered-list, quote, callout, table y code. " +
             "No incluyas bloques image ni document: las imágenes y documentos del artículo original se conservan automáticamente. " +
             "Mantén el contenido 100% original y atribuye los datos a sus fuentes.";

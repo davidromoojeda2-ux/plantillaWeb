@@ -4,13 +4,17 @@ namespace Aplication.Services;
 
 /// <summary>
 /// Corrección determinista: divide los párrafos que superan el máximo en límites de
-/// frase. No toca párrafos con marcado inline para no romper enlaces o negritas.
+/// frase y, opcionalmente, fusiona consecutivos demasiado cortos. No parte párrafos
+/// con marcado inline para no romper enlaces o negritas.
 /// </summary>
 public static class ParagraphNormalizer
 {
     private const int MinChunkWords = 20;
 
-    public static void Apply(List<ContentBlockDto>? blocks, ParagraphStyleProfile profile)
+    public static void Apply(
+        List<ContentBlockDto>? blocks,
+        ParagraphStyleProfile profile,
+        bool mergeShort = false)
     {
         if (blocks is null || blocks.Count == 0) return;
 
@@ -38,10 +42,70 @@ public static class ParagraphNormalizer
             result.AddRange(chunks.Select(text => new ContentParagraphBlockDto { Text = text }));
         }
 
+        if (mergeShort)
+        {
+            var merged = MergeShortParagraphs(result, profile);
+            if (merged.Count != result.Count)
+            {
+                result = merged;
+                changed = true;
+            }
+        }
+
         if (!changed) return;
 
         blocks.Clear();
         blocks.AddRange(result);
+    }
+
+    /// <summary>
+    /// Fusiona párrafos consecutivos cuando uno de los dos es demasiado corto y la
+    /// suma no supera el máximo. Se usa en la corrección manual para resolver avisos
+    /// de longitud sin depender de que el modelo los reescriba.
+    /// </summary>
+    private static List<ContentBlockDto> MergeShortParagraphs(
+        List<ContentBlockDto> blocks, ParagraphStyleProfile profile)
+    {
+        var current = blocks;
+
+        while (true)
+        {
+            var merged = MergeShortOnce(current, profile);
+            if (merged.Count == current.Count) return merged;
+            current = merged;
+        }
+    }
+
+    private static List<ContentBlockDto> MergeShortOnce(
+        List<ContentBlockDto> blocks, ParagraphStyleProfile profile)
+    {
+        var result = new List<ContentBlockDto>(blocks.Count);
+
+        for (var i = 0; i < blocks.Count; i++)
+        {
+            if (blocks[i] is ContentParagraphBlockDto current
+                && i + 1 < blocks.Count
+                && blocks[i + 1] is ContentParagraphBlockDto next)
+            {
+                var currentWords = ParagraphText.CountWords(current.Text);
+                var nextWords = ParagraphText.CountWords(next.Text);
+
+                if ((currentWords < profile.MinWords || nextWords < profile.MinWords)
+                    && currentWords + nextWords <= profile.MaxWords)
+                {
+                    result.Add(new ContentParagraphBlockDto
+                    {
+                        Text = $"{current.Text.Trim()} {next.Text.Trim()}"
+                    });
+                    i++;
+                    continue;
+                }
+            }
+
+            result.Add(blocks[i]);
+        }
+
+        return result;
     }
 
     private static List<string> Split(string text, ParagraphStyleProfile profile)

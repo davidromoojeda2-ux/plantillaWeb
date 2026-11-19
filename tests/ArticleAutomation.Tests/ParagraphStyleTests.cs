@@ -144,6 +144,22 @@ public class ParagraphStyleTests
     }
 
     [Fact]
+    public void Normalizer_Merges_Short_Paragraphs_When_Requested()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            Paragraph(Words(20)),
+            Paragraph(Words(20))
+        };
+
+        ParagraphNormalizer.Apply(
+            blocks, ParagraphStyleProfile.Resolve("news", null, "es"), mergeShort: true);
+
+        var only = Assert.Single(blocks);
+        Assert.Equal(40, CountWords(((ContentParagraphBlockDto)only).Text));
+    }
+
+    [Fact]
     public void Normalizer_Does_Not_Touch_Paragraphs_With_Inline_Markup()
     {
         var text = "<a href=\"/articulos/fuente\">" + Words(200) + "</a>";
@@ -222,6 +238,28 @@ public class ParagraphStyleTests
         var longIssue = Assert.Single(
             issues, issue => issue.Code == "style-length-long");
         Assert.Equal([0, 1], longIssue.BlockIndexes);
+    }
+
+    [Fact]
+    public void Correction_Instructions_Keep_Block_And_Detail()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            Paragraph(Words(100)),
+            Paragraph(Words(20))
+        };
+
+        var profile = ParagraphStyleProfile.Resolve("news", null, "es");
+        var findings = ParagraphStyle.Analyze(blocks, profile);
+        var instructions = ParagraphStyle.DescribeFindingsForPrompt(findings, blocks, profile);
+
+        Assert.Contains(instructions, i =>
+            i.Contains("Bloque 1", StringComparison.Ordinal)
+            && i.Contains("100", StringComparison.Ordinal)
+            && i.Contains("máximo", StringComparison.Ordinal));
+        Assert.Contains(instructions, i =>
+            i.Contains("Bloque 2", StringComparison.Ordinal)
+            && i.Contains("mínimo", StringComparison.Ordinal));
     }
 
     private static ContentParagraphBlockDto Paragraph(string text) => new() { Text = text };

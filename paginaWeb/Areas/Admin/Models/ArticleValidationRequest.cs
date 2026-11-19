@@ -25,3 +25,11 @@ public sealed record ArticleCorrectionInput(
     string? Summary,
     string? BlocksJson,
     IReadOnlyList<ArticleCorrectionObservation>? Issues);
+
+/// <summary>
+/// Enlaces caídos que el usuario confirmó quitar del cuerpo. El servidor vuelve a
+/// comprobarlos antes de eliminar sus etiquetas para no borrar enlaces ya válidos.
+/// </summary>
+public sealed record ArticleLinkRemovalInput(
+    string? BlocksJson,
+    IReadOnlyList<string>? Urls);

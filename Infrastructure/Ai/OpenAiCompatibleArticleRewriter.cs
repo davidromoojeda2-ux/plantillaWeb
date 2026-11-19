@@ -86,37 +86,45 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             "El contenido debe ser 100% original y atribuir los datos a sus fuentes.";
     }
 
-    internal static string RenderBlocks(IEnumerable<ContentBlockDto> blocks)
+    internal static string RenderBlocks(
+        IEnumerable<ContentBlockDto> blocks, bool includeBlockNumbers = false)
     {
         var sb = new StringBuilder();
+        var index = 0;
+
         foreach (var block in blocks)
         {
+            index++;
+            var prefix = includeBlockNumbers ? $"[Bloque {index}] " : string.Empty;
+
             switch (block)
             {
                 case ContentHeadingBlockDto h:
-                    sb.AppendLine().AppendLine($"{(h.Level == 3 ? "###" : "##")} {h.Text}");
+                    sb.AppendLine().AppendLine($"{prefix}{(h.Level == 3 ? "###" : "##")} {h.Text}");
                     break;
                 case ContentParagraphBlockDto p:
-                    sb.AppendLine(p.Text);
+                    sb.AppendLine($"{prefix}{p.Text}");
                     break;
                 case ContentBulletListBlockDto l:
-                    foreach (var item in l.Items) sb.AppendLine($"- {item}");
+                    for (var i = 0; i < l.Items.Count; i++)
+                        sb.AppendLine($"{(i == 0 ? prefix : string.Empty)}- {l.Items[i]}");
                     break;
                 case ContentOrderedListBlockDto l:
-                    foreach (var item in l.Items) sb.AppendLine($"1. {item}");
+                    for (var i = 0; i < l.Items.Count; i++)
+                        sb.AppendLine($"{(i == 0 ? prefix : string.Empty)}1. {l.Items[i]}");
                     break;
                 case ContentQuoteBlockDto q:
-                    sb.AppendLine($"> {q.Text}");
+                    sb.AppendLine($"{prefix}> {q.Text}");
                     break;
                 case ContentCalloutBlockDto c:
-                    sb.AppendLine($"NOTA: {c.Text}");
+                    sb.AppendLine($"{prefix}NOTA: {c.Text}");
                     break;
                 case ContentTableBlockDto t:
-                    sb.AppendLine(string.Join(" | ", t.Headers));
+                    sb.AppendLine($"{prefix}{string.Join(" | ", t.Headers)}");
                     foreach (var row in t.Rows) sb.AppendLine(string.Join(" | ", row));
                     break;
                 case ContentCodeBlockDto c:
-                    sb.AppendLine(c.Code);
+                    sb.AppendLine($"{prefix}{c.Code}");
                     break;
             }
         }

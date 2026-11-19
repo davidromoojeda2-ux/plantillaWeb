@@ -283,6 +283,13 @@
                 if (event.target === this.canvas) this.clearSelectedBlock();
             });
 
+            // La marca de validación deja de ser vigente en cuanto se edita el bloque;
+            // al revalidar, el servidor vuelve a decidir si sigue teniendo observaciones.
+            this.canvas.addEventListener('input', event => {
+                const card = event.target.closest?.('.cbe-block');
+                card?.classList.remove('has-issue-error', 'has-issue-warning');
+            });
+
             document.addEventListener('scroll', () => {
                 if (this.inlineToolbar && !this.inlineToolbar.hidden) {
                     this.scheduleHideInlineToolbar();

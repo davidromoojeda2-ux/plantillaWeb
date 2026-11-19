@@ -121,4 +121,75 @@ public static class ParagraphStyle
 
         return issues;
     }
+
+    /// <summary>
+    /// Instrucciones concretas por bloque para el corrector de IA. A diferencia del
+    /// resumen del panel, conserva el índice, el número de párrafo y el detalle que el
+    /// modelo necesita para dividir, ampliar o reestructurar el punto señalado.
+    /// </summary>
+    public static IReadOnlyList<string> DescribeFindingsForPrompt(
+        IReadOnlyList<ParagraphFinding> findings,
+        IReadOnlyList<ContentBlockDto> blocks,
+        ParagraphStyleProfile profile)
+    {
+        var instructions = new List<string>();
+
+        foreach (var finding in findings.OrderBy(f => f.BlockIndex))
+        {
+            var paragraph = ParagraphNumber(blocks, finding.BlockIndex);
+            var reference = paragraph > 0
+                ? $"Bloque {finding.BlockIndex + 1} (párrafo {paragraph})"
+                : $"Bloque {finding.BlockIndex + 1}";
+
+            switch (finding.Code)
+            {
+                case "length" when finding.Value > profile.MaxWords:
+                    instructions.Add(
+                        $"{reference}: tiene {finding.Value} palabras y el máximo es {profile.MaxWords}. " +
+                        $"Divídelo en dos o más párrafos de entre {profile.MinWords} y {profile.MaxWords} palabras.");
+                    break;
+
+                case "length" when finding.Value > 0 && finding.Value < profile.MinWords:
+                    instructions.Add(
+                        $"{reference}: tiene {finding.Value} palabras y el mínimo es {profile.MinWords}. " +
+                        $"Amplíalo con información concreta hasta {profile.MinWords}-{profile.MaxWords} palabras.");
+                    break;
+
+                case "stacked":
+                    instructions.Add(
+                        $"{reference}: hay {finding.Value} párrafos seguidos sin heading, lista, tabla ni cita " +
+                        $"(máximo {profile.MaxConsecutive}). Intercala uno de esos recursos o reestructura la sección.");
+                    break;
+
+                case "first-sentence":
+                    instructions.Add(
+                        $"{reference}: la primera frase tiene {finding.Value} palabras. " +
+                        $"Reescríbela para responder en {profile.MaxFirstSentenceWords} palabras o menos.");
+                    break;
+
+                case "opener":
+                    instructions.Add(
+                        $"{reference}: abre con una fórmula de relleno. " +
+                        "Reescribe la primera frase empezando por la respuesta concreta.");
+                    break;
+
+                default:
+                    instructions.Add($"{reference}: {finding.Message}");
+                    break;
+            }
+        }
+
+        return instructions;
+    }
+
+    private static int ParagraphNumber(
+        IReadOnlyList<ContentBlockDto> blocks, int blockIndex)
+    {
+        var number = 0;
+        for (var i = 0; i <= blockIndex && i < blocks.Count; i++)
+        {
+            if (blocks[i] is ContentParagraphBlockDto) number++;
+        }
+        return number;
+    }
 }

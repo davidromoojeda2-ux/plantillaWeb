@@ -27,6 +27,10 @@ public class OpenAiCompatibleArticleCorrectorTests
         });
 
         Assert.Contains("El párrafo 1 tiene 120 palabras; divídelo.", prompt);
+        Assert.Contains("Reescribe el artículo completo", prompt);
+        Assert.Contains("Reglas obligatorias", prompt);
+        Assert.Contains("[Bloque 1]", prompt);
+        Assert.Contains("se considerará fallida", prompt);
         Assert.Contains("No cambies el tema", prompt);
         Assert.Contains("entre 40 y 70", prompt);
         Assert.Contains("No inventes URLs", prompt);
