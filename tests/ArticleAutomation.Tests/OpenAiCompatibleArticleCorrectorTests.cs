@@ -33,7 +33,7 @@ public class OpenAiCompatibleArticleCorrectorTests
         Assert.Contains("se considerará fallida", prompt);
         Assert.Contains("No cambies el tema", prompt);
         Assert.Contains("entre 40 y 70", prompt);
-        Assert.Contains("No inventes URLs", prompt);
+        Assert.Contains("no elimines, sustituyas ni inventes enlaces", prompt);
     }
 
     [Fact]

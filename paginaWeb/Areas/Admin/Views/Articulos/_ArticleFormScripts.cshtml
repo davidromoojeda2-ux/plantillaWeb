@@ -158,6 +158,23 @@
             return lastIssues.filter(issue => !MANUAL_ONLY_CODES.has(issue.code));
         }
 
+        // Usa el diálogo estándar del sistema (app-dialogs.js). Si por alguna razón
+        // no estuviera cargado, conserva el confirm nativo como último recurso.
+        function confirmDialog(message, options) {
+            if (typeof window.appConfirm === 'function') {
+                return window.appConfirm(message, options || {});
+            }
+            return Promise.resolve(window.confirm(message));
+        }
+
+        function alertDialog(message, options) {
+            if (typeof window.appAlert === 'function') {
+                return window.appAlert(message, options || {});
+            }
+            window.alert(message);
+            return Promise.resolve();
+        }
+
         function setBadge(text, classes) {
             summaryBadge.textContent = text;
             summaryBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold ' + classes;
@@ -244,17 +261,26 @@
                     removeLink.textContent = 'Quitar enlace';
                     removeLink.addEventListener('click', async event => {
                         event.stopPropagation();
-                        if (!window.confirm('¿Quitar el enlace caído?\n\n' + issue.url +
-                            '\n\nSe conservará el texto visible.')) {
-                            return;
-                        }
+
+                        const accepted = await confirmDialog(
+                            '¿Quitar el enlace caído?\n\n' + issue.url +
+                            '\n\nSe conservará el texto visible.',
+                            {
+                                title: 'Quitar enlace',
+                                type: 'danger',
+                                acceptLabel: 'Quitar enlace',
+                                cancelLabel: 'Rechazar'
+                            });
+
+                        if (!accepted) return;
 
                         try {
                             await removeBrokenLinks([issue.url]);
                         } catch (error) {
-                            if (window.showToast) {
-                                window.showToast(error.message || 'No se pudo quitar el enlace.', 'error');
-                            }
+                            await alertDialog(error.message || 'No se pudo quitar el enlace.', {
+                                title: 'No se pudo quitar el enlace',
+                                type: 'danger'
+                            });
                         }
                     });
                     removeLink.addEventListener('keydown', event => event.stopPropagation());
@@ -472,11 +498,16 @@
 
             const list = urls.slice(0, 5).map(url => '• ' + url).join('\n');
             const more = urls.length > 5 ? '\n• …y ' + (urls.length - 5) + ' más' : '';
-            const message = 'Se encontraron ' + urls.length + ' enlace(s) caído(s) que la IA no pudo sustituir:\n\n' +
+            const message = 'Se encontraron ' + urls.length + ' enlace(s) caído(s) en el artículo:\n\n' +
                 list + more +
                 '\n\n¿Quieres quitarlos? Se conservará el texto visible y no se borrará contenido.';
 
-            return Promise.resolve(window.confirm(message));
+            return confirmDialog(message, {
+                title: 'Enlaces caídos',
+                type: 'danger',
+                acceptLabel: 'Quitar enlaces',
+                cancelLabel: 'Rechazar'
+            });
         }
 
         async function removeBrokenLinks(urls) {
@@ -491,7 +522,8 @@
                 },
                 body: JSON.stringify({
                     blocksJson: document.getElementById('BlocksJsonInput')?.value || '[]',
-                    urls
+                    urls,
+                    confirmed: true
                 })
             });
 
@@ -531,9 +563,16 @@
                 return;
             }
 
-            if (!window.confirm('La IA reemplazará el título, el resumen y el cuerpo con una versión corregida. ¿Continuar?')) {
-                return;
-            }
+            const accepted = await confirmDialog(
+                'La IA reescribirá el título, el resumen y el cuerpo del artículo para corregir las observaciones. ¿Continuar?',
+                {
+                    title: 'Corregir con IA',
+                    type: 'warning',
+                    acceptLabel: 'Corregir',
+                    cancelLabel: 'Rechazar'
+                });
+
+            if (!accepted) return;
 
             const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
             const payload = {
@@ -567,30 +606,37 @@
                 const brokenLinks = Array.isArray(data.brokenLinks) ? data.brokenLinks : [];
                 const remaining = Number(data.remainingStyleIssues) || 0;
 
-                if (brokenLinks.length > 0 && await confirmRemoveLinks(brokenLinks)) {
+                // La eliminación solo se ejecuta con una confirmación explícita.
+                // Si el usuario rechaza, los enlaces se conservan tal cual.
+                let shouldRemoveLinks = false;
+                if (brokenLinks.length > 0) {
+                    shouldRemoveLinks = await confirmRemoveLinks(brokenLinks);
+                }
+
+                if (shouldRemoveLinks) {
                     await removeBrokenLinks(brokenLinks);
-                } else {
-                    if (window.showToast) {
-                        const attempts = Number(data.attempts) || 1;
-                        let message = 'Corrección aplicada' +
-                            (attempts > 1 ? ' tras ' + attempts + ' intentos' : '') + '.';
-                        if (brokenLinks.length > 0) {
-                            message += ' Se mantuvieron ' + brokenLinks.length + ' enlace(s) caído(s).';
-                        }
-                        if (remaining > 0) {
-                            message += ' Quedan ' + remaining + ' aviso(s) de estilo; puedes reintentar la corrección.';
-                        }
-                        message += ' Revisa los cambios antes de guardar.';
-                        window.showToast(message, brokenLinks.length > 0 || remaining > 0 ? 'info' : 'success');
-                    }
-                    await validateArticle();
+                    return;
                 }
-            } catch (error) {
+
                 if (window.showToast) {
-                    window.showToast(error.message || 'No se pudo corregir el artículo.', 'error');
-                } else {
-                    renderList(errorsBox, 'No se pudo corregir', [error.message || 'Inténtalo de nuevo.']);
+                    const attempts = Number(data.attempts) || 1;
+                    let message = 'Corrección aplicada' +
+                        (attempts > 1 ? ' tras ' + attempts + ' intentos' : '') + '.';
+                    if (brokenLinks.length > 0) {
+                        message += ' Se mantuvieron ' + brokenLinks.length + ' enlace(s) caído(s).';
+                    }
+                    if (remaining > 0) {
+                        message += ' Quedan ' + remaining + ' aviso(s) de estilo; puedes reintentar la corrección.';
+                    }
+                    message += ' Revisa los cambios antes de guardar.';
+                    window.showToast(message, brokenLinks.length > 0 || remaining > 0 ? 'info' : 'success');
                 }
+                await validateArticle();
+            } catch (error) {
+                await alertDialog(error.message || 'No se pudo corregir el artículo.', {
+                    title: 'No se pudo corregir',
+                    type: 'danger'
+                });
             } finally {
                 aiButton.disabled = false;
                 aiLabel.textContent = originalLabel || 'Corregir con IA';

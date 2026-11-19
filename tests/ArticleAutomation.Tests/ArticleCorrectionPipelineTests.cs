@@ -19,7 +19,7 @@ public class ArticleCorrectionPipelineTests
 
         var outcome = await ArticleCorrectionPipeline.CorrectAsync(
             source,
-            ["Enlace caído: https://example.com/roto"],
+            ["Ajusta la introducción para que responda antes."],
             Plan(),
             Config(),
             corrector);
@@ -29,7 +29,7 @@ public class ArticleCorrectionPipelineTests
         Assert.Empty(outcome.RemainingFindings);
         Assert.Contains(
             corrector.Requests[0].Issues,
-            issue => issue.Contains("Enlace caído", StringComparison.Ordinal));
+            issue => issue.Contains("Ajusta la introducción", StringComparison.Ordinal));
         Assert.Contains(
             corrector.Requests[1].Issues,
             issue => issue.Contains("Bloque 1", StringComparison.Ordinal)

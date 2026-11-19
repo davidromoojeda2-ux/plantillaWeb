@@ -355,13 +355,14 @@ public class ArticulosController : Controller
         }
 
         var plan = ArticleGenerationPlanner.FromSettings(settings);
-        var internalLinks = await _articleService
-            .GetInternalLinkCandidatesAsync(request.Title ?? string.Empty) ?? [];
 
         var issues = (request.Issues ?? [])
             // El panel agrupa el estilo en mensajes sin bloque; el pipeline los
             // regenera con el índice y el detalle exactos.
             .Where(issue => !(issue.Code?.StartsWith("style-", StringComparison.Ordinal) ?? false))
+            // Los enlaces se gestionan aparte y solo se quitan con confirmación:
+            // el corrector no debe tocarlos ni recibirlos como instrucción.
+            .Where(issue => !string.Equals(issue.Code, "link", StringComparison.OrdinalIgnoreCase))
             .Select(issue => issue.Message?.Trim())
             .Where(message => !string.IsNullOrWhiteSpace(message))
             .Select(message => message!)
@@ -380,7 +381,6 @@ public class ArticulosController : Controller
                 plan,
                 new ArticleCorrectionRequest
                 {
-                    InternalLinks = internalLinks,
                     Temperature = plan.Temperature,
                     MaxTokens = plan.MaxTokens,
                     ApiKey = settings.AiApiKey,
@@ -437,6 +437,14 @@ public class ArticulosController : Controller
     {
         if (request is null)
             return BadRequest(new { message = "Solicitud no válida." });
+
+        if (!request.Confirmed)
+        {
+            return BadRequest(new
+            {
+                message = "La eliminación de enlaces requiere confirmación explícita del usuario."
+            });
+        }
 
         List<ContentBlockDto> blocks;
         try

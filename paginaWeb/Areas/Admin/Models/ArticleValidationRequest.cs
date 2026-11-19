@@ -32,4 +32,5 @@ public sealed record ArticleCorrectionInput(
 /// </summary>
 public sealed record ArticleLinkRemovalInput(
     string? BlocksJson,
-    IReadOnlyList<string>? Urls);
+    IReadOnlyList<string>? Urls,
+    bool Confirmed = false);

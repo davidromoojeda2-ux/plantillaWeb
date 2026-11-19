@@ -94,12 +94,6 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
                   (issue, index) => $"{index + 1}. {issue}")) + "\n"
             : "No hay observaciones: devuelve el artículo tal cual, sin cambios de sentido.\n";
 
-        var links = request.InternalLinks.Count > 0
-            ? "Enlaces internos disponibles para sustituir enlaces caídos:\n" +
-              string.Join("\n", request.InternalLinks.Select(
-                  link => $"- {link.Title} → /articulos/{link.Slug}")) + "\n"
-            : string.Empty;
-
         var rules =
             $"- Cada \"paragraph\" debe tener entre {profile.MinWords} y {profile.MaxWords} palabras. " +
             $"Si supera {profile.MaxWords}, divídelo en dos o más párrafos; si no llega a {profile.MinWords}, amplíalo con información concreta.\n" +
@@ -113,8 +107,7 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
             "Reglas obligatorias:\n" + rules +
             issues +
             ParagraphStyle.DescribeForPrompt(profile) + "\n" +
-            links +
-            "Si una observación indica un enlace caído, sustitúyelo por uno de los enlaces internos disponibles si encaja; si no, conserva el enlace tal cual y no lo elimines: el editor pedirá confirmación al usuario antes de quitarlo. No inventes URLs.\n" +
+            "Conserva todas las etiquetas <a> y sus href exactamente como están: no elimines, sustituyas ni inventes enlaces. La gestión de enlaces se hace aparte con confirmación del usuario.\n" +
             "Puedes dividir, fusionar o añadir párrafos y añadir encabezados, listas o citas para cumplir las reglas; conserva el orden lógico y la información relevante.\n" +
             "En el texto cada bloque aparece precedido por su número (por ejemplo, [Bloque 7]); usa esa referencia para localizar cada observación.\n" +
             "No copies las marcas [Bloque N] en los textos del JSON de salida: son solo referencias internas.\n" +
