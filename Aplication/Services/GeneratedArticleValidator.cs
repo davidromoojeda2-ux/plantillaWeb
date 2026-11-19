@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Aplication.DTOs.Automation;
 using Aplication.DTOs.ContentBlocks;
 
@@ -23,9 +22,6 @@ public sealed record ArticleValidationResult(
 /// </summary>
 public static class GeneratedArticleValidator
 {
-    private static readonly Regex WordRegex = new(@"\S+", RegexOptions.Compiled);
-    private static readonly Regex TagRegex = new("<[^>]+>", RegexOptions.Compiled);
-
     public static ArticleValidationResult Validate(
         GeneratedArticle article,
         ArticleGenerationPlan plan,
@@ -204,7 +200,6 @@ public static class GeneratedArticleValidator
             }
         }
 
-        var plain = TagRegex.Replace(string.Join(' ', texts), " ");
-        return WordRegex.Matches(plain).Count;
+        return ParagraphText.CountWords(string.Join(' ', texts));
     }
 }
