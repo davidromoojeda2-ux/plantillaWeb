@@ -426,6 +426,10 @@
             }
 
             if (correctedBlocks) {
+                if (!Array.isArray(correctedBlocks) || correctedBlocks.length === 0) {
+                    throw new Error('La IA no devolvió bloques para el artículo. Inténtalo de nuevo.');
+                }
+
                 if (window.contentBlocksEditor?.replaceBlocks) {
                     window.contentBlocksEditor.replaceBlocks(correctedBlocks);
                 } else {

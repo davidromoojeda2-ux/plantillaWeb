@@ -383,6 +383,14 @@ public class ArticulosController : Controller
                 Model = settings.AiModel
             }, HttpContext.RequestAborted);
 
+            if (corrected.Blocks.Count == 0)
+            {
+                return BadRequest(new
+                {
+                    message = "La IA no devolvió bloques para el artículo. Inténtalo de nuevo."
+                });
+            }
+
             // El modelo puede conservar enlaces caídos aunque se le indiquen: se
             // eliminan de forma determinista para que la revalidación no los repita.
             var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
@@ -409,8 +417,12 @@ public class ArticulosController : Controller
 
             return Json(new
             {
-                title = corrected.Title,
-                summary = corrected.Summary,
+                title = string.IsNullOrWhiteSpace(corrected.Title)
+                    ? request.Title ?? string.Empty
+                    : corrected.Title,
+                summary = string.IsNullOrWhiteSpace(corrected.Summary)
+                    ? request.Summary ?? string.Empty
+                    : corrected.Summary,
                 metaDescription = corrected.MetaDescription,
                 tags = corrected.Tags,
                 blocksJson = ContentBlockJson.Serialize(corrected.Blocks),
