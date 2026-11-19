@@ -396,7 +396,7 @@ public class ArticulosController : Controller
             // devuelven para que el usuario los confirme. Antes de mostrarla, se
             // restauran los href originales por si el modelo los cambió por su cuenta.
             var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
-            ArticleFormValidator.RestoreLinkHrefs(corrected.Blocks, blocks, baseUri);
+            ArticleFormValidator.RestoreLinkHrefs(corrected.Blocks, blocks);
             var correctedLinks = ArticleFormValidator.ExtractLinks(corrected.Blocks);
 
             var urlsToCheck = corrected.LinkActions

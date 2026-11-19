@@ -246,8 +246,7 @@ public static class ArticleFormValidator
     /// </summary>
     public static int RestoreLinkHrefs(
         IReadOnlyList<ContentBlockDto> corrected,
-        IReadOnlyList<ContentBlockDto> original,
-        Uri? baseUri = null)
+        IReadOnlyList<ContentBlockDto> original)
     {
         var originals = new List<(string Text, string Href)>();
 
