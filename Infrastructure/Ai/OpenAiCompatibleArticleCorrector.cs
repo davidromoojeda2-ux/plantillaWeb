@@ -117,6 +117,7 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
             "Si una observación indica un enlace caído, sustitúyelo por uno de los enlaces internos disponibles si encaja; si no, conserva el enlace tal cual y no lo elimines: el editor pedirá confirmación al usuario antes de quitarlo. No inventes URLs.\n" +
             "Puedes dividir, fusionar o añadir párrafos y añadir encabezados, listas o citas para cumplir las reglas; conserva el orden lógico y la información relevante.\n" +
             "En el texto cada bloque aparece precedido por su número (por ejemplo, [Bloque 7]); usa esa referencia para localizar cada observación.\n" +
+            "No copies las marcas [Bloque N] en los textos del JSON de salida: son solo referencias internas.\n" +
             "Artículo actual:\n" +
             $"Título: {request.Title}\nResumen: {request.Summary}\n\n{source}\n" +
             "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n" +
