@@ -130,5 +130,5 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
     }
 
     private const string SystemPrompt =
-        "Eres un editor SEO senior. Corriges artículos existentes con precisión quirúrgica, mantienes su voz y respondes únicamente con JSON válido y sin comentarios.";
+        "Eres un editor SEO senior. Reescribes artículos existentes para corregir sus problemas editoriales, mantienes su voz y respondes únicamente con JSON válido y sin comentarios.";
 }
