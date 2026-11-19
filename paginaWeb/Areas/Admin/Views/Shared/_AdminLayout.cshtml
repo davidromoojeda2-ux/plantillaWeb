@@ -221,6 +221,95 @@
     <script src="~/_framework/blazor.server.js"></script>
     <script src="~/js/admin-live-fallback.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    @* ─── Modal de bienvenida (solo al hacer login) ──────────────────────── *@
+    @if (TempData["WelcomeUser"] != null)
+    {
+        var wUser     = TempData["WelcomeUser"]?.ToString() ?? "Admin";
+        var wGreeting = TempData["WelcomeGreeting"]?.ToString() ?? "Bienvenido";
+        var wInitial  = wUser.Length > 0 ? wUser[0].ToString().ToUpper() : "A";
+
+        <div id="welcomeModal"
+             class="fixed inset-0 z-[90] flex items-center justify-center p-4"
+             role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+
+            @* Backdrop *@
+            <div id="welcomeBackdrop"
+                 class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"
+                 style="animation: wFadeIn 300ms ease both;"></div>
+
+            @* Card *@
+            <div class="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl"
+                 style="animation: wSlideUp 350ms cubic-bezier(.22,.68,0,1.2) both;">
+
+                @* Header con gradiente *@
+                <div class="relative bg-gradient-to-br from-[#001D4A] via-[#00296B] to-[#003F88] px-8 pt-10 pb-14 text-center overflow-hidden">
+                    @* Orbes decorativos *@
+                    <div class="pointer-events-none absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/5"></div>
+                    <div class="pointer-events-none absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-yellow-400/10"></div>
+
+                    @* Avatar inicial *@
+                    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 text-2xl font-bold text-white shadow-lg ring-2 ring-white/20"
+                         aria-hidden="true">@wInitial</div>
+
+                    <p class="text-blue-200 text-xs font-semibold tracking-widest uppercase mb-1">@wGreeting</p>
+                    <h2 id="welcomeTitle" class="text-2xl font-bold text-white leading-tight">@wUser</h2>
+                </div>
+
+                @* Body (sube sobre el header) *@
+                <div class="relative -mt-6 mx-5 rounded-2xl bg-white px-6 py-5 shadow-lg border border-slate-100 text-center">
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Has iniciado sesión correctamente. El panel está listo para que gestiones el contenido del portal.
+                    </p>
+                    <p class="mt-2 text-xs font-medium text-slate-400" id="welcomeClock"></p>
+
+                    <button id="welcomeClose" type="button"
+                            class="mt-5 w-full rounded-xl bg-[#FDC500] py-2.5 px-4 text-sm font-bold text-[#00296B] shadow-md
+                                   transition-all hover:bg-[#FFD500] hover:scale-[1.02] active:scale-[0.98]
+                                   focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FDC500] focus-visible:ring-offset-2">
+                        Ir al panel &rarr;
+                    </button>
+                </div>
+
+                <p class="text-center text-xs text-slate-400 py-3">
+                    Presiona <kbd class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">Esc</kbd> o haz clic fuera para cerrar
+                </p>
+            </div>
+        </div>
+
+        <style>
+            @@keyframes wFadeIn  { from { opacity:0 } to { opacity:1 } }
+            @@keyframes wSlideUp { from { opacity:0; transform:translateY(28px) scale(.96) } to { opacity:1; transform:none } }
+        </style>
+
+        <script>
+            (function () {
+                var modal    = document.getElementById('welcomeModal');
+                var backdrop = document.getElementById('welcomeBackdrop');
+                var closeBtn = document.getElementById('welcomeClose');
+                var clock    = document.getElementById('welcomeClock');
+
+                if (clock) {
+                    var now = new Date();
+                    clock.textContent =
+                        now.toLocaleDateString('es', { weekday:'long', day:'numeric', month:'long' }) +
+                        ' · ' + now.toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
+                }
+
+                function closeModal() {
+                    modal.style.transition = 'opacity 200ms ease';
+                    modal.style.opacity = '0';
+                    setTimeout(function () { modal.remove(); }, 220);
+                }
+
+                closeBtn.addEventListener('click', closeModal);
+                backdrop.addEventListener('click', closeModal);
+                document.addEventListener('keydown', function handler(e) {
+                    if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', handler); }
+                });
+            })();
+        </script>
+    }
 </body>
 </html>
 

@@ -70,6 +70,39 @@ public class AuthController : Controller
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
+        var displayName = user?.Username ?? model.Username;
+
+        int hour;
+        try
+        {
+            // IANA es el identificador disponible en Linux/Docker.
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("America/Bogota");
+            hour = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).Hour;
+        }
+        catch
+        {
+            try
+            {
+                // Compatibilidad con instalaciones Windows.
+                var tz = TimeZoneInfo.FindSystemTimeZoneById("SA Pacific Standard Time");
+                hour = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).Hour;
+            }
+            catch
+            {
+                hour = DateTime.Now.Hour; // último fallback local del servidor
+            }
+        }
+
+        var greeting = hour switch
+        {
+            >= 5 and < 12  => "Buenos días",
+            >= 12 and < 19 => "Buenas tardes",
+            _              => "Buenas noches"
+        };
+
+        TempData["WelcomeUser"]     = displayName;
+        TempData["WelcomeGreeting"] = greeting;
+
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
         {
             return Redirect(returnUrl);
