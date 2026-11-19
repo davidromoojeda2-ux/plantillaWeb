@@ -448,6 +448,7 @@ public sealed class ArticleAutomationService : IAutomationService
                 IncludeFaq = plan.IncludeFaq,
                 IncludeCta = plan.IncludeCta,
                 IncludeLinks = plan.IncludeLinks,
+                ParagraphStyles = plan.ParagraphStyles,
                 Temperature = plan.Temperature,
                 CorrectionHint = correctionHint,
                 ApiKey = settings.AiApiKey,
@@ -457,13 +458,18 @@ public sealed class ArticleAutomationService : IAutomationService
 
             // La IA puede ignorar la instrucción de no añadir secciones opcionales:
             // se eliminan antes de validar para que nunca se publiquen sin seleccionarlas.
-            GeneratedArticleSectionFilter.Apply(generated, plan);
+            // El pipeline, además, normaliza los párrafos y analiza su estilo.
+            var draftStyle = ArticleDraftPipeline.Process(generated, plan);
 
             if (generated.TotalTokens is not null)
                 totalTokens += generated.TotalTokens.Value;
 
-            var validation = GeneratedArticleValidator.Validate(generated, plan);
-            if (validation.IsValid) return (generated, [], totalTokens);
+            var validation = GeneratedArticleValidator.Validate(generated, plan, draftStyle.Findings);
+
+            // El estilo nunca bloquea por sí solo: solo fuerza un reintento mientras
+            // queden intentos. Al agotarlos, el artículo se guarda y se registra el aviso.
+            if (validation.IsValid && !draftStyle.HasHardIssues)
+                return (generated, [], totalTokens);
 
             correctionHint = validation.ToCorrectionHint();
 
@@ -471,8 +477,9 @@ public sealed class ArticleAutomationService : IAutomationService
                 return (generated, validation.Errors, totalTokens);
 
             _logger.LogWarning(
-                "El artículo generado para '{Topic}' no cumple la estructura (intento {Attempt}/{Attempts}): {Errors}",
-                topic.Title, attempt, plan.MaxGenerationAttempts, string.Join(" | ", validation.Errors));
+                "El artículo generado para '{Topic}' no cumple la estructura o el estilo de párrafo (intento {Attempt}/{Attempts}): {Errors}",
+                topic.Title, attempt, plan.MaxGenerationAttempts,
+                string.Join(" | ", validation.Errors.Concat(validation.EffectiveStyleHints)));
         }
     }
 

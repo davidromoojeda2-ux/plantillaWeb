@@ -251,7 +251,8 @@ public class ArticulosController : Controller
             request.CategoryId,
             request.CoverImageUrl,
             request.Status,
-            blocks);
+            blocks,
+            blocks.Count > 0 ? await ResolveParagraphStyleAsync() : null);
 
         errors.AddRange(validation.Errors);
         warnings.AddRange(validation.Warnings);
@@ -336,6 +337,7 @@ public class ArticulosController : Controller
                 IncludeFaq = plan.IncludeFaq,
                 IncludeCta = plan.IncludeCta,
                 IncludeLinks = plan.IncludeLinks,
+                ParagraphStyles = plan.ParagraphStyles,
                 InternalLinks = internalLinks,
                 Temperature = plan.Temperature,
                 ApiKey = settings.AiApiKey,
@@ -343,7 +345,7 @@ public class ArticulosController : Controller
                 Model = settings.AiModel
             });
 
-            GeneratedArticleSectionFilter.Apply(rewritten, plan);
+            var draftStyle = ArticleDraftPipeline.Process(rewritten, plan);
 
             var slugBase = SlugGenerator.Slugify(rewritten.Title);
             var slug = string.IsNullOrWhiteSpace(slugBase)
@@ -375,7 +377,13 @@ public class ArticulosController : Controller
             });
 
             _menuService.InvalidateMenu();
-            TempData["Success"] = "Artículo reescrito y guardado como borrador. Revísalo antes de publicar.";
+
+            // El estilo de párrafo nunca impide guardar: se informa como aviso en el toast.
+            var styleNotes = ParagraphStyle.Summarize(draftStyle.Findings, draftStyle.Profile);
+            TempData["Success"] = "Artículo reescrito y guardado como borrador. Revísalo antes de publicar."
+                + (styleNotes.Count > 0
+                    ? " " + string.Join(" ", styleNotes)
+                    : string.Empty);
         }
         catch (Exception ex)
         {
@@ -438,6 +446,17 @@ public class ArticulosController : Controller
 
         var siteSettings = await _siteSettingsService.GetAsync();
         ViewBag.EnabledShareNetworks = siteSettings.EnabledShareNetworks;
+    }
+
+    /// <summary>
+    /// Resuelve el perfil de párrafo vigente con la plantilla y los umbrales guardados.
+    /// El editor no envía la plantilla, así que se usa la configuración global.
+    /// </summary>
+    private async Task<ParagraphStyleProfile> ResolveParagraphStyleAsync()
+    {
+        var settings = await _automation.GetSettingsAsync();
+        var plan = ArticleGenerationPlanner.FromSettings(settings);
+        return ParagraphStyleProfile.Resolve(plan.Template, plan.ParagraphStyles, settings.Language);
     }
 
     private async Task<(bool IsValid, string? ErrorMessage)> ValidateHeroEligibilityAsync(

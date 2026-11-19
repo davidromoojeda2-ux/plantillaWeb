@@ -2,6 +2,7 @@ using System.Text;
 using Aplication.DTOs.Automation;
 using Aplication.DTOs.ContentBlocks;
 using Aplication.Interfaces;
+using Aplication.Services;
 using Infrastructure.Resilience;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -62,6 +63,9 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             ? "Enlaces internos disponibles:\n" + string.Join("\n", request.InternalLinks.Select(l => $"- {l.Title} → /articulos/{l.Slug}")) + "\n"
             : string.Empty;
 
+        var paragraphStyle = ParagraphStyleProfile.Resolve(
+            request.Template, request.ParagraphStyles, request.Language);
+
         return
             $"Reescribe el siguiente artículo en {language} para convertirlo en una versión 100% original, más completa, actualizada y útil, manteniendo el tema pero sin copiar frases ni párrafos.\n" +
             topic +
@@ -69,6 +73,7 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             $"Tono editorial: {OpenAiCompatibleArticleGenerator.DescribeTone(request.Tone)}\n" +
             $"Estructura: {OpenAiCompatibleArticleGenerator.DescribeTemplate(request.Template)}.\n" +
             length +
+            ParagraphStyle.DescribeForPrompt(paragraphStyle) + "\n" +
             (rules.Count > 0 ? $"Secciones requeridas: {string.Join("; ", rules)}.\n" : string.Empty) +
             OpenAiCompatibleArticleGenerator.DescribeForbiddenSections(
                 request.IncludeConclusion, request.IncludeFaq, request.IncludeCta, request.Template) +

@@ -27,7 +27,8 @@ public static class ArticleFormValidator
         string? categoryId,
         string? coverImageUrl,
         string? status,
-        IReadOnlyList<ContentBlockDto> blocks)
+        IReadOnlyList<ContentBlockDto> blocks,
+        ParagraphStyleProfile? paragraphStyle = null)
     {
         var errors = new List<string>();
         var warnings = new List<string>();
@@ -64,6 +65,12 @@ public static class ArticleFormValidator
         }
 
         ValidateBlocks(blocks, errors, warnings);
+
+        if (paragraphStyle is not null && blocks.Count > 0)
+        {
+            var findings = ParagraphStyle.Analyze(blocks, paragraphStyle);
+            warnings.AddRange(ParagraphStyle.Summarize(findings, paragraphStyle));
+        }
 
         return new ArticleFormValidationResult(errors, warnings, ExtractLinks(blocks));
     }

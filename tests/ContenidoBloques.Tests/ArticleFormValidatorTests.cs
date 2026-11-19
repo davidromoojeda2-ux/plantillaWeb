@@ -128,6 +128,34 @@ public class ArticleFormValidatorTests
         Assert.DoesNotContain("#seccion", links);
     }
 
+    [Fact]
+    public void Los_parrafos_largos_generan_avisos_sin_bloquear()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = string.Join(' ', Enumerable.Repeat("palabra", 200))
+            }
+        };
+
+        var profile = ParagraphStyleProfile.Resolve("news", null, "es");
+
+        var result = ArticleFormValidator.Validate(
+            "Título de prueba",
+            "Resumen suficientemente largo para validar el artículo.",
+            "titulo-de-prueba",
+            "Redacción",
+            "cat-1",
+            "/uploads/portada.webp",
+            "Publicado",
+            blocks,
+            profile);
+
+        Assert.DoesNotContain(result.Errors, e => e.Contains("párrafo", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.Warnings, w => w.Contains("palabras", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static List<ContentBlockDto> ValidBlocks() =>
     [
         new ContentParagraphBlockDto

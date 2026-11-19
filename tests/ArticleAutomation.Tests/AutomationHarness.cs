@@ -108,10 +108,34 @@ internal static class TestArticles
         Blocks = [new ContentParagraphBlockDto { Text = "Texto corto." }]
     };
 
-    /// <summary>Artículo que cumple la validación de estructura por defecto.</summary>
+    /// <summary>Artículo que cumple la validación de estructura y estilo por defecto.</summary>
     public static GeneratedArticle Valid(string title, int words = 820)
     {
-        var filler = string.Join(' ', Enumerable.Repeat("contenido", words));
+        var blocks = new List<ContentBlockDto>();
+        var remaining = Math.Max(words, 1);
+        var sections = new[] { "Desarrollo", "Contexto", "Detalles", "Aplicaciones" };
+
+        var intro = Math.Min(remaining, 60);
+        blocks.Add(Paragraph(intro));
+        remaining -= intro;
+
+        var sectionIndex = 0;
+        while (remaining > 0)
+        {
+            blocks.Add(new ContentHeadingBlockDto { Level = 2, Text = sections[sectionIndex % sections.Length] });
+
+            for (var i = 0; i < 2 && remaining > 0; i++)
+            {
+                var take = Math.Min(60, remaining);
+                blocks.Add(Paragraph(take));
+                remaining -= take;
+            }
+
+            if (sectionIndex == 0)
+                blocks.Add(new ContentBulletListBlockDto { Items = ["Primer punto", "Segundo punto", "Tercer punto"] });
+
+            sectionIndex++;
+        }
 
         return new GeneratedArticle
         {
@@ -119,15 +143,13 @@ internal static class TestArticles
             Summary = "Resumen de prueba del artículo generado.",
             MetaDescription = "Meta descripción de prueba con la longitud necesaria para validar el artículo generado.",
             Tags = ["uno", "dos", "tres"],
-            Blocks =
-            [
-                new ContentParagraphBlockDto { Text = $"Introducción del artículo. {filler}" },
-                new ContentHeadingBlockDto { Level = 2, Text = "Desarrollo" },
-                new ContentParagraphBlockDto { Text = "Desarrollo del tema con detalle y contexto." },
-                new ContentBulletListBlockDto { Items = ["Primer punto", "Segundo punto", "Tercer punto"] },
-                new ContentHeadingBlockDto { Level = 2, Text = "Conclusión" },
-                new ContentParagraphBlockDto { Text = "Cierre del artículo con una idea final." }
-            ]
+            Blocks = blocks
         };
+    }
+
+    private static ContentParagraphBlockDto Paragraph(int words)
+    {
+        var filler = string.Join(' ', Enumerable.Repeat("contenido", Math.Max(0, words - 3)));
+        return new ContentParagraphBlockDto { Text = $"Contenido de prueba. {filler}".Trim() };
     }
 }

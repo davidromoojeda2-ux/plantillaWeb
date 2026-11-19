@@ -5,10 +5,16 @@ using Aplication.DTOs.ContentBlocks;
 namespace Aplication.Services;
 
 /// <summary>Resultado de validar un artículo generado contra la configuración editorial.</summary>
-public sealed record ArticleValidationResult(bool IsValid, IReadOnlyList<string> Errors)
+public sealed record ArticleValidationResult(
+    bool IsValid,
+    IReadOnlyList<string> Errors,
+    IReadOnlyList<string>? StyleHints = null,
+    bool HasHardStyleIssues = false)
 {
+    public IReadOnlyList<string> EffectiveStyleHints => StyleHints ?? [];
+
     public string ToCorrectionHint() =>
-        string.Join("\n", Errors.Select(e => $"- {e}"));
+        string.Join("\n", Errors.Concat(EffectiveStyleHints).Select(e => $"- {e}"));
 }
 
 /// <summary>
@@ -20,7 +26,10 @@ public static class GeneratedArticleValidator
     private static readonly Regex WordRegex = new(@"\S+", RegexOptions.Compiled);
     private static readonly Regex TagRegex = new("<[^>]+>", RegexOptions.Compiled);
 
-    public static ArticleValidationResult Validate(GeneratedArticle article, ArticleGenerationPlan plan)
+    public static ArticleValidationResult Validate(
+        GeneratedArticle article,
+        ArticleGenerationPlan plan,
+        IReadOnlyList<ParagraphFinding>? styleFindings = null)
     {
         var errors = new List<string>();
 
@@ -55,7 +64,12 @@ public static class GeneratedArticleValidator
         ValidateHierarchy(blocks, errors);
         ValidateRequiredSections(blocks, plan, errors);
 
-        return new ArticleValidationResult(errors.Count == 0, errors);
+        var profile = ParagraphStyleProfile.Resolve(plan.Template, plan.ParagraphStyles, plan.Language);
+        var findings = styleFindings ?? ParagraphStyle.Analyze(blocks, profile);
+        var styleHints = findings.Select(f => f.Message).ToList();
+        var hasHardStyleIssues = findings.Any(f => f.Severity == ParagraphSeverity.Hard);
+
+        return new ArticleValidationResult(errors.Count == 0, errors, styleHints, hasHardStyleIssues);
     }
 
     private static void ValidateWordCount(GeneratedArticle article, ArticleGenerationPlan plan, List<string> errors)

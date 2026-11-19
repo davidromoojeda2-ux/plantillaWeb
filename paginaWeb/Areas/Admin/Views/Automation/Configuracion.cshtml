@@ -394,7 +394,39 @@
                                                                                                                     </div>
                                                                                                                 </div>
 
-                                                                                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+                                                                                                                <!-- Reglas de párrafo por plantilla -->
+                                                                                                                 <div class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                                                                                                     <h4 class="text-sm font-bold text-slate-800 mb-1">Reglas de párrafo por plantilla</h4>
+                                                                                                                     <p class="text-xs text-slate-500 mb-4">Cada párrafo debe respetar estos rangos. El máximo absoluto es 1,5× el máximo recomendado: solo fuerza un reintento correctivo y nunca impide guardar el artículo.</p>
+
+                                                                                                                     <div class="hidden sm:grid sm:grid-cols-[1fr_repeat(3,minmax(0,110px))] gap-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                                                                                                         <span>Plantilla</span>
+                                                                                                                         <span>Mín. palabras</span>
+                                                                                                                         <span>Máx. palabras</span>
+                                                                                                                         <span>Párrafos seguidos</span>
+                                                                                                                     </div>
+
+                                                                                                                     <div class="mt-2 space-y-2">
+                                                                                                                         @for (var i = 0; i < Model.ParagraphStyles.Count; i++)
+                                                                                                                         {
+                                                                                                                             <div class="grid grid-cols-2 sm:grid-cols-[1fr_repeat(3,minmax(0,110px))] items-center gap-2">
+                                                                                                                                 <input type="hidden" asp-for="ParagraphStyles[i].Template" />
+                                                                                                                                 <span class="col-span-2 text-sm font-medium text-slate-700 sm:col-span-1">@Model.ParagraphStyles[i].Label</span>
+                                                                                                                                 <input asp-for="ParagraphStyles[i].MinWords" type="number" min="20" max="200"
+                                                                                                                                        aria-label="Mínimo de palabras para @Model.ParagraphStyles[i].Label"
+                                                                                                                                        class="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-sm" />
+                                                                                                                                 <input asp-for="ParagraphStyles[i].MaxWords" type="number" min="40" max="300"
+                                                                                                                                        aria-label="Máximo de palabras para @Model.ParagraphStyles[i].Label"
+                                                                                                                                        class="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-sm" />
+                                                                                                                                 <input asp-for="ParagraphStyles[i].MaxConsecutive" type="number" min="1" max="6"
+                                                                                                                                        aria-label="Párrafos seguidos permitidos para @Model.ParagraphStyles[i].Label"
+                                                                                                                                        class="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-sm" />
+                                                                                                                             </div>
+                                                                                                                         }
+                                                                                                                     </div>
+                                                                                                                 </div>
+
+                                                                                                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
                                                                                                                     <label class="flex items-center gap-3 text-sm text-slate-700">
                                                                                                                         <input type="checkbox" asp-for="IncludeList"
                                                                                                                                class="h-4 w-4 rounded border-slate-300 text-[#00509D]" />

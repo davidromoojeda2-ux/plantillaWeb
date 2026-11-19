@@ -97,6 +97,12 @@ public class AutomationSettings
     /// <summary>Tolerancia de palabras sobre la longitud pedida (porcentaje).</summary>
     public int WordTolerancePercent { get; set; } = 20;
 
+    /// <summary>
+    /// Umbrales de párrafo por plantilla. Si una plantilla no aparece, se usan los
+    /// valores predeterminados del código. Se guarda como documento embebido.
+    /// </summary>
+    public Dictionary<string, ParagraphStyleSetting> ParagraphStyles { get; set; } = [];
+
     /// <summary>Clave de Serper (api.serper.dev).</summary>
     public string SerperApiKey { get; set; } = string.Empty;
 

@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Aplication.DTOs.Automation;
 using Aplication.Interfaces;
+using Aplication.Services;
 using Infrastructure.Resilience;
 using Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -127,6 +128,8 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
         var length = request.TargetWords > 0 ? $"Extensión objetivo: {request.TargetWords} palabras (aproximada).\n" : string.Empty;
 
         var minBlocks = Math.Max(3, request.MinBlocks);
+        var paragraphStyle = ParagraphStyleProfile.Resolve(
+            request.Template, request.ParagraphStyles, request.Language);
         var keyword = string.IsNullOrWhiteSpace(request.PrimaryKeyword)
             ? string.Empty
             : $"Palabra clave principal: {request.PrimaryKeyword}. Optimiza el artículo para ella (densidad natural 1-2 %, sin keyword stuffing) e incluye variaciones y sinónimos en los encabezados.\n";
@@ -139,6 +142,7 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
             $"Tono editorial: {DescribeTone(request.Tone)}\n" +
             $"Estructura: {DescribeTemplate(request.Template)}.\n" +
             $"Usa al menos {minBlocks} bloques en total (sin máximo).\n" +
+            ParagraphStyle.DescribeForPrompt(paragraphStyle) + "\n" +
             DescribeRequiredSections(request) +
             DescribeForbiddenSections(request.IncludeConclusion, request.IncludeFaq, request.IncludeCta, request.Template) +
             DescribeInternalLinks(request) +
@@ -217,7 +221,7 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
             "Artículo de preguntas frecuentes.\n" +
             "- Introducción breve de un solo párrafo.\n" +
             "- De 4 a 6 preguntas como \"heading\" de nivel 3.\n" +
-            "- Cada pregunta debe ir seguida de una respuesta directa de 70 a 120 palabras.\n" +
+            "- Cada pregunta debe ir seguida de una respuesta directa de 70 a 80 palabras.\n" +
             "- No agregues secciones ajenas al formato de pregunta y respuesta.",
         "ppa" =>
             "Respuesta tipo \"People Also Ask\".\n" +
