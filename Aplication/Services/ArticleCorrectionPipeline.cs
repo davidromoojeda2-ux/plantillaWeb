@@ -20,8 +20,8 @@ public static class ArticleCorrectionPipeline
     /// Mínimo dos intentos (uno de corrección y otro de verificación) y como máximo
     /// tres, siguiendo la configuración de reintentos de la automatización.
     /// </summary>
-    public const int MinAttempts = 2;
-    public const int MaxAttempts = 3;
+    private const int MinAttempts = 2;
+    private const int MaxAttempts = 3;
 
     public static async Task<ArticleCorrectionOutcome> CorrectAsync(
         GeneratedArticle source,

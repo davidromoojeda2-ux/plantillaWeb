@@ -61,16 +61,24 @@ public static class ArticleFormValidator
             }
         }
 
-        var errors = issues
-            .Where(issue => issue.Severity == ArticleIssueSeverity.Error)
-            .Select(issue => issue.Message)
-            .ToList();
-        var warnings = issues
-            .Where(issue => issue.Severity == ArticleIssueSeverity.Warning)
-            .Select(issue => issue.Message)
-            .ToList();
+        var (errors, warnings) = SplitBySeverity(issues);
 
         return new ArticleFormValidationResult(errors, warnings, ExtractLinks(blocks), issues);
+    }
+
+    /// <summary>Separa los mensajes por severidad, conservando el orden original.</summary>
+    public static (IReadOnlyList<string> Errors, IReadOnlyList<string> Warnings) SplitBySeverity(
+        IEnumerable<ArticleValidationIssue> issues)
+    {
+        var list = issues as IReadOnlyCollection<ArticleValidationIssue> ?? issues.ToList();
+
+        return (
+            list.Where(issue => issue.Severity == ArticleIssueSeverity.Error)
+                .Select(issue => issue.Message)
+                .ToList(),
+            list.Where(issue => issue.Severity == ArticleIssueSeverity.Warning)
+                .Select(issue => issue.Message)
+                .ToList());
     }
 
     /// <summary>Extrae los enlaces (href) del contenido evitando duplicados.</summary>
@@ -107,8 +115,7 @@ public static class ArticleFormValidator
 
     /// <summary>
     /// Elimina los enlaces a las URL indicadas conservando el texto visible. Se usa
-    /// después de una corrección con IA para garantizar que no queden enlaces caídos
-    /// aunque el modelo los haya conservado.
+    /// solo después de que el usuario confirme quitar enlaces caídos.
     /// </summary>
     public static void RemoveLinks(
         IReadOnlyList<ContentBlockDto> blocks,
@@ -120,45 +127,12 @@ public static class ArticleFormValidator
         var broken = brokenUrls
             .Select(url => CanonicalLink(url, baseUri))
             .Where(url => url is not null)
+            .Select(url => url!)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         if (broken.Count == 0) return;
 
-        foreach (var block in blocks)
-        {
-            switch (block)
-            {
-                case ContentParagraphBlockDto p:
-                    p.Text = RemoveBrokenAnchors(p.Text, broken, baseUri);
-                    break;
-                case ContentHeadingBlockDto h:
-                    h.Text = RemoveBrokenAnchors(h.Text, broken, baseUri);
-                    break;
-                case ContentQuoteBlockDto q:
-                    q.Text = RemoveBrokenAnchors(q.Text, broken, baseUri);
-                    if (q.Attribution is not null)
-                        q.Attribution = RemoveBrokenAnchors(q.Attribution, broken, baseUri);
-                    break;
-                case ContentCalloutBlockDto c:
-                    if (c.Title is not null)
-                        c.Title = RemoveBrokenAnchors(c.Title, broken, baseUri);
-                    c.Text = RemoveBrokenAnchors(c.Text, broken, baseUri);
-                    break;
-                case ContentBulletListBlockDto l:
-                    RewriteItems(l.Items, broken, baseUri);
-                    break;
-                case ContentOrderedListBlockDto l:
-                    RewriteItems(l.Items, broken, baseUri);
-                    break;
-                case ContentTableBlockDto t:
-                    for (var i = 0; i < t.Headers.Count; i++)
-                        t.Headers[i] = RemoveBrokenAnchors(t.Headers[i], broken, baseUri);
-                    foreach (var row in t.Rows)
-                        for (var i = 0; i < row.Count; i++)
-                            row[i] = RemoveBrokenAnchors(row[i], broken, baseUri);
-                    break;
-            }
-        }
+        TransformHtmlFields(blocks, html => RemoveBrokenAnchors(html, broken, baseUri));
     }
 
     /// <summary>
@@ -194,47 +168,11 @@ public static class ArticleFormValidator
                     return match.Value;
 
                 count++;
-                var encoded = WebUtility.HtmlEncode(replacement);
-                return HrefValueRegex.Replace(
-                    match.Value,
-                    hrefMatch => hrefMatch.Groups[1].Value + "\"" + encoded + "\"",
-                    1);
+                return SetAnchorHref(match.Value, replacement);
             });
         }
 
-        foreach (var block in blocks)
-        {
-            switch (block)
-            {
-                case ContentParagraphBlockDto p:
-                    p.Text = Replace(p.Text);
-                    break;
-                case ContentHeadingBlockDto h:
-                    h.Text = Replace(h.Text);
-                    break;
-                case ContentQuoteBlockDto q:
-                    q.Text = Replace(q.Text);
-                    if (q.Attribution is not null) q.Attribution = Replace(q.Attribution);
-                    break;
-                case ContentCalloutBlockDto c:
-                    if (c.Title is not null) c.Title = Replace(c.Title);
-                    c.Text = Replace(c.Text);
-                    break;
-                case ContentBulletListBlockDto l:
-                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = Replace(l.Items[i]);
-                    break;
-                case ContentOrderedListBlockDto l:
-                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = Replace(l.Items[i]);
-                    break;
-                case ContentTableBlockDto t:
-                    for (var i = 0; i < t.Headers.Count; i++)
-                        t.Headers[i] = Replace(t.Headers[i]);
-                    foreach (var row in t.Rows)
-                        for (var i = 0; i < row.Count; i++)
-                            row[i] = Replace(row[i]);
-                    break;
-            }
-        }
+        TransformHtmlFields(blocks, Replace);
 
         return count;
     }
@@ -289,47 +227,11 @@ public static class ArticleFormValidator
                 if (string.Equals(current, href, StringComparison.Ordinal)) return match.Value;
 
                 count++;
-                var encoded = WebUtility.HtmlEncode(href);
-                return HrefValueRegex.Replace(
-                    match.Value,
-                    hrefMatch => hrefMatch.Groups[1].Value + "\"" + encoded + "\"",
-                    1);
+                return SetAnchorHref(match.Value, href);
             });
         }
 
-        foreach (var block in corrected)
-        {
-            switch (block)
-            {
-                case ContentParagraphBlockDto p:
-                    p.Text = Restore(p.Text);
-                    break;
-                case ContentHeadingBlockDto h:
-                    h.Text = Restore(h.Text);
-                    break;
-                case ContentQuoteBlockDto q:
-                    q.Text = Restore(q.Text);
-                    if (q.Attribution is not null) q.Attribution = Restore(q.Attribution);
-                    break;
-                case ContentCalloutBlockDto c:
-                    if (c.Title is not null) c.Title = Restore(c.Title);
-                    c.Text = Restore(c.Text);
-                    break;
-                case ContentBulletListBlockDto l:
-                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = Restore(l.Items[i]);
-                    break;
-                case ContentOrderedListBlockDto l:
-                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = Restore(l.Items[i]);
-                    break;
-                case ContentTableBlockDto t:
-                    for (var i = 0; i < t.Headers.Count; i++)
-                        t.Headers[i] = Restore(t.Headers[i]);
-                    foreach (var row in t.Rows)
-                        for (var i = 0; i < row.Count; i++)
-                            row[i] = Restore(row[i]);
-                    break;
-            }
-        }
+        TransformHtmlFields(corrected, Restore);
 
         return count;
     }
@@ -517,11 +419,47 @@ public static class ArticleFormValidator
         return false;
     }
 
-    private static void RewriteItems(
-        List<string> items, HashSet<string> broken, Uri? baseUri)
+    /// <summary>
+    /// Recorre todos los campos de texto editables de los bloques y aplica una
+    /// transformación. Centraliza el recorrido que comparten quitar, reemplazar y
+    /// restaurar enlaces.
+    /// </summary>
+    private static void TransformHtmlFields(
+        IReadOnlyList<ContentBlockDto> blocks, Func<string, string> transform)
     {
-        for (var i = 0; i < items.Count; i++)
-            items[i] = RemoveBrokenAnchors(items[i], broken, baseUri);
+        foreach (var block in blocks)
+        {
+            switch (block)
+            {
+                case ContentParagraphBlockDto p:
+                    p.Text = transform(p.Text);
+                    break;
+                case ContentHeadingBlockDto h:
+                    h.Text = transform(h.Text);
+                    break;
+                case ContentQuoteBlockDto q:
+                    q.Text = transform(q.Text);
+                    if (q.Attribution is not null) q.Attribution = transform(q.Attribution);
+                    break;
+                case ContentCalloutBlockDto c:
+                    if (c.Title is not null) c.Title = transform(c.Title);
+                    c.Text = transform(c.Text);
+                    break;
+                case ContentBulletListBlockDto l:
+                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = transform(l.Items[i]);
+                    break;
+                case ContentOrderedListBlockDto l:
+                    for (var i = 0; i < l.Items.Count; i++) l.Items[i] = transform(l.Items[i]);
+                    break;
+                case ContentTableBlockDto t:
+                    for (var i = 0; i < t.Headers.Count; i++)
+                        t.Headers[i] = transform(t.Headers[i]);
+                    foreach (var row in t.Rows)
+                        for (var i = 0; i < row.Count; i++)
+                            row[i] = transform(row[i]);
+                    break;
+            }
+        }
     }
 
     private static string RemoveBrokenAnchors(
@@ -531,18 +469,20 @@ public static class ArticleFormValidator
 
         return AnchorRegex.Replace(html, match =>
         {
-            var raw = match.Groups[1].Success
-                ? match.Groups[1].Value
-                : match.Groups[2].Success
-                    ? match.Groups[2].Value
-                    : match.Groups[3].Value;
-
+            var raw = ExtractHrefValue(match);
             var canonical = CanonicalLink(WebUtility.HtmlDecode(raw).Trim(), baseUri);
             return canonical is not null && broken.Contains(canonical)
                 ? match.Groups[4].Value
                 : match.Value;
         });
     }
+
+    /// <summary>Cambia solo el valor del href conservando el resto de la etiqueta.</summary>
+    private static string SetAnchorHref(string anchorHtml, string href) =>
+        HrefValueRegex.Replace(
+            anchorHtml,
+            match => match.Groups[1].Value + "\"" + WebUtility.HtmlEncode(href) + "\"",
+            1);
 
     /// <summary>Forma canónica de un enlace para comparar hrefs y URLs normalizadas.</summary>
     public static string? CanonicalizeLink(string? link, Uri? baseUri = null) =>
@@ -578,13 +518,7 @@ public static class ArticleFormValidator
     {
         foreach (Match match in HrefRegex.Matches(html))
         {
-            var raw = match.Groups[1].Success
-                ? match.Groups[1].Value
-                : match.Groups[2].Success
-                    ? match.Groups[2].Value
-                    : match.Groups[3].Value;
-
-            var url = WebUtility.HtmlDecode(raw).Trim();
+            var url = WebUtility.HtmlDecode(ExtractHrefValue(match)).Trim();
             if (IsCheckableLink(url)) yield return url;
         }
     }

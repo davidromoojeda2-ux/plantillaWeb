@@ -80,8 +80,8 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             links +
             "Artículo original:\n" +
             $"Título: {request.Title}\nResumen: {request.Summary}\n\n{source}\n" +
-            "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n" +
-            "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ]\n}\n" +
+            OpenAiCompatibleArticleGenerator.JsonOutputInstruction +
+            OpenAiCompatibleArticleGenerator.ArticleJsonShape +
             "Reglas: primer bloque \"paragraph\"; sin encabezados de nivel 1; sin dos encabezados seguidos; tipos permitidos heading (2/3), paragraph, bullet-list, ordered-list, quote, callout, table, divider y code; sin imágenes. " +
             "El contenido debe ser 100% original y atribuir los datos a sus fuentes.";
     }

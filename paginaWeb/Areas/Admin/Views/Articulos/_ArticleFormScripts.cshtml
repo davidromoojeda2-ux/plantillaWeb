@@ -149,6 +149,10 @@
         const applyLinkActionsUrl = card.getAttribute('data-apply-link-actions-url');
         if (!validateUrl) return;
 
+        function getToken() {
+            return form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        }
+
         let lastIssues = [];
 
         // Observaciones que la IA no puede resolver por sí sola (requieren elección
@@ -375,7 +379,7 @@
         }
 
         async function validateArticle() {
-            const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const token = getToken();
             const payload = {
                 title: document.getElementById('titleInput')?.value || document.getElementById('Title')?.value || '',
                 summary: document.getElementById('Summary')?.value || '',
@@ -455,6 +459,20 @@
             }
         }
 
+        function applyBlocksJson(blocksJson, blocks) {
+            if (typeof blocksJson !== 'string' && !Array.isArray(blocks)) return;
+
+            if (window.contentBlocksEditor?.replaceBlocks) {
+                window.contentBlocksEditor.replaceBlocks(
+                    Array.isArray(blocks) ? blocks : JSON.parse(blocksJson));
+            } else if (typeof blocksJson === 'string') {
+                // Respaldo si el navegador conserva una versión antigua del editor:
+                // al menos el cuerpo se guarda con el formulario.
+                const input = document.getElementById('BlocksJsonInput');
+                if (input) input.value = blocksJson;
+            }
+        }
+
         function applyCorrection(data) {
             let correctedBlocks = null;
             if (typeof data.blocksJson === 'string') {
@@ -483,14 +501,7 @@
                     throw new Error('La IA no devolvió bloques para el artículo. Inténtalo de nuevo.');
                 }
 
-                if (window.contentBlocksEditor?.replaceBlocks) {
-                    window.contentBlocksEditor.replaceBlocks(correctedBlocks);
-                } else {
-                    // Respaldo si el navegador conserva una versión antigua del editor:
-                    // al menos el cuerpo corregido se guarda con el formulario.
-                    const input = document.getElementById('BlocksJsonInput');
-                    if (input) input.value = data.blocksJson;
-                }
+                applyBlocksJson(data.blocksJson, correctedBlocks);
             }
         }
 
@@ -528,7 +539,7 @@
         async function applyLinkActions(actions) {
             if (!applyLinkActionsUrl || !Array.isArray(actions) || actions.length === 0) return;
 
-            const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const token = getToken();
             const response = await fetch(applyLinkActionsUrl, {
                 method: 'POST',
                 headers: {
@@ -552,14 +563,7 @@
                     response.status + ').');
             }
 
-            if (typeof data.blocksJson === 'string') {
-                if (window.contentBlocksEditor?.replaceBlocks) {
-                    window.contentBlocksEditor.replaceBlocks(JSON.parse(data.blocksJson));
-                } else {
-                    const input = document.getElementById('BlocksJsonInput');
-                    if (input) input.value = data.blocksJson;
-                }
-            }
+            applyBlocksJson(data.blocksJson);
 
             if (window.showToast) {
                 const applied = Number(data.applied) || 0;
@@ -576,7 +580,7 @@
         async function removeBrokenLinks(urls) {
             if (!removeLinksUrl || !Array.isArray(urls) || urls.length === 0) return;
 
-            const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const token = getToken();
             const response = await fetch(removeLinksUrl, {
                 method: 'POST',
                 headers: {
@@ -595,14 +599,7 @@
                 throw new Error(data.message || 'No se pudieron quitar los enlaces (HTTP ' + response.status + ').');
             }
 
-            if (typeof data.blocksJson === 'string') {
-                if (window.contentBlocksEditor?.replaceBlocks) {
-                    window.contentBlocksEditor.replaceBlocks(JSON.parse(data.blocksJson));
-                } else {
-                    const input = document.getElementById('BlocksJsonInput');
-                    if (input) input.value = data.blocksJson;
-                }
-            }
+            applyBlocksJson(data.blocksJson);
 
             if (window.showToast) {
                 window.showToast(
@@ -637,7 +634,7 @@
 
             if (!accepted) return;
 
-            const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const token = getToken();
             const payload = {
                 title: document.getElementById('titleInput')?.value || '',
                 summary: document.getElementById('Summary')?.value || '',

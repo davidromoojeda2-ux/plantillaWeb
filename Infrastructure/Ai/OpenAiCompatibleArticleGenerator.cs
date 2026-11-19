@@ -18,6 +18,18 @@ namespace Infrastructure.Ai;
 /// </summary>
 public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
 {
+    /// <summary>Instrucción común para pedir el JSON del artículo.</summary>
+    internal const string JsonOutputInstruction =
+        "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n";
+
+    /// <summary>Contrato JSON compartido por el reescritor y el corrector.</summary>
+    internal const string ArticleJsonShape =
+        "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ]\n}\n";
+
+    /// <summary>Mismo contrato, con las acciones de enlaces que confirma el usuario.</summary>
+    internal const string ArticleJsonShapeWithLinkActions =
+        "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ],\n  \"linkActions\": [ { \"type\": \"replace\", \"url\": \"https://roto\", \"replacement\": \"/articulos/valido\", \"reason\": \"...\" }, { \"type\": \"remove\", \"url\": \"https://roto\", \"reason\": \"...\" } ]\n}\n";
+
     private readonly HttpClient _http;
     private readonly ILogger<OpenAiCompatibleArticleGenerator> _logger;
     private readonly ResiliencePipeline _pipeline;

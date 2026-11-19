@@ -293,14 +293,7 @@ public class ArticulosController : Controller
             }
         }
 
-        var errors = issues
-            .Where(issue => issue.Severity == ArticleIssueSeverity.Error)
-            .Select(issue => issue.Message)
-            .ToList();
-        var warnings = issues
-            .Where(issue => issue.Severity == ArticleIssueSeverity.Warning)
-            .Select(issue => issue.Message)
-            .ToList();
+        var (errors, warnings) = ArticleFormValidator.SplitBySeverity(issues);
 
         return Json(new
         {
@@ -344,15 +337,8 @@ public class ArticulosController : Controller
             });
         }
 
-        List<ContentBlockDto> blocks;
-        try
-        {
-            blocks = ContentBlockJson.Deserialize(request.BlocksJson);
-        }
-        catch (JsonException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        if (!TryReadBlocks(request.BlocksJson, out var blocks, out var blocksError))
+            return BadRequest(new { message = blocksError });
 
         var plan = ArticleGenerationPlanner.FromSettings(settings);
         var internalLinks = await _articleService
@@ -399,36 +385,11 @@ public class ArticulosController : Controller
             ArticleFormValidator.RestoreLinkHrefs(corrected.Blocks, blocks);
             var correctedLinks = ArticleFormValidator.ExtractLinks(corrected.Blocks);
 
-            var urlsToCheck = corrected.LinkActions
-                .SelectMany(action => new[] { action.Url, action.Replacement })
-                .Where(url => !string.IsNullOrWhiteSpace(url))
-                .Select(url => url!)
-                .Concat(correctedLinks)
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-
-            var checkedLinks = urlsToCheck.Count > 0
-                ? await _linkChecker.CheckAsync(urlsToCheck, baseUri, HttpContext.RequestAborted)
-                : [];
-
-            var checksByCanonical = checkedLinks
-                .Select(link => (
-                    Canonical: ArticleFormValidator.CanonicalizeLink(link.Url, baseUri),
-                    Link: link))
-                .Where(item => item.Canonical is not null)
-                .GroupBy(item => item.Canonical!, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.First().Link,
-                    StringComparer.OrdinalIgnoreCase);
-
-            ArticleLinkCheckResult? FindCheck(string? url)
-            {
-                var canonical = ArticleFormValidator.CanonicalizeLink(url, baseUri);
-                return canonical is not null && checksByCanonical.TryGetValue(canonical, out var check)
-                    ? check
-                    : null;
-            }
+            var checks = await CheckLinkMapAsync(
+                corrected.LinkActions
+                    .SelectMany(action => new[] { action.Url, action.Replacement })
+                    .Concat(correctedLinks),
+                baseUri);
 
             bool ExistsInBody(string? url)
             {
@@ -458,7 +419,7 @@ public class ArticulosController : Controller
                         continue;
                     }
 
-                    var check = FindCheck(replacement);
+                    var check = FindLinkCheck(checks, replacement, baseUri);
                     var exists = ExistsInBody(action.Url);
                     var verified = exists && check is not null && !check.IsBroken;
                     var validation = !exists
@@ -473,7 +434,7 @@ public class ArticulosController : Controller
                 }
                 else if (type == "remove")
                 {
-                    var check = FindCheck(action.Url);
+                    var check = FindLinkCheck(checks, action.Url, baseUri);
                     var exists = ExistsInBody(action.Url);
                     var verified = exists && check?.Status == "caido";
                     var validation = !exists
@@ -490,7 +451,7 @@ public class ArticulosController : Controller
             // se ofrece quitarlo, pero el usuario decide.
             foreach (var link in correctedLinks)
             {
-                if (FindCheck(link)?.Status != "caido") continue;
+                if (FindLinkCheck(checks, link, baseUri)?.Status != "caido") continue;
 
                 var canonical = ArticleFormValidator.CanonicalizeLink(link, baseUri);
                 var covered = proposed.Any(action =>
@@ -580,15 +541,8 @@ public class ArticulosController : Controller
             });
         }
 
-        List<ContentBlockDto> blocks;
-        try
-        {
-            blocks = ContentBlockJson.Deserialize(request.BlocksJson);
-        }
-        catch (JsonException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        if (!TryReadBlocks(request.BlocksJson, out var blocks, out var blocksError))
+            return BadRequest(new { message = blocksError });
 
         var urls = (request.Urls ?? [])
             .Where(url => !string.IsNullOrWhiteSpace(url))
@@ -636,15 +590,8 @@ public class ArticulosController : Controller
             });
         }
 
-        List<ContentBlockDto> blocks;
-        try
-        {
-            blocks = ContentBlockJson.Deserialize(request.BlocksJson);
-        }
-        catch (JsonException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        if (!TryReadBlocks(request.BlocksJson, out var blocks, out var blocksError))
+            return BadRequest(new { message = blocksError });
 
         var actions = (request.Actions ?? [])
             .Where(action => !string.IsNullOrWhiteSpace(action.Url))
@@ -665,34 +612,9 @@ public class ArticulosController : Controller
         }
 
         var baseUri = new Uri($"{Request.Scheme}://{Request.Host}");
-        var urls = actions
-            .SelectMany(action => new[] { action.Url, action.Replacement })
-            .Where(url => !string.IsNullOrWhiteSpace(url))
-            .Select(url => url!)
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-
-        var checkedLinks = await _linkChecker.CheckAsync(
-            urls, baseUri, HttpContext.RequestAborted);
-
-        var checksByCanonical = checkedLinks
-            .Select(link => (
-                Canonical: ArticleFormValidator.CanonicalizeLink(link.Url, baseUri),
-                Link: link))
-            .Where(item => item.Canonical is not null)
-            .GroupBy(item => item.Canonical!, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(
-                group => group.Key,
-                group => group.First().Link,
-                StringComparer.OrdinalIgnoreCase);
-
-        ArticleLinkCheckResult? FindCheck(string? url)
-        {
-            var canonical = ArticleFormValidator.CanonicalizeLink(url, baseUri);
-            return canonical is not null && checksByCanonical.TryGetValue(canonical, out var check)
-                ? check
-                : null;
-        }
+        var checks = await CheckLinkMapAsync(
+            actions.SelectMany(action => new[] { action.Url, action.Replacement }),
+            baseUri);
 
         var replacements = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var removals = new List<string>();
@@ -703,12 +625,12 @@ public class ArticulosController : Controller
         {
             if (action.Type == "replace")
             {
-                var check = FindCheck(action.Replacement);
+                var check = FindLinkCheck(checks, action.Replacement, baseUri);
                 if (!string.IsNullOrWhiteSpace(action.Replacement)
                     && check is not null
                     && !check.IsBroken)
                 {
-                    replacements[action.Url] = action.Replacement!;
+                    replacements[action.Url!] = action.Replacement!;
                     applied++;
                 }
                 else
@@ -718,9 +640,9 @@ public class ArticulosController : Controller
             }
             else if (action.Type == "remove")
             {
-                if (FindCheck(action.Url)?.Status == "caido")
+                if (FindLinkCheck(checks, action.Url, baseUri)?.Status == "caido")
                 {
-                    removals.Add(action.Url);
+                    removals.Add(action.Url!);
                     applied++;
                 }
                 else
@@ -746,6 +668,68 @@ public class ArticulosController : Controller
             applied,
             skipped
         });
+    }
+
+    /// <summary>
+    /// Lee el cuerpo JSON del editor y devuelve un mensaje listo para BadRequest si
+    /// el formato no es válido.
+    /// </summary>
+    private static bool TryReadBlocks(
+        string? json, out List<ContentBlockDto> blocks, out string? error)
+    {
+        try
+        {
+            blocks = ContentBlockJson.Deserialize(json);
+            error = null;
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            blocks = [];
+            error = ex.Message;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Comprueba un conjunto de URL y devuelve un índice por forma canónica para
+    /// localizar el resultado sin repetir la lógica en cada acción.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<string, ArticleLinkCheckResult>> CheckLinkMapAsync(
+        IEnumerable<string?> urls, Uri baseUri)
+    {
+        var distinct = urls
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .Select(url => url!)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (distinct.Count == 0)
+            return new Dictionary<string, ArticleLinkCheckResult>(StringComparer.OrdinalIgnoreCase);
+
+        var checkedLinks = await _linkChecker.CheckAsync(
+            distinct, baseUri, HttpContext.RequestAborted);
+
+        return checkedLinks
+            .Select(link => (
+                Canonical: ArticleFormValidator.CanonicalizeLink(link.Url, baseUri),
+                Link: link))
+            .Where(item => item.Canonical is not null)
+            .GroupBy(item => item.Canonical!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Link,
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static ArticleLinkCheckResult? FindLinkCheck(
+        IReadOnlyDictionary<string, ArticleLinkCheckResult> checks,
+        string? url, Uri baseUri)
+    {
+        var canonical = ArticleFormValidator.CanonicalizeLink(url, baseUri);
+        return canonical is not null && checks.TryGetValue(canonical, out var check)
+            ? check
+            : null;
     }
 
     [HttpPost("eliminar/{id}")]

@@ -121,8 +121,8 @@ public sealed class OpenAiCompatibleArticleCorrector : IAiArticleCorrector
             "No copies las marcas [Bloque N] en los textos del JSON de salida: son solo referencias internas.\n" +
             "Artículo actual:\n" +
             $"Título: {request.Title}\nResumen: {request.Summary}\n\n{source}\n" +
-            "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n" +
-            "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ],\n  \"linkActions\": [ { \"type\": \"replace\", \"url\": \"https://roto\", \"replacement\": \"/articulos/valido\", \"reason\": \"...\" }, { \"type\": \"remove\", \"url\": \"https://roto\", \"reason\": \"...\" } ]\n}\n" +
+            OpenAiCompatibleArticleGenerator.JsonOutputInstruction +
+            OpenAiCompatibleArticleGenerator.ArticleJsonShapeWithLinkActions +
             "Antes de responder, cuenta las palabras de cada \"paragraph\" y comprueba que está entre " +
             $"{profile.MinWords} y {profile.MaxWords}; divide los largos y amplía los cortos. " +
             "Reglas: primer bloque \"paragraph\"; sin encabezados de nivel 1; sin dos encabezados seguidos; tipos permitidos heading (2/3), paragraph, bullet-list, ordered-list, quote, callout, table y code. " +
