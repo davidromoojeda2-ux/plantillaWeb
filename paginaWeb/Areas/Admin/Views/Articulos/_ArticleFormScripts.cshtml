@@ -571,7 +571,9 @@
                     await removeBrokenLinks(brokenLinks);
                 } else {
                     if (window.showToast) {
-                        let message = 'Corrección aplicada.';
+                        const attempts = Number(data.attempts) || 1;
+                        let message = 'Corrección aplicada' +
+                            (attempts > 1 ? ' tras ' + attempts + ' intentos' : '') + '.';
                         if (brokenLinks.length > 0) {
                             message += ' Se mantuvieron ' + brokenLinks.length + ' enlace(s) caído(s).';
                         }

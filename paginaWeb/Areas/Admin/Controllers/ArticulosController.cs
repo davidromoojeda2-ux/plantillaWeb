@@ -421,7 +421,8 @@ public class ArticulosController : Controller
                 tags = corrected.Tags,
                 blocksJson = ContentBlockJson.Serialize(corrected.Blocks),
                 brokenLinks,
-                remainingStyleIssues = outcome.RemainingFindings.Count
+                remainingStyleIssues = outcome.RemainingFindings.Count,
+                attempts = outcome.Attempts
             });
         }
         catch (Exception ex)
