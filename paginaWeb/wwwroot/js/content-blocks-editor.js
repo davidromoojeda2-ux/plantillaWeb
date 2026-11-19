@@ -545,6 +545,53 @@
             this.refreshIndices();
         }
 
+        /**
+         * Lleva al usuario a un bloque concreto (por ejemplo, al pulsar una
+         * observación de la validación). Devuelve false si el índice no existe.
+         */
+        focusBlock(index) {
+            const block = this.blocks[index];
+            if (!block || !block.el) return false;
+
+            this.selectBlock(block);
+            block.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            this.focusFirstField(block.el);
+
+            const previous = block.el.style.boxShadow;
+            block.el.style.transition = 'box-shadow 0.2s ease';
+            block.el.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.55)';
+            setTimeout(() => {
+                block.el.style.boxShadow = previous || '';
+            }, 1800);
+
+            return true;
+        }
+
+        /**
+         * Reemplaza el cuerpo completo del artículo. Lo usa la corrección con IA
+         * después de revisar y normalizar los bloques devueltos por el modelo.
+         */
+        replaceBlocks(blocks) {
+            if (!Array.isArray(blocks)) return;
+
+            this.clearSelectedBlock();
+            this.blocks = [];
+            if (this.canvas) this.canvas.innerHTML = '';
+
+            const items = blocks.filter(item =>
+                item && typeof item === 'object' && TYPE_LABEL[item.type]);
+            const source = items.length > 0 ? items : [{ type: 'paragraph' }];
+
+            source.forEach(item => {
+                if (this.blocks.length >= this.maxBlocks) return;
+                this.blocks.push(this.createBlock(item.type, item));
+            });
+
+            this.renderCanvas();
+            this.sync();
+            this.dirty = true;
+        }
+
         selectBlock(block) {
             if (!block || this.selectedBlock === block) return;
             this.selectedBlock?.el.classList.remove('is-selected');

@@ -86,7 +86,7 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             "El contenido debe ser 100% original y atribuir los datos a sus fuentes.";
     }
 
-    private static string RenderBlocks(IEnumerable<ContentBlockDto> blocks)
+    internal static string RenderBlocks(IEnumerable<ContentBlockDto> blocks)
     {
         var sb = new StringBuilder();
         foreach (var block in blocks)

@@ -4,6 +4,15 @@ using Aplication.DTOs.ContentBlocks;
 namespace Aplication.Services;
 
 /// <summary>
+/// Hallazgo agregado de estilo. Conserva los índices de los bloques afectados para
+/// que la interfaz pueda llevar al usuario a cada punto observado.
+/// </summary>
+public sealed record ParagraphStyleIssue(
+    string Code,
+    string Message,
+    IReadOnlyList<int> BlockIndexes);
+
+/// <summary>
 /// Fachada del estilo de párrafo. Es la única superficie que consumen el generador,
 /// el reescritor, los validadores y el panel: concentra las reglas y el texto que se
 /// envía al modelo, de modo que prompt y validación no puedan desincronizarse.
@@ -49,11 +58,19 @@ public static class ParagraphStyle
     /// una advertencia por cada párrafo.
     /// </summary>
     public static IReadOnlyList<string> Summarize(
+        IReadOnlyList<ParagraphFinding> findings, ParagraphStyleProfile profile) =>
+        SummarizeWithTargets(findings, profile).Select(issue => issue.Message).ToList();
+
+    /// <summary>
+    /// Igual que <see cref="Summarize"/>, pero conserva los bloques afectados por cada
+    /// mensaje para que la interfaz pueda navegar al punto observado.
+    /// </summary>
+    public static IReadOnlyList<ParagraphStyleIssue> SummarizeWithTargets(
         IReadOnlyList<ParagraphFinding> findings, ParagraphStyleProfile profile)
     {
         if (findings.Count == 0) return [];
 
-        var messages = new List<string>();
+        var issues = new List<ParagraphStyleIssue>();
 
         var longParagraphs = findings
             .Where(f => f.Code == "length" && f.Value > profile.MaxWords)
@@ -61,34 +78,47 @@ public static class ParagraphStyle
         if (longParagraphs.Count > 0)
         {
             var max = longParagraphs.Max(f => f.Value);
-            messages.Add(longParagraphs.Count == 1
-                ? $"1 párrafo supera las {profile.MaxWords} palabras (el más largo: {max})."
-                : $"{longParagraphs.Count} párrafos superan las {profile.MaxWords} palabras (el más largo: {max}).");
+            issues.Add(new ParagraphStyleIssue(
+                "style-length-long",
+                longParagraphs.Count == 1
+                    ? $"1 párrafo supera las {profile.MaxWords} palabras (el más largo: {max})."
+                    : $"{longParagraphs.Count} párrafos superan las {profile.MaxWords} palabras (el más largo: {max}).",
+                longParagraphs.Select(f => f.BlockIndex).Distinct().ToList()));
         }
 
         var shortParagraphs = findings
-            .Count(f => f.Code == "length" && f.Value > 0 && f.Value < profile.MinWords);
-        if (shortParagraphs > 0)
+            .Where(f => f.Code == "length" && f.Value > 0 && f.Value < profile.MinWords)
+            .ToList();
+        if (shortParagraphs.Count > 0)
         {
-            messages.Add(shortParagraphs == 1
-                ? $"1 párrafo no alcanza las {profile.MinWords} palabras."
-                : $"{shortParagraphs} párrafos no alcanzan las {profile.MinWords} palabras.");
+            issues.Add(new ParagraphStyleIssue(
+                "style-length-short",
+                shortParagraphs.Count == 1
+                    ? $"1 párrafo no alcanza las {profile.MinWords} palabras."
+                    : $"{shortParagraphs.Count} párrafos no alcanzan las {profile.MinWords} palabras.",
+                shortParagraphs.Select(f => f.BlockIndex).Distinct().ToList()));
         }
 
         var stacked = findings.Where(f => f.Code == "stacked").ToList();
         if (stacked.Count > 0)
         {
-            messages.Add($"Hay hasta {stacked.Max(f => f.Value)} párrafos seguidos sin un recurso de respiro (máximo {profile.MaxConsecutive}).");
+            issues.Add(new ParagraphStyleIssue(
+                "style-stacked",
+                $"Hay hasta {stacked.Max(f => f.Value)} párrafos seguidos sin un recurso de respiro (máximo {profile.MaxConsecutive}).",
+                stacked.Select(f => f.BlockIndex).Distinct().ToList()));
         }
 
-        var notAnswering = findings.Count(f => f.Code is "opener" or "first-sentence");
-        if (notAnswering > 0)
+        var notAnswering = findings.Where(f => f.Code is "opener" or "first-sentence").ToList();
+        if (notAnswering.Count > 0)
         {
-            messages.Add(notAnswering == 1
-                ? "1 párrafo no responde de inmediato al encabezado (primera frase larga o con fórmula de relleno)."
-                : $"{notAnswering} párrafos no responden de inmediato al encabezado (primera frase larga o con fórmula de relleno).");
+            issues.Add(new ParagraphStyleIssue(
+                "style-answer",
+                notAnswering.Count == 1
+                    ? "1 párrafo no responde de inmediato al encabezado (primera frase larga o con fórmula de relleno)."
+                    : $"{notAnswering.Count} párrafos no responden de inmediato al encabezado (primera frase larga o con fórmula de relleno).",
+                notAnswering.Select(f => f.BlockIndex).Distinct().ToList()));
         }
 
-        return messages;
+        return issues;
     }
 }

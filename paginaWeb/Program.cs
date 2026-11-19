@@ -100,6 +100,7 @@ builder.Services.AddHttpClient<ITopicDiscoveryService, SerperTopicDiscoveryServi
 builder.Services.AddHttpClient<IAiArticleGenerator, OpenAiCompatibleArticleGenerator>();
 builder.Services.AddHttpClient<ITopicCountryValidator, OpenAiCompatibleTopicCountryValidator>();
 builder.Services.AddHttpClient<IAiArticleRewriter, OpenAiCompatibleArticleRewriter>();
+builder.Services.AddHttpClient<IAiArticleCorrector, OpenAiCompatibleArticleCorrector>();
 builder.Services.AddHttpClient<IProviderBalanceService, ProviderBalanceService>();
 builder.Services.AddHttpClient<IArticleLinkChecker, ArticleLinkChecker>(client =>
 {

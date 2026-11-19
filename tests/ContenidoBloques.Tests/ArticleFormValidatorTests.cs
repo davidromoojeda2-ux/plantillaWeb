@@ -154,6 +154,41 @@ public class ArticleFormValidatorTests
 
         Assert.DoesNotContain(result.Errors, e => e.Contains("párrafo", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(result.Warnings, w => w.Contains("palabras", StringComparison.OrdinalIgnoreCase));
+
+        var issue = Assert.Single(
+            result.EffectiveIssues, i => i.Code == "style-length-long");
+        Assert.Contains(0, issue.BlockIndexes!);
+    }
+
+    [Fact]
+    public void Los_errores_de_campo_apuntan_al_input()
+    {
+        var result = ArticleFormValidator.Validate(
+            "", "", "", "", null, null, "Publicado", ValidBlocks());
+
+        var titleIssue = Assert.Single(
+            result.EffectiveIssues, issue => issue.Field == "titleInput");
+
+        Assert.Equal("error", titleIssue.Severity);
+        Assert.Equal("required", titleIssue.Code);
+    }
+
+    [Fact]
+    public void Localiza_el_bloque_que_contiene_un_enlace()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto { Text = "Sin enlaces." },
+            new ContentParagraphBlockDto
+            {
+                Text = "Ver <a href=\"https://example.com/a\">A</a>."
+            }
+        };
+
+        var indexes = ArticleFormValidator.FindBlocksWithLink(
+            blocks, "https://example.com/a");
+
+        Assert.Equal([1], indexes);
     }
 
     private static List<ContentBlockDto> ValidBlocks() =>

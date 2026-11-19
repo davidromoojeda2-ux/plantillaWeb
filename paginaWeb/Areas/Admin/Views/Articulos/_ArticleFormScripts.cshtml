@@ -137,21 +137,119 @@
         const linksBox = document.getElementById('validationLinks');
         const cleanBox = document.getElementById('validationClean');
         const summaryBadge = document.getElementById('validationSummaryBadge');
+        const aiButton = document.getElementById('btnAiCorrect');
+        const aiLabel = document.getElementById('btnAiCorrectLabel');
         const form = document.getElementById('articleForm');
 
         if (!card || !button || !results || !form) return;
 
         const validateUrl = card.getAttribute('data-validate-url');
+        const correctUrl = card.getAttribute('data-correct-url');
         if (!validateUrl) return;
+
+        let lastIssues = [];
+
+        // Observaciones que la IA no puede resolver por sí sola (requieren elección
+        // de categoría, portada o estado).
+        const MANUAL_ONLY_CODES = new Set(['category', 'cover', 'status']);
+
+        function correctableIssues() {
+            return lastIssues.filter(issue => !MANUAL_ONLY_CODES.has(issue.code));
+        }
 
         function setBadge(text, classes) {
             summaryBadge.textContent = text;
             summaryBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold ' + classes;
         }
 
-        function renderList(container, title, items) {
+        function highlight(element) {
+            if (!element) return;
+            const previous = element.style.boxShadow;
+            element.style.transition = 'box-shadow 0.2s ease';
+            element.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.55)';
+            setTimeout(() => {
+                element.style.boxShadow = previous || '';
+            }, 1800);
+        }
+
+        function focusField(id) {
+            const field = document.getElementById(id);
+            if (!field) return false;
+
+            field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            field.focus?.({ preventScroll: true });
+            highlight(field);
+            return true;
+        }
+
+        function focusBlock(index) {
+            const editor = window.contentBlocksEditor;
+            if (editor && typeof editor.focusBlock === 'function' && editor.focusBlock(index)) {
+                return true;
+            }
+
+            const block = document.querySelector(
+                '#contentBlocksEditor .cbe-block[data-index="' + index + '"]');
+            if (!block) return false;
+
+            block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            highlight(block);
+            return true;
+        }
+
+        // Lleva al usuario al punto observado. Si una observación abarca varios
+        // bloques, cada clic avanza al siguiente.
+        function goToIssue(issue, item) {
+            if (issue.field && focusField(issue.field)) return;
+
+            const indexes = Array.isArray(issue.blockIndexes) ? issue.blockIndexes : [];
+            if (indexes.length > 0) {
+                const next = Number(item.dataset.nextTarget || 0) % indexes.length;
+                item.dataset.nextTarget = String(next + 1);
+                if (focusBlock(indexes[next])) return;
+            }
+
+            if (issue.url) {
+                const editor = document.getElementById('contentBlocksEditor');
+                editor?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                highlight(editor);
+            }
+        }
+
+        function createIssueItem(issue) {
+            const item = document.createElement('li');
+            const hasTarget = !!issue.field
+                || (Array.isArray(issue.blockIndexes) && issue.blockIndexes.length > 0);
+            item.className = 'rounded px-1 -mx-1 ' + (hasTarget
+                ? 'cursor-pointer hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-amber-400'
+                : '');
+            item.textContent = issue.message;
+
+            if (hasTarget) {
+                item.tabIndex = 0;
+                item.title = 'Ir al punto observado';
+                item.setAttribute('role', 'button');
+
+                const arrow = document.createElement('span');
+                arrow.className = 'ml-1 text-[10px] font-bold opacity-70';
+                arrow.textContent = '→';
+                item.appendChild(arrow);
+
+                const activate = () => goToIssue(issue, item);
+                item.addEventListener('click', activate);
+                item.addEventListener('keydown', event => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    activate();
+                });
+            }
+
+            return item;
+        }
+
+        function renderIssues(container, title, issues) {
             container.innerHTML = '';
-            if (!items || items.length === 0) {
+            if (!issues || issues.length === 0) {
                 container.classList.add('hidden');
                 return;
             }
@@ -163,13 +261,15 @@
 
             const list = document.createElement('ul');
             list.className = 'space-y-1 list-disc list-inside';
-            items.forEach(item => {
-                const li = document.createElement('li');
-                li.textContent = item;
-                list.appendChild(li);
-            });
+            issues.forEach(issue => list.appendChild(createIssueItem(issue)));
             container.appendChild(list);
             container.classList.remove('hidden');
+        }
+
+        // Respaldo para respuestas antiguas que solo traen errores y avisos.
+        function renderList(container, title, items) {
+            renderIssues(container, title,
+                (items || []).map(message => ({ message, blockIndexes: [] })));
         }
 
         function statusMeta(status) {
@@ -255,24 +355,39 @@
                 const data = await response.json();
                 results.classList.remove('hidden');
 
-                renderList(errorsBox, 'Errores', data.errors);
-                renderList(warningsBox, 'Avisos', data.warnings);
+                lastIssues = Array.isArray(data.issues) ? data.issues : [];
+                if (lastIssues.length === 0) {
+                    lastIssues = [
+                        ...(Array.isArray(data.errors) ? data.errors : []).map(message => ({
+                            severity: 'error', code: 'general', message, blockIndexes: []
+                        })),
+                        ...(Array.isArray(data.warnings) ? data.warnings : []).map(message => ({
+                            severity: 'warning', code: 'general', message, blockIndexes: []
+                        }))
+                    ];
+                }
+
+                const errorIssues = lastIssues.filter(issue => issue.severity === 'error');
+                const warningIssues = lastIssues.filter(issue => issue.severity === 'warning');
+
+                renderIssues(errorsBox, 'Errores', errorIssues);
+                renderIssues(warningsBox, 'Avisos', warningIssues);
                 renderLinks(data.links);
 
-                const errorCount = Array.isArray(data.errors) ? data.errors.length : 0;
-                const warningCount = Array.isArray(data.warnings) ? data.warnings.length : 0;
+                aiButton?.classList.toggle('hidden', correctableIssues().length === 0);
+                cleanBox.classList.toggle('hidden', lastIssues.length > 0);
 
-                cleanBox.classList.toggle('hidden', errorCount > 0 || warningCount > 0);
-
-                if (errorCount > 0) {
-                    setBadge(errorCount + (errorCount === 1 ? ' error' : ' errores'), 'bg-rose-100 text-rose-800 border border-rose-200');
-                } else if (warningCount > 0) {
-                    setBadge(warningCount + (warningCount === 1 ? ' aviso' : ' avisos'), 'bg-amber-100 text-amber-800 border border-amber-200');
+                if (errorIssues.length > 0) {
+                    setBadge(errorIssues.length + (errorIssues.length === 1 ? ' error' : ' errores'), 'bg-rose-100 text-rose-800 border border-rose-200');
+                } else if (warningIssues.length > 0) {
+                    setBadge(warningIssues.length + (warningIssues.length === 1 ? ' aviso' : ' avisos'), 'bg-amber-100 text-amber-800 border border-amber-200');
                 } else {
                     setBadge('Sin problemas', 'bg-emerald-100 text-emerald-800 border border-emerald-200');
                 }
             } catch (error) {
                 results.classList.remove('hidden');
+                lastIssues = [];
+                aiButton?.classList.add('hidden');
                 renderList(errorsBox, 'No se pudo validar', [error.message || 'Inténtalo de nuevo.']);
                 warningsBox.classList.add('hidden');
                 linksSection.classList.add('hidden');
@@ -284,6 +399,88 @@
             }
         }
 
+        function applyCorrection(data) {
+            const title = document.getElementById('titleInput');
+            if (title && typeof data.title === 'string') {
+                title.value = data.title;
+                title.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            const summary = document.getElementById('Summary');
+            if (summary && typeof data.summary === 'string') {
+                summary.value = data.summary;
+                summary.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            if (typeof data.blocksJson === 'string' && window.contentBlocksEditor?.replaceBlocks) {
+                try {
+                    window.contentBlocksEditor.replaceBlocks(JSON.parse(data.blocksJson));
+                } catch (error) {
+                    console.warn('No se pudo aplicar el cuerpo corregido', error);
+                }
+            }
+        }
+
+        async function correctWithAi() {
+            if (!correctUrl) return;
+
+            const issues = correctableIssues();
+            if (issues.length === 0) {
+                if (window.showToast) {
+                    window.showToast('Las observaciones actuales requieren corrección manual.', 'info');
+                }
+                return;
+            }
+
+            if (!window.confirm('La IA reemplazará el título, el resumen y el cuerpo con una versión corregida. ¿Continuar?')) {
+                return;
+            }
+
+            const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const payload = {
+                title: document.getElementById('titleInput')?.value || '',
+                summary: document.getElementById('Summary')?.value || '',
+                blocksJson: document.getElementById('BlocksJsonInput')?.value || '[]',
+                issues: issues.map(issue => ({ code: issue.code || null, message: issue.message }))
+            };
+
+            aiButton.disabled = true;
+            const originalLabel = aiLabel.textContent;
+            aiLabel.textContent = 'Corrigiendo…';
+
+            try {
+                const response = await fetch(correctUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data.message || 'La corrección no está disponible (HTTP ' + response.status + ').');
+                }
+
+                applyCorrection(data);
+                if (window.showToast) {
+                    window.showToast('Corrección aplicada. Revisa los cambios antes de guardar.', 'success');
+                }
+                await validateArticle();
+            } catch (error) {
+                if (window.showToast) {
+                    window.showToast(error.message || 'No se pudo corregir el artículo.', 'error');
+                } else {
+                    renderList(errorsBox, 'No se pudo corregir', [error.message || 'Inténtalo de nuevo.']);
+                }
+            } finally {
+                aiButton.disabled = false;
+                aiLabel.textContent = originalLabel || 'Corregir con IA';
+            }
+        }
+
         button.addEventListener('click', validateArticle);
+        aiButton?.addEventListener('click', correctWithAi);
     })();
 </script>

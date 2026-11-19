@@ -206,6 +206,24 @@ public class ParagraphStyleTests
         Assert.Empty(unsupported.ForbiddenOpeners);
     }
 
+    [Fact]
+    public void Summary_Keeps_The_Block_Indexes()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            Paragraph(Words(80)),
+            Paragraph(Words(130))
+        };
+
+        var profile = ParagraphStyleProfile.Resolve("news", null, "es");
+        var findings = ParagraphStyle.Analyze(blocks, profile);
+        var issues = ParagraphStyle.SummarizeWithTargets(findings, profile);
+
+        var longIssue = Assert.Single(
+            issues, issue => issue.Code == "style-length-long");
+        Assert.Equal([0, 1], longIssue.BlockIndexes);
+    }
+
     private static ContentParagraphBlockDto Paragraph(string text) => new() { Text = text };
 
     private static string Words(int count) => string.Join(' ', Enumerable.Repeat("palabra", count));

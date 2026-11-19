@@ -29,6 +29,7 @@ public class ArticulosController : Controller
     private readonly IDocumentService _documentService;
     private readonly IMenuService _menuService;
     private readonly IAiArticleRewriter _rewriter;
+    private readonly IAiArticleCorrector _corrector;
     private readonly IAutomationService _automation;
     private readonly ISiteSettingsService _siteSettingsService;
     private readonly IArticleLinkChecker _linkChecker;
@@ -40,6 +41,7 @@ public class ArticulosController : Controller
         IDocumentService documentService,
         IMenuService menuService,
         IAiArticleRewriter rewriter,
+        IAiArticleCorrector corrector,
         IAutomationService automation,
         ISiteSettingsService siteSettingsService,
         IArticleLinkChecker linkChecker)
@@ -50,6 +52,7 @@ public class ArticulosController : Controller
         _documentService = documentService;
         _menuService = menuService;
         _rewriter = rewriter;
+        _corrector = corrector;
         _automation = automation;
         _siteSettingsService = siteSettingsService;
         _linkChecker = linkChecker;
@@ -230,8 +233,7 @@ public class ArticulosController : Controller
         if (request is null)
             return BadRequest(new { message = "Solicitud de validación no válida." });
 
-        var errors = new List<string>();
-        var warnings = new List<string>();
+        var issues = new List<ArticleValidationIssue>();
         var blocks = new List<ContentBlockDto>();
 
         try
@@ -240,7 +242,8 @@ public class ArticulosController : Controller
         }
         catch (JsonException ex)
         {
-            errors.Add(ex.Message);
+            issues.Add(new ArticleValidationIssue(
+                ArticleIssueSeverity.Error, "json", ex.Message, "contentBlocksEditor"));
         }
 
         var validation = ArticleFormValidator.Validate(
@@ -254,8 +257,7 @@ public class ArticulosController : Controller
             blocks,
             blocks.Count > 0 ? await ResolveParagraphStyleAsync() : null);
 
-        errors.AddRange(validation.Errors);
-        warnings.AddRange(validation.Warnings);
+        issues.AddRange(validation.EffectiveIssues);
 
         var linksToCheck = validation.Links.ToList();
         if (!string.IsNullOrWhiteSpace(request.CoverImageUrl))
@@ -266,17 +268,54 @@ public class ArticulosController : Controller
 
         foreach (var link in links)
         {
+            var isCover = !string.IsNullOrWhiteSpace(request.CoverImageUrl)
+                && string.Equals(link.Url, request.CoverImageUrl, StringComparison.Ordinal);
+
             if (link.IsBroken)
-                errors.Add($"Enlace caído: {link.Url} ({link.Detail ?? link.Status}).");
+            {
+                issues.Add(new ArticleValidationIssue(
+                    ArticleIssueSeverity.Error,
+                    "link",
+                    $"Enlace caído: {link.Url} ({link.Detail ?? link.Status}).",
+                    isCover ? "coverImageUrlInput" : null,
+                    isCover ? null : ArticleFormValidator.FindBlocksWithLink(blocks, link.Url),
+                    link.Url));
+            }
             else if (link.IsWarning)
-                warnings.Add($"Enlace restringido: {link.Url} ({link.StatusCode}).");
+            {
+                issues.Add(new ArticleValidationIssue(
+                    ArticleIssueSeverity.Warning,
+                    "link",
+                    $"Enlace restringido: {link.Url} ({link.StatusCode}).",
+                    isCover ? "coverImageUrlInput" : null,
+                    isCover ? null : ArticleFormValidator.FindBlocksWithLink(blocks, link.Url),
+                    link.Url));
+            }
         }
+
+        var errors = issues
+            .Where(issue => issue.Severity == ArticleIssueSeverity.Error)
+            .Select(issue => issue.Message)
+            .ToList();
+        var warnings = issues
+            .Where(issue => issue.Severity == ArticleIssueSeverity.Warning)
+            .Select(issue => issue.Message)
+            .ToList();
 
         return Json(new
         {
             isValid = errors.Count == 0,
             errors,
             warnings,
+            issues = issues.Select(issue => new
+            {
+                severity = issue.Severity,
+                code = issue.Code,
+                message = issue.Message,
+                field = issue.Field,
+                blockIndexes = issue.BlockIndexes,
+                url = issue.Url
+            }),
             links = links.Select(link => new
             {
                 link.Url,
@@ -287,6 +326,76 @@ public class ArticulosController : Controller
             }),
             checkedAt = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
         });
+    }
+
+    [HttpPost("corregir")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Corregir([FromBody] ArticleCorrectionInput request)
+    {
+        if (request is null)
+            return BadRequest(new { message = "Solicitud de corrección no válida." });
+
+        var settings = await _automation.GetSettingsAsync();
+        if (string.IsNullOrWhiteSpace(settings.AiApiKey))
+        {
+            return BadRequest(new
+            {
+                message = "La IA no está configurada. Añade una clave en la configuración de automatización."
+            });
+        }
+
+        List<ContentBlockDto> blocks;
+        try
+        {
+            blocks = ContentBlockJson.Deserialize(request.BlocksJson);
+        }
+        catch (JsonException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+
+        var plan = ArticleGenerationPlanner.FromSettings(settings);
+        var internalLinks = await _articleService
+            .GetInternalLinkCandidatesAsync(request.Title ?? string.Empty) ?? [];
+
+        var issues = (request.Issues ?? [])
+            .Select(issue => issue.Message?.Trim())
+            .Where(message => !string.IsNullOrWhiteSpace(message))
+            .Select(message => message!)
+            .ToList();
+
+        try
+        {
+            var corrected = await _corrector.CorrectAsync(new ArticleCorrectionRequest
+            {
+                Title = request.Title ?? string.Empty,
+                Summary = request.Summary ?? string.Empty,
+                Blocks = blocks,
+                Language = settings.Language,
+                Template = plan.Template,
+                ParagraphStyles = plan.ParagraphStyles,
+                Issues = issues,
+                InternalLinks = internalLinks,
+                Temperature = plan.Temperature,
+                MaxTokens = plan.MaxTokens,
+                ApiKey = settings.AiApiKey,
+                BaseUrl = settings.AiBaseUrl,
+                Model = settings.AiModel
+            }, HttpContext.RequestAborted);
+
+            return Json(new
+            {
+                title = corrected.Title,
+                summary = corrected.Summary,
+                metaDescription = corrected.MetaDescription,
+                tags = corrected.Tags,
+                blocksJson = ContentBlockJson.Serialize(corrected.Blocks)
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = $"No se pudo corregir el artículo: {ex.Message}" });
+        }
     }
 
     [HttpPost("eliminar/{id}")]
