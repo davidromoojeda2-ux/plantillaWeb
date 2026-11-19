@@ -327,7 +327,7 @@ public static class ArticleFormValidator
                 blockIndexes: levelOne);
         }
 
-        var empty = IndexesOf(blocks, IsEmptyBlock);
+        var empty = IndexesOf(blocks, ContentBlockRules.IsEmpty);
         if (empty.Count > 0)
         {
             AddError(issues, "empty",
@@ -385,19 +385,6 @@ public static class ArticleFormValidator
         }
         return indexes;
     }
-
-    private static bool IsEmptyBlock(ContentBlockDto block) => block switch
-    {
-        ContentParagraphBlockDto p => string.IsNullOrWhiteSpace(p.Text),
-        ContentHeadingBlockDto h => string.IsNullOrWhiteSpace(h.Text),
-        ContentQuoteBlockDto q => string.IsNullOrWhiteSpace(q.Text),
-        ContentCalloutBlockDto c => string.IsNullOrWhiteSpace(c.Text),
-        ContentBulletListBlockDto l => l.Items.Count < 2 || l.Items.All(string.IsNullOrWhiteSpace),
-        ContentOrderedListBlockDto l => l.Items.Count < 2 || l.Items.All(string.IsNullOrWhiteSpace),
-        ContentTableBlockDto t => t.Headers.Count == 0 || t.Rows.Count < 2,
-        ContentCodeBlockDto c => string.IsNullOrWhiteSpace(c.Code),
-        _ => false
-    };
 
     private static bool BlockContainsLink(ContentBlockDto block, string url, Uri? baseUri)
     {

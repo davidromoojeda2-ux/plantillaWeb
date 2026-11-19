@@ -112,7 +112,7 @@ public static class GeneratedArticleValidator
             }
         }
 
-        if (blocks.Any(IsEmptyBlock))
+        if (blocks.Any(ContentBlockRules.IsEmpty))
             errors.Add("Hay bloques vacíos o listas con menos de 2 elementos; completa o elimina esos bloques.");
     }
 
@@ -182,19 +182,6 @@ public static class GeneratedArticleValidator
         !string.IsNullOrWhiteSpace(text)
         && text.Contains("href", StringComparison.OrdinalIgnoreCase)
         && text.Contains("<a", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsEmptyBlock(ContentBlockDto block) => block switch
-    {
-        ContentParagraphBlockDto p => string.IsNullOrWhiteSpace(p.Text),
-        ContentHeadingBlockDto h => string.IsNullOrWhiteSpace(h.Text),
-        ContentQuoteBlockDto q => string.IsNullOrWhiteSpace(q.Text),
-        ContentCalloutBlockDto c => string.IsNullOrWhiteSpace(c.Text),
-        ContentBulletListBlockDto l => l.Items.Count < 2 || l.Items.All(string.IsNullOrWhiteSpace),
-        ContentOrderedListBlockDto l => l.Items.Count < 2 || l.Items.All(string.IsNullOrWhiteSpace),
-        ContentTableBlockDto t => t.Headers.Count == 0 || t.Rows.Count < 2,
-        ContentCodeBlockDto c => string.IsNullOrWhiteSpace(c.Code),
-        _ => false
-    };
 
     private static int CountWords(GeneratedArticle article)
     {
