@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Aplication.DTOs.Automation;
 using Aplication.Interfaces;
+using Aplication.Services;
 using Infrastructure.Resilience;
 using Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,18 @@ namespace Infrastructure.Ai;
 /// </summary>
 public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
 {
+    /// <summary>Instrucción común para pedir el JSON del artículo.</summary>
+    internal const string JsonOutputInstruction =
+        "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n";
+
+    /// <summary>Contrato JSON compartido por el reescritor y el corrector.</summary>
+    internal const string ArticleJsonShape =
+        "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ]\n}\n";
+
+    /// <summary>Mismo contrato, con las acciones de enlaces que confirma el usuario.</summary>
+    internal const string ArticleJsonShapeWithLinkActions =
+        "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ],\n  \"linkActions\": [ { \"type\": \"replace\", \"url\": \"https://roto\", \"replacement\": \"/articulos/valido\", \"reason\": \"...\" }, { \"type\": \"remove\", \"url\": \"https://roto\", \"reason\": \"...\" } ]\n}\n";
+
     private readonly HttpClient _http;
     private readonly ILogger<OpenAiCompatibleArticleGenerator> _logger;
     private readonly ResiliencePipeline _pipeline;
@@ -110,6 +123,16 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
                 Tags = (article.Tags ?? []).Select(t => t.Trim()).Where(t => t.Length > 0).ToList(),
                 CategorySuggestion = article.CategorySuggestion,
                 MetaDescription = article.MetaDescription?.Trim() ?? string.Empty,
+                LinkActions = (article.LinkActions ?? [])
+                    .Where(action => !string.IsNullOrWhiteSpace(action.Url))
+                    .Select(action => new ArticleLinkAction(
+                        (action.Type ?? string.Empty).Trim().ToLowerInvariant(),
+                        action.Url!.Trim(),
+                        string.IsNullOrWhiteSpace(action.Replacement)
+                            ? null
+                            : action.Replacement.Trim(),
+                        action.Reason))
+                    .ToList(),
                 TotalTokens = parsed?.Usage?.TotalTokens
             };
         }
@@ -127,6 +150,8 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
         var length = request.TargetWords > 0 ? $"Extensión objetivo: {request.TargetWords} palabras (aproximada).\n" : string.Empty;
 
         var minBlocks = Math.Max(3, request.MinBlocks);
+        var paragraphStyle = ParagraphStyleProfile.Resolve(
+            request.Template, request.ParagraphStyles, request.Language);
         var keyword = string.IsNullOrWhiteSpace(request.PrimaryKeyword)
             ? string.Empty
             : $"Palabra clave principal: {request.PrimaryKeyword}. Optimiza el artículo para ella (densidad natural 1-2 %, sin keyword stuffing) e incluye variaciones y sinónimos en los encabezados.\n";
@@ -139,6 +164,7 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
             $"Tono editorial: {DescribeTone(request.Tone)}\n" +
             $"Estructura: {DescribeTemplate(request.Template)}.\n" +
             $"Usa al menos {minBlocks} bloques en total (sin máximo).\n" +
+            ParagraphStyle.DescribeForPrompt(paragraphStyle) + "\n" +
             DescribeRequiredSections(request) +
             DescribeForbiddenSections(request.IncludeConclusion, request.IncludeFaq, request.IncludeCta, request.Template) +
             DescribeInternalLinks(request) +
@@ -217,7 +243,7 @@ public sealed class OpenAiCompatibleArticleGenerator : IAiArticleGenerator
             "Artículo de preguntas frecuentes.\n" +
             "- Introducción breve de un solo párrafo.\n" +
             "- De 4 a 6 preguntas como \"heading\" de nivel 3.\n" +
-            "- Cada pregunta debe ir seguida de una respuesta directa de 70 a 120 palabras.\n" +
+            "- Cada pregunta debe ir seguida de una respuesta directa de 70 a 80 palabras.\n" +
             "- No agregues secciones ajenas al formato de pregunta y respuesta.",
         "ppa" =>
             "Respuesta tipo \"People Also Ask\".\n" +
@@ -382,6 +408,15 @@ internal sealed class AiGeneratedArticle
     public string? CategorySuggestion { get; set; }
     public List<string>? Tags { get; set; }
     public List<AiBlock>? Blocks { get; set; }
+    public List<AiLinkAction>? LinkActions { get; set; }
+}
+
+internal sealed class AiLinkAction
+{
+    public string? Type { get; set; }
+    public string? Url { get; set; }
+    public string? Replacement { get; set; }
+    public string? Reason { get; set; }
 }
 
 internal sealed class AiBlock

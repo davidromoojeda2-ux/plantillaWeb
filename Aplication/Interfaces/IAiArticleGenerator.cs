@@ -1,4 +1,5 @@
 using Aplication.DTOs.Automation;
+using Domine.Entities;
 
 namespace Aplication.Interfaces;
 
@@ -40,6 +41,9 @@ public sealed class TopicGenerationRequest
 
     /// <summary>Indicaciones de corrección cuando el intento anterior no cumplió la estructura.</summary>
     public string? CorrectionHint { get; set; }
+
+    /// <summary>Umbrales de párrafo por plantilla definidos en la configuración.</summary>
+    public IReadOnlyDictionary<string, ParagraphStyleSetting>? ParagraphStyles { get; set; }
 
     /// <summary>Clave del proveedor de IA, provista por el orquestador.</summary>
     public string ApiKey { get; set; } = string.Empty;

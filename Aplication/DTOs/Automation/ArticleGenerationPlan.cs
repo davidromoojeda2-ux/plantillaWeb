@@ -21,7 +21,9 @@ public sealed record ArticleGenerationPlan(
     bool IncludeConclusion,
     bool IncludeFaq,
     bool IncludeCta,
-    bool IncludeLinks);
+    bool IncludeLinks,
+    IReadOnlyDictionary<string, ParagraphStyleSetting>? ParagraphStyles = null,
+    string Language = "es");
 
 /// <summary>Construye el plan efectivo a partir de la configuración de automatización.</summary>
 public static class ArticleGenerationPlanner
@@ -50,6 +52,8 @@ public static class ArticleGenerationPlanner
             IncludeConclusion: settings.IncludeConclusion,
             IncludeFaq: settings.IncludeFaq,
             IncludeCta: settings.IncludeCta,
-            IncludeLinks: settings.IncludeLinks);
+            IncludeLinks: settings.IncludeLinks,
+            ParagraphStyles: settings.ParagraphStyles,
+            Language: settings.Language);
     }
 }

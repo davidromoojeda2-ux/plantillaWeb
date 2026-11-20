@@ -1,5 +1,6 @@
 using Aplication.DTOs.Automation;
 using Aplication.DTOs.ContentBlocks;
+using Domine.Entities;
 
 namespace Aplication.Interfaces;
 
@@ -29,6 +30,9 @@ public sealed class ArticleRewriteRequest
     public List<InternalLinkCandidate> InternalLinks { get; set; } = [];
 
     public double Temperature { get; set; } = 0.5;
+
+    /// <summary>Umbrales de párrafo por plantilla definidos en la configuración.</summary>
+    public IReadOnlyDictionary<string, ParagraphStyleSetting>? ParagraphStyles { get; set; }
 
     public string ApiKey { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = "https://api.openai.com/v1";

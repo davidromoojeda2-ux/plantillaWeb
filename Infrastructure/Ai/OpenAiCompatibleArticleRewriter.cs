@@ -2,6 +2,7 @@ using System.Text;
 using Aplication.DTOs.Automation;
 using Aplication.DTOs.ContentBlocks;
 using Aplication.Interfaces;
+using Aplication.Services;
 using Infrastructure.Resilience;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -62,6 +63,9 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             ? "Enlaces internos disponibles:\n" + string.Join("\n", request.InternalLinks.Select(l => $"- {l.Title} → /articulos/{l.Slug}")) + "\n"
             : string.Empty;
 
+        var paragraphStyle = ParagraphStyleProfile.Resolve(
+            request.Template, request.ParagraphStyles, request.Language);
+
         return
             $"Reescribe el siguiente artículo en {language} para convertirlo en una versión 100% original, más completa, actualizada y útil, manteniendo el tema pero sin copiar frases ni párrafos.\n" +
             topic +
@@ -69,49 +73,58 @@ public sealed class OpenAiCompatibleArticleRewriter : IAiArticleRewriter
             $"Tono editorial: {OpenAiCompatibleArticleGenerator.DescribeTone(request.Tone)}\n" +
             $"Estructura: {OpenAiCompatibleArticleGenerator.DescribeTemplate(request.Template)}.\n" +
             length +
+            ParagraphStyle.DescribeForPrompt(paragraphStyle) + "\n" +
             (rules.Count > 0 ? $"Secciones requeridas: {string.Join("; ", rules)}.\n" : string.Empty) +
             OpenAiCompatibleArticleGenerator.DescribeForbiddenSections(
                 request.IncludeConclusion, request.IncludeFaq, request.IncludeCta, request.Template) +
             links +
             "Artículo original:\n" +
             $"Título: {request.Title}\nResumen: {request.Summary}\n\n{source}\n" +
-            "Devuelve SOLO un JSON válido (sin markdown) con esta forma:\n" +
-            "{\n  \"title\": \"...\",\n  \"summary\": \"...\",\n  \"metaDescription\": \"...\",\n  \"categorySuggestion\": \"...\",\n  \"tags\": [\"...\"],\n  \"blocks\": [ { \"type\": \"heading\", \"level\": 2, \"text\": \"...\" }, { \"type\": \"paragraph\", \"text\": \"...\" }, { \"type\": \"bullet-list\", \"items\": [\"...\"] } ]\n}\n" +
+            OpenAiCompatibleArticleGenerator.JsonOutputInstruction +
+            OpenAiCompatibleArticleGenerator.ArticleJsonShape +
             "Reglas: primer bloque \"paragraph\"; sin encabezados de nivel 1; sin dos encabezados seguidos; tipos permitidos heading (2/3), paragraph, bullet-list, ordered-list, quote, callout, table, divider y code; sin imágenes. " +
             "El contenido debe ser 100% original y atribuir los datos a sus fuentes.";
     }
 
-    private static string RenderBlocks(IEnumerable<ContentBlockDto> blocks)
+    internal static string RenderBlocks(
+        IEnumerable<ContentBlockDto> blocks, bool includeBlockNumbers = false)
     {
         var sb = new StringBuilder();
+        var index = 0;
+
         foreach (var block in blocks)
         {
+            index++;
+            var prefix = includeBlockNumbers ? $"[Bloque {index}] " : string.Empty;
+
             switch (block)
             {
                 case ContentHeadingBlockDto h:
-                    sb.AppendLine().AppendLine($"{(h.Level == 3 ? "###" : "##")} {h.Text}");
+                    sb.AppendLine().AppendLine($"{prefix}{(h.Level == 3 ? "###" : "##")} {h.Text}");
                     break;
                 case ContentParagraphBlockDto p:
-                    sb.AppendLine(p.Text);
+                    sb.AppendLine($"{prefix}{p.Text}");
                     break;
                 case ContentBulletListBlockDto l:
-                    foreach (var item in l.Items) sb.AppendLine($"- {item}");
+                    for (var i = 0; i < l.Items.Count; i++)
+                        sb.AppendLine($"{(i == 0 ? prefix : string.Empty)}- {l.Items[i]}");
                     break;
                 case ContentOrderedListBlockDto l:
-                    foreach (var item in l.Items) sb.AppendLine($"1. {item}");
+                    for (var i = 0; i < l.Items.Count; i++)
+                        sb.AppendLine($"{(i == 0 ? prefix : string.Empty)}1. {l.Items[i]}");
                     break;
                 case ContentQuoteBlockDto q:
-                    sb.AppendLine($"> {q.Text}");
+                    sb.AppendLine($"{prefix}> {q.Text}");
                     break;
                 case ContentCalloutBlockDto c:
-                    sb.AppendLine($"NOTA: {c.Text}");
+                    sb.AppendLine($"{prefix}NOTA: {c.Text}");
                     break;
                 case ContentTableBlockDto t:
-                    sb.AppendLine(string.Join(" | ", t.Headers));
+                    sb.AppendLine($"{prefix}{string.Join(" | ", t.Headers)}");
                     foreach (var row in t.Rows) sb.AppendLine(string.Join(" | ", row));
                     break;
                 case ContentCodeBlockDto c:
-                    sb.AppendLine(c.Code);
+                    sb.AppendLine($"{prefix}{c.Code}");
                     break;
             }
         }

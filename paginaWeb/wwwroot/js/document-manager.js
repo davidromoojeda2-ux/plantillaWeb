@@ -296,9 +296,17 @@
 
     async function deleteDocument(id) {
         var doc = allDocuments.find(function (item) { return item.id === id; });
-        if (!window.confirm('¿Eliminar "' + documentLabel(doc) + '"? Esta acción borra el archivo y lo quita de los artículos que lo usen.')) {
-            return;
-        }
+        var message = '¿Eliminar "' + documentLabel(doc) + '"? Esta acción borra el archivo y lo quita de los artículos que lo usen.';
+        var confirmed = typeof window.appConfirm === 'function'
+            ? await window.appConfirm(message, {
+                title: 'Eliminar documento',
+                type: 'danger',
+                acceptLabel: 'Eliminar',
+                cancelLabel: 'Rechazar'
+            })
+            : window.confirm(message);
+
+        if (!confirmed) return;
 
         try {
             var response = await fetch(deleteUrl + '/' + encodeURIComponent(id), {

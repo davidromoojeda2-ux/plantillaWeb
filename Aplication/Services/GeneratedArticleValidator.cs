@@ -1,14 +1,19 @@
-using System.Text.RegularExpressions;
 using Aplication.DTOs.Automation;
 using Aplication.DTOs.ContentBlocks;
 
 namespace Aplication.Services;
 
 /// <summary>Resultado de validar un artículo generado contra la configuración editorial.</summary>
-public sealed record ArticleValidationResult(bool IsValid, IReadOnlyList<string> Errors)
+public sealed record ArticleValidationResult(
+    bool IsValid,
+    IReadOnlyList<string> Errors,
+    IReadOnlyList<string>? StyleHints = null,
+    bool HasHardStyleIssues = false)
 {
+    public IReadOnlyList<string> EffectiveStyleHints => StyleHints ?? [];
+
     public string ToCorrectionHint() =>
-        string.Join("\n", Errors.Select(e => $"- {e}"));
+        string.Join("\n", Errors.Concat(EffectiveStyleHints).Select(e => $"- {e}"));
 }
 
 /// <summary>
@@ -17,10 +22,10 @@ public sealed record ArticleValidationResult(bool IsValid, IReadOnlyList<string>
 /// </summary>
 public static class GeneratedArticleValidator
 {
-    private static readonly Regex WordRegex = new(@"\S+", RegexOptions.Compiled);
-    private static readonly Regex TagRegex = new("<[^>]+>", RegexOptions.Compiled);
-
-    public static ArticleValidationResult Validate(GeneratedArticle article, ArticleGenerationPlan plan)
+    public static ArticleValidationResult Validate(
+        GeneratedArticle article,
+        ArticleGenerationPlan plan,
+        IReadOnlyList<ParagraphFinding>? styleFindings = null)
     {
         var errors = new List<string>();
 
@@ -55,7 +60,12 @@ public static class GeneratedArticleValidator
         ValidateHierarchy(blocks, errors);
         ValidateRequiredSections(blocks, plan, errors);
 
-        return new ArticleValidationResult(errors.Count == 0, errors);
+        var profile = ParagraphStyleProfile.Resolve(plan.Template, plan.ParagraphStyles, plan.Language);
+        var findings = styleFindings ?? ParagraphStyle.Analyze(blocks, profile);
+        var styleHints = findings.Select(f => f.Message).ToList();
+        var hasHardStyleIssues = findings.Any(f => f.Severity == ParagraphSeverity.Hard);
+
+        return new ArticleValidationResult(errors.Count == 0, errors, styleHints, hasHardStyleIssues);
     }
 
     private static void ValidateWordCount(GeneratedArticle article, ArticleGenerationPlan plan, List<string> errors)
@@ -98,7 +108,7 @@ public static class GeneratedArticleValidator
             }
         }
 
-        if (blocks.Any(IsEmptyBlock))
+        if (blocks.Any(ContentBlockRules.IsEmpty))
             errors.Add("Hay bloques vacíos o listas con menos de 2 elementos; completa o elimina esos bloques.");
     }
 
@@ -169,19 +179,6 @@ public static class GeneratedArticleValidator
         && text.Contains("href", StringComparison.OrdinalIgnoreCase)
         && text.Contains("<a", StringComparison.OrdinalIgnoreCase);
 
-    private static bool IsEmptyBlock(ContentBlockDto block) => block switch
-    {
-        ContentParagraphBlockDto p => string.IsNullOrWhiteSpace(p.Text),
-        ContentHeadingBlockDto h => string.IsNullOrWhiteSpace(h.Text),
-        ContentQuoteBlockDto q => string.IsNullOrWhiteSpace(q.Text),
-        ContentCalloutBlockDto c => string.IsNullOrWhiteSpace(c.Text),
-        ContentBulletListBlockDto l => l.Items.Count < 2 || l.Items.All(string.IsNullOrWhiteSpace),
-        ContentOrderedListBlockDto l => l.Items.Count < 2 || l.Items.All(string.IsNullOrWhiteSpace),
-        ContentTableBlockDto t => t.Headers.Count == 0 || t.Rows.Count < 2,
-        ContentCodeBlockDto c => string.IsNullOrWhiteSpace(c.Code),
-        _ => false
-    };
-
     private static int CountWords(GeneratedArticle article)
     {
         var texts = new List<string> { article.Title, article.Summary };
@@ -203,7 +200,6 @@ public static class GeneratedArticleValidator
             }
         }
 
-        var plain = TagRegex.Replace(string.Join(' ', texts), " ");
-        return WordRegex.Matches(plain).Count;
+        return ParagraphText.CountWords(string.Join(' ', texts));
     }
 }

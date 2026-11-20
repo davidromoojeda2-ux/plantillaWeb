@@ -75,6 +75,36 @@
     box-shadow: inset 2px 0 0 var(--cbe-accent-soft);
   }
 
+  /* Observaciones de la validación: el bloque señalado se pinta en rojo (error)
+     o ámbar (aviso) para localizarlo de un vistazo. */
+  .cbe-block.has-issue-error {
+    background: #fff1f2;
+    outline: 2px solid #dc2626;
+    outline-offset: 1px;
+    box-shadow: inset 4px 0 0 #dc2626, 0 0 0 3px rgb(220 38 38 / 0.16);
+  }
+
+  .cbe-block.has-issue-warning {
+    background: #fffbeb;
+    outline: 2px solid #f59e0b;
+    outline-offset: 1px;
+    box-shadow: inset 4px 0 0 #f59e0b, 0 0 0 3px rgb(245 158 11 / 0.16);
+  }
+
+  .cbe-block.has-issue-error:focus-within,
+  .cbe-block.has-issue-error.is-selected {
+    background: #fee2e2;
+    outline-color: #b91c1c;
+    box-shadow: inset 4px 0 0 #b91c1c, 0 0 0 4px rgb(220 38 38 / 0.25);
+  }
+
+  .cbe-block.has-issue-warning:focus-within,
+  .cbe-block.has-issue-warning.is-selected {
+    background: #fef3c7;
+    outline-color: #d97706;
+    box-shadow: inset 4px 0 0 #d97706, 0 0 0 4px rgb(245 158 11 / 0.25);
+  }
+
   .cbe-block.is-dragging {
     opacity: 0.45;
   }

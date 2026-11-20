@@ -1,5 +1,6 @@
 using Aplication.DTOs;
 using Aplication.DTOs.Automation;
+using Aplication.Services;
 using Domine.Entities;
 
 namespace paginaWeb.Areas.Admin.Models;
@@ -41,6 +42,7 @@ public class AutomationConfigViewModel
     public double Temperature { get; set; } = 0.5;
     public int MaxGenerationAttempts { get; set; } = 2;
     public int WordTolerancePercent { get; set; } = 20;
+    public List<ParagraphStyleOptionViewModel> ParagraphStyles { get; set; } = [];
     public string BaseTopicsText { get; set; } = string.Empty;
     public bool DiscoverWithSerper { get; set; } = true;
     public List<string> CategoryIds { get; set; } = [];
@@ -101,6 +103,7 @@ public class AutomationConfigViewModel
             Temperature = s.Temperature,
             MaxGenerationAttempts = s.MaxGenerationAttempts,
             WordTolerancePercent = standard?.WordTolerancePercent ?? s.WordTolerancePercent,
+            ParagraphStyles = BuildParagraphStyles(s),
             BaseTopicsText = string.Join(Environment.NewLine, s.BaseTopics),
             DiscoverWithSerper = s.DiscoverWithSerper,
             CategoryIds = s.CategoryIds,
@@ -119,6 +122,45 @@ public class AutomationConfigViewModel
             PublishMinute = s.PublishMinute,
             Categories = categories
         };
+    }
+
+    private static List<ParagraphStyleOptionViewModel> BuildParagraphStyles(AutomationSettings settings)
+    {
+        var overrides = settings.ParagraphStyles ?? [];
+
+        return ParagraphStyleDefaults.Templates
+            .Select(template =>
+            {
+                var defaults = ParagraphStyleDefaults.For(template);
+                var setting = overrides.TryGetValue(template, out var custom)
+                    ? ParagraphStyleProfile.Clamp(custom, defaults)
+                    : defaults;
+
+                return new ParagraphStyleOptionViewModel
+                {
+                    Template = template,
+                    Label = ParagraphStyleDefaults.Label(template),
+                    MinWords = setting.MinWords,
+                    MaxWords = setting.MaxWords,
+                    MaxConsecutive = setting.MaxConsecutive
+                };
+            })
+            .ToList();
+    }
+
+    private Dictionary<string, ParagraphStyleSetting> BuildParagraphSettings(AutomationSettings existing)
+    {
+        if (ParagraphStyles.Count == 0)
+            return existing.ParagraphStyles ?? [];
+
+        var result = new Dictionary<string, ParagraphStyleSetting>(StringComparer.OrdinalIgnoreCase);
+        foreach (var option in ParagraphStyles)
+        {
+            var key = ParagraphStyleDefaults.Normalize(option.Template);
+            result[key] = ParagraphStyleProfile.Clamp(option.ToSetting(), ParagraphStyleDefaults.For(key));
+        }
+
+        return result;
     }
 
     public AutomationSettings ToSettings(AutomationSettings existing)
@@ -157,6 +199,7 @@ public class AutomationConfigViewModel
             Temperature = Math.Clamp(Temperature, 0.0, 1.5),
             MaxGenerationAttempts = Math.Clamp(MaxGenerationAttempts, 1, 5),
             WordTolerancePercent = tolerance,
+            ParagraphStyles = BuildParagraphSettings(existing),
             BaseTopics = (BaseTopicsText ?? string.Empty)
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToList(),
@@ -181,4 +224,24 @@ public class AutomationConfigViewModel
             CreatedAt = existing.CreatedAt
         };
     }
+}
+
+/// <summary>
+/// Umbral editable de una plantilla en el panel de automatización.
+/// El máximo duro se calcula (1,5×) y no se expone.
+/// </summary>
+public class ParagraphStyleOptionViewModel
+{
+    public string Template { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public int MinWords { get; set; }
+    public int MaxWords { get; set; }
+    public int MaxConsecutive { get; set; }
+
+    public ParagraphStyleSetting ToSetting() => new()
+    {
+        MinWords = MinWords,
+        MaxWords = MaxWords,
+        MaxConsecutive = MaxConsecutive
+    };
 }

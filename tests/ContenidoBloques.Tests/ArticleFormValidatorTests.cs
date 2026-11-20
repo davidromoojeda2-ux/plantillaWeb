@@ -128,6 +128,164 @@ public class ArticleFormValidatorTests
         Assert.DoesNotContain("#seccion", links);
     }
 
+    [Fact]
+    public void Los_parrafos_largos_generan_avisos_sin_bloquear()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = string.Join(' ', Enumerable.Repeat("palabra", 200))
+            }
+        };
+
+        var profile = ParagraphStyleProfile.Resolve("news", null, "es");
+
+        var result = ArticleFormValidator.Validate(
+            "Título de prueba",
+            "Resumen suficientemente largo para validar el artículo.",
+            "titulo-de-prueba",
+            "Redacción",
+            "cat-1",
+            "/uploads/portada.webp",
+            "Publicado",
+            blocks,
+            profile);
+
+        Assert.DoesNotContain(result.Errors, e => e.Contains("párrafo", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(result.Warnings, w => w.Contains("palabras", StringComparison.OrdinalIgnoreCase));
+
+        var issue = Assert.Single(
+            result.EffectiveIssues, i => i.Code == "style-length-long");
+        Assert.Contains(0, issue.BlockIndexes!);
+    }
+
+    [Fact]
+    public void Los_errores_de_campo_apuntan_al_input()
+    {
+        var result = ArticleFormValidator.Validate(
+            "", "", "", "", null, null, "Publicado", ValidBlocks());
+
+        var titleIssue = Assert.Single(
+            result.EffectiveIssues, issue => issue.Field == "titleInput");
+
+        Assert.Equal("error", titleIssue.Severity);
+        Assert.Equal("required", titleIssue.Code);
+    }
+
+    [Fact]
+    public void Localiza_el_bloque_que_contiene_un_enlace()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto { Text = "Sin enlaces." },
+            new ContentParagraphBlockDto
+            {
+                Text = "Ver <a href=\"https://example.com/a\">A</a>."
+            }
+        };
+
+        var indexes = ArticleFormValidator.FindBlocksWithLink(
+            blocks, "https://example.com/a");
+
+        Assert.Equal([1], indexes);
+    }
+
+    [Fact]
+    public void Localiza_el_enlace_aunque_cambie_la_barra_final()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Ver <a href=\"http://localhost:5034/articulos/roto\">artículo</a>."
+            }
+        };
+
+        var indexes = ArticleFormValidator.FindBlocksWithLink(
+            blocks, "http://localhost:5034/articulos/roto/",
+            new Uri("http://localhost:5034"));
+
+        Assert.Equal([0], indexes);
+    }
+
+    [Fact]
+    public void Quita_los_enlaces_caidos_y_conserva_el_texto()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Mira <a href=\"http://localhost:5034/articulos/roto\">esto</a> " +
+                       "y <a href=\"/articulos/ok\">aquello</a>."
+            }
+        };
+
+        ArticleFormValidator.RemoveLinks(
+            blocks,
+            ["http://localhost:5034/articulos/roto/"],
+            new Uri("http://localhost:5034"));
+
+        var text = ((ContentParagraphBlockDto)blocks[0]).Text;
+
+        Assert.Contains("Mira esto", text);
+        Assert.DoesNotContain("articulos/roto", text);
+        Assert.Contains("/articulos/ok", text);
+    }
+
+    [Fact]
+    public void Reemplaza_el_href_conservando_texto_y_atributos()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Mira <a href=\"http://localhost:5034/articulos/roto\" class=\"x\">esto</a>."
+            }
+        };
+
+        var count = ArticleFormValidator.ReplaceLinks(
+            blocks,
+            new Dictionary<string, string>
+            {
+                ["http://localhost:5034/articulos/roto/"] = "/articulos/valido"
+            },
+            new Uri("http://localhost:5034"));
+
+        var text = ((ContentParagraphBlockDto)blocks[0]).Text;
+
+        Assert.Equal(1, count);
+        Assert.Contains("href=\"/articulos/valido\"", text);
+        Assert.Contains("class=\"x\"", text);
+        Assert.Contains(">esto</a>", text);
+    }
+
+    [Fact]
+    public void Restaura_el_href_original_si_la_ia_lo_cambio()
+    {
+        var original = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Ver <a href=\"/articulos/original\">fuente</a>."
+            }
+        };
+        var corrected = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = "Ver <a href=\"/articulos/inventado\">fuente</a>."
+            }
+        };
+
+        var count = ArticleFormValidator.RestoreLinkHrefs(corrected, original);
+        var text = ((ContentParagraphBlockDto)corrected[0]).Text;
+
+        Assert.Equal(1, count);
+        Assert.Contains("/articulos/original", text);
+        Assert.DoesNotContain("/articulos/inventado", text);
+    }
+
     private static List<ContentBlockDto> ValidBlocks() =>
     [
         new ContentParagraphBlockDto
