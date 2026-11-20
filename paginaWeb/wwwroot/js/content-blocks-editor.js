@@ -287,7 +287,7 @@
             // al revalidar, el servidor vuelve a decidir si sigue teniendo observaciones.
             this.canvas.addEventListener('input', event => {
                 const card = event.target.closest?.('.cbe-block');
-                card?.classList.remove('has-issue-error', 'has-issue-warning');
+                if (card) this.clearBlockIssue(card);
             });
 
             document.addEventListener('scroll', () => {
@@ -312,7 +312,7 @@
                 <span class="cbe-inline-separator" aria-hidden="true"></span>
                 <div class="cbe-inline-group">
                     <button type="button" class="cbe-format-btn cbe-format-btn-highlight" data-cmd="mark" title="Resaltar" aria-label="Resaltar texto" aria-pressed="false">${ICONS.highlight}</button>
-                    <button type="button" class="cbe-format-btn" data-cmd="createLink" title="Insertar enlace" aria-label="Insertar enlace" aria-pressed="false">${ICONS.link}</button>
+                    <button type="button" class="cbe-format-btn" data-cmd="createLink" title="Insertar o editar enlace" aria-label="Insertar o editar enlace" aria-pressed="false">${ICONS.link}</button>
                 </div>
             `;
 
@@ -601,38 +601,78 @@
 
         /**
          * Marca con rojo (errores) o ámbar (avisos) los bloques señalados por la
-         * validación. Reemplaza las marcas de la validación anterior.
+         * validación y muestra dentro de cada bloque la observación detectada.
+         * Reemplaza las marcas y notas de la validación anterior. El resumen del
+         * panel de validación se conserva para mantener la vista global.
          *
-         * @param {Array<{severity?: string, blockIndexes?: number[]}>} issues
+         * @param {Array<{severity?: string, message?: string, blockIndexes?: number[]}>} issues
          */
         markIssues(issues) {
             this.clearIssueMarks();
             if (!Array.isArray(issues)) return;
 
-            const severityByIndex = new Map();
+            const issuesByIndex = new Map();
             issues.forEach(issue => {
                 const indexes = Array.isArray(issue.blockIndexes) ? issue.blockIndexes : [];
+                const message = String(issue.message ?? '').trim();
+                if (indexes.length === 0 || !message) return;
+
                 const severity = issue.severity === 'error' ? 'error' : 'warning';
                 indexes.forEach(index => {
-                    if (severityByIndex.get(index) !== 'error') {
-                        severityByIndex.set(index, severity);
-                    }
+                    const record = issuesByIndex.get(index) || { severity: 'warning', messages: [] };
+                    if (severity === 'error') record.severity = 'error';
+                    if (!record.messages.includes(message)) record.messages.push(message);
+                    issuesByIndex.set(index, record);
                 });
             });
 
-            severityByIndex.forEach((severity, index) => {
+            issuesByIndex.forEach((record, index) => {
                 const block = this.blocks[index];
                 if (!block || !block.el) return;
+
                 block.el.classList.add(
-                    severity === 'error' ? 'has-issue-error' : 'has-issue-warning');
+                    record.severity === 'error' ? 'has-issue-error' : 'has-issue-warning');
+                this.renderBlockIssue(block, record);
             });
+        }
+
+        /** Inserta la nota con las observaciones detectadas dentro del bloque. */
+        renderBlockIssue(block, record) {
+            const note = element(
+                'div', `cbe-block-issue cbe-block-issue-${record.severity}`);
+            note.setAttribute('role', 'note');
+
+            const title = element(
+                'p',
+                'cbe-block-issue-title',
+                record.severity === 'error'
+                    ? 'Observación detectada (error)'
+                    : 'Observación detectada (aviso)');
+
+            const list = element('ul', 'cbe-block-issue-list');
+            record.messages.forEach(message => {
+                const item = document.createElement('li');
+                item.textContent = message;
+                list.appendChild(item);
+            });
+
+            note.append(title, list);
+            block.el.appendChild(note);
         }
 
         /** Quita las marcas de validación de todos los bloques. */
         clearIssueMarks() {
             this.blocks.forEach(block => {
                 block.el?.classList.remove('has-issue-error', 'has-issue-warning');
+                block.el?.querySelector('.cbe-block-issue')?.remove();
             });
+        }
+
+        /** Quita la marca y la nota de un bloque concreto (por ejemplo, al editarlo). */
+        clearBlockIssue(card) {
+            if (!card) return;
+            card.classList.remove('has-issue-error', 'has-issue-warning');
+            card.querySelector('.cbe-block-issue')?.remove();
         }
 
         selectBlock(block) {
@@ -1565,7 +1605,7 @@
                 if (Date.now() < this.ignoreSelectionUntil) return;
 
                 const selection = document.getSelection();
-                if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+                if (!selection || selection.rangeCount === 0) {
                     this.updateFormatState(null);
                     this.scheduleHideInlineToolbar();
                     return;
@@ -1577,6 +1617,17 @@
                     : container.parentElement;
                 const field = element?.closest('.cbe-rich');
                 if (!field || !this.root.contains(field)) {
+                    this.updateFormatState(null);
+                    this.scheduleHideInlineToolbar();
+                    return;
+                }
+
+                // Con el cursor dentro de un enlace se mantiene visible la burbuja
+                // para que el usuario pueda abrir el diálogo y cambiar la URL, sin
+                // necesidad de seleccionar todo el texto enlazado.
+                const anchor = element?.closest('a');
+                const inLink = !!anchor && field.contains(anchor);
+                if (selection.isCollapsed && !inLink) {
                     this.updateFormatState(null);
                     this.scheduleHideInlineToolbar();
                     return;
@@ -1748,38 +1799,86 @@
         applyInlineCommand(command, field = this.activeEditable, showBubble = true) {
             if (!field) return;
             this.ignoreSelectionUntil = Date.now() + 350;
-            field.focus();
 
             if (command === 'createLink') {
                 const selection = document.getSelection();
-                const savedRange = selection && selection.rangeCount > 0
-                    ? selection.getRangeAt(0).cloneRange()
+                const range = selection && selection.rangeCount > 0
+                    ? selection.getRangeAt(0)
                     : null;
+                const inField = !!range && field.contains(range.commonAncestorContainer);
+
+                if (!inField) {
+                    this.notify('Coloca el cursor o selecciona el texto que quieres enlazar.');
+                    return;
+                }
+
+                // Si el cursor está dentro de un enlace, el diálogo debe mostrar su
+                // URL actual para que el usuario pueda cambiarla. Antes se abría
+                // siempre vacío, así que no había forma de editar el enlace existente.
+                const existingAnchor = this.closestInlineElement(
+                    range.commonAncestorContainer, field, 'a');
+                if (!existingAnchor && range.collapsed) {
+                    this.notify('Selecciona el texto al que quieres agregar el enlace.');
+                    return;
+                }
+
+                const savedRange = range.cloneRange();
+                const currentHref = existingAnchor?.getAttribute('href') || '';
 
                 const applyLink = (url) => {
-                    if (!url) return;
-                    if (!isSafeHref(url)) {
+                    if (url === null || url === undefined) return;
+                    const value = String(url).trim();
+
+                    if (!value && !existingAnchor) {
+                        this.notify('Escribe la URL del enlace.');
+                        return;
+                    }
+
+                    if (value && !isSafeHref(value)) {
                         this.notify('El enlace debe usar http, https, mailto o una ruta interna.');
                         return;
                     }
 
                     field.focus();
-                    if (savedRange) {
+
+                    if (existingAnchor && existingAnchor.isConnected) {
+                        if (!value) {
+                            // Dejar el campo vacío quita el enlace conservando el texto.
+                            this.unwrapInlineElement(existingAnchor);
+                        } else {
+                            existingAnchor.setAttribute('href', value);
+                            if (/^https?:/i.test(value)) {
+                                existingAnchor.setAttribute('target', '_blank');
+                                existingAnchor.setAttribute('rel', 'noopener noreferrer');
+                            } else {
+                                existingAnchor.removeAttribute('target');
+                                existingAnchor.removeAttribute('rel');
+                            }
+                        }
+                    } else {
                         const activeSelection = document.getSelection();
                         activeSelection.removeAllRanges();
                         activeSelection.addRange(savedRange);
+                        document.execCommand('createLink', false, value);
                     }
 
-                    document.execCommand('createLink', false, url);
                     this.updateFormatState(field);
                     this.sync();
                     if (showBubble) this.showInlineToolbar(field);
                 };
 
-                const message = 'URL del enlace (https://, mailto: o ruta interna):';
-                window.appPrompt(message, 'https://').then(applyLink);
+                const message = existingAnchor
+                    ? 'URL del enlace (déjala vacía para quitar el enlace):'
+                    : 'URL del enlace (https://, mailto: o ruta interna):';
+                window.appPrompt(message, currentHref || 'https://', {
+                    title: existingAnchor ? 'Editar enlace' : 'Insertar enlace',
+                    acceptLabel: existingAnchor ? 'Actualizar enlace' : 'Insertar enlace',
+                    requireValue: false
+                }).then(applyLink);
                 return;
             }
+
+            field.focus();
 
             if (command === 'mark') {
                 this.toggleInlineWrapper(field, 'mark');

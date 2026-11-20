@@ -105,6 +105,48 @@
     box-shadow: inset 4px 0 0 #d97706, 0 0 0 4px rgb(245 158 11 / 0.25);
   }
 
+  /* Observación concreta dentro del bloque: además del resumen del panel, el
+     usuario ve aquí el detalle del hallazgo que le afecta. */
+  .cbe-block-issue {
+    margin: 0.45rem 0 0.15rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--cbe-line-strong);
+    border-radius: var(--cbe-radius-sm);
+    font-size: 0.74rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .cbe-block-issue-error {
+    border-color: #fecaca;
+    background: #fff5f5;
+    color: #991b1b;
+  }
+
+  .cbe-block-issue-warning {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+  }
+
+  .cbe-block-issue-title {
+    margin: 0 0 0.2rem;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .cbe-block-issue-list {
+    margin: 0;
+    padding-left: 1.05rem;
+    list-style: disc;
+  }
+
+  .cbe-block-issue-list li + li {
+    margin-top: 0.15rem;
+  }
+
   .cbe-block.is-dragging {
     opacity: 0.45;
   }

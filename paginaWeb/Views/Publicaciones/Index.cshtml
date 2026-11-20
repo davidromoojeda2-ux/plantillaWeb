@@ -7,21 +7,24 @@
         ? $"Resultados de búsqueda para {Model.Query} en el portal."
         : "Explora todas las publicaciones, noticias, reportajes y coberturas del portal.";
 
-    // Los resultados de búsqueda no aportan contenido propio: no indexar, pero seguir enlaces.
     if (isSearch)
         ViewData["Robots"] = "noindex, follow";
 }
 
 
 <div class="public-page">
-    <!-- ─── 1. Cabecera Hero de Extremo a Extremo (Full Width) ───────────────── -->
     <header class="page-hero">
         <div class="page-hero__glow" aria-hidden="true"></div>
 
         <div class="container page-hero__inner">
-            <!-- Breadcrumb -->
             <nav class="page-hero__breadcrumb" aria-label="Migas de pan">
-                <a asp-controller="Home" asp-action="Index">Inicio</a>
+                <a asp-controller="Home" asp-action="Index" class="inline-flex items-center gap-1 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
+                    </svg>
+                    Inicio
+                </a>
                 <span>/</span>
                 <span class="page-hero__breadcrumb-current">Publicaciones</span>
                 @if (isSearch)
@@ -43,7 +46,7 @@
             <p class="page-hero__subtitle">
                 @(isSearch
                     ? $"Explorando contenidos relacionados con '{Model.Query}' en nuestras áreas temáticas y coberturas."
-                    : "Encuentra crónicas, análisis, investigaciones y las coberturas informativas más recientes de nuestra redacción.")
+                    : "Todo el contenido disponible que tenemos para ti.")
             </p>
         </div>
     </header>
