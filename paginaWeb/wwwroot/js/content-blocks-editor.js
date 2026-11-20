@@ -287,7 +287,7 @@
             // al revalidar, el servidor vuelve a decidir si sigue teniendo observaciones.
             this.canvas.addEventListener('input', event => {
                 const card = event.target.closest?.('.cbe-block');
-                card?.classList.remove('has-issue-error', 'has-issue-warning');
+                if (card) this.clearBlockIssue(card);
             });
 
             document.addEventListener('scroll', () => {
@@ -601,38 +601,78 @@
 
         /**
          * Marca con rojo (errores) o ámbar (avisos) los bloques señalados por la
-         * validación. Reemplaza las marcas de la validación anterior.
+         * validación y muestra dentro de cada bloque la observación detectada.
+         * Reemplaza las marcas y notas de la validación anterior. El resumen del
+         * panel de validación se conserva para mantener la vista global.
          *
-         * @param {Array<{severity?: string, blockIndexes?: number[]}>} issues
+         * @param {Array<{severity?: string, message?: string, blockIndexes?: number[]}>} issues
          */
         markIssues(issues) {
             this.clearIssueMarks();
             if (!Array.isArray(issues)) return;
 
-            const severityByIndex = new Map();
+            const issuesByIndex = new Map();
             issues.forEach(issue => {
                 const indexes = Array.isArray(issue.blockIndexes) ? issue.blockIndexes : [];
+                const message = String(issue.message ?? '').trim();
+                if (indexes.length === 0 || !message) return;
+
                 const severity = issue.severity === 'error' ? 'error' : 'warning';
                 indexes.forEach(index => {
-                    if (severityByIndex.get(index) !== 'error') {
-                        severityByIndex.set(index, severity);
-                    }
+                    const record = issuesByIndex.get(index) || { severity: 'warning', messages: [] };
+                    if (severity === 'error') record.severity = 'error';
+                    if (!record.messages.includes(message)) record.messages.push(message);
+                    issuesByIndex.set(index, record);
                 });
             });
 
-            severityByIndex.forEach((severity, index) => {
+            issuesByIndex.forEach((record, index) => {
                 const block = this.blocks[index];
                 if (!block || !block.el) return;
+
                 block.el.classList.add(
-                    severity === 'error' ? 'has-issue-error' : 'has-issue-warning');
+                    record.severity === 'error' ? 'has-issue-error' : 'has-issue-warning');
+                this.renderBlockIssue(block, record);
             });
+        }
+
+        /** Inserta la nota con las observaciones detectadas dentro del bloque. */
+        renderBlockIssue(block, record) {
+            const note = element(
+                'div', `cbe-block-issue cbe-block-issue-${record.severity}`);
+            note.setAttribute('role', 'note');
+
+            const title = element(
+                'p',
+                'cbe-block-issue-title',
+                record.severity === 'error'
+                    ? 'Observación detectada (error)'
+                    : 'Observación detectada (aviso)');
+
+            const list = element('ul', 'cbe-block-issue-list');
+            record.messages.forEach(message => {
+                const item = document.createElement('li');
+                item.textContent = message;
+                list.appendChild(item);
+            });
+
+            note.append(title, list);
+            block.el.appendChild(note);
         }
 
         /** Quita las marcas de validación de todos los bloques. */
         clearIssueMarks() {
             this.blocks.forEach(block => {
                 block.el?.classList.remove('has-issue-error', 'has-issue-warning');
+                block.el?.querySelector('.cbe-block-issue')?.remove();
             });
+        }
+
+        /** Quita la marca y la nota de un bloque concreto (por ejemplo, al editarlo). */
+        clearBlockIssue(card) {
+            if (!card) return;
+            card.classList.remove('has-issue-error', 'has-issue-warning');
+            card.querySelector('.cbe-block-issue')?.remove();
         }
 
         selectBlock(block) {
