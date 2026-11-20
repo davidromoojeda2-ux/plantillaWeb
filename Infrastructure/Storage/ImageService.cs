@@ -1,4 +1,5 @@
 using Aplication.DTOs;
+using Aplication.DTOs.Images;
 using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
@@ -6,9 +7,6 @@ using Aplication.Services;
 using Domine.Entities;
 using Domine.Exceptions;
 using Microsoft.Extensions.Logging;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
 
 namespace Infrastructure.Storage;
 
@@ -23,6 +21,7 @@ public class ImageService
     private readonly S3Storage _s3Storage;
     private readonly LocalStorage _localStorage;
     private readonly IImageMetadataRepository _metadataRepo;
+    private readonly IImageProcessor _imageProcessor;
     private readonly IArticleRepository? _articleRepo;
     private readonly ISiteSettingsService? _siteSettings;
     private readonly ILogger<ImageService> _logger;
@@ -31,6 +30,7 @@ public class ImageService
         S3Storage s3Storage,
         LocalStorage localStorage,
         IImageMetadataRepository metadataRepo,
+        IImageProcessor imageProcessor,
         ILogger<ImageService> logger,
         IArticleRepository? articleRepo = null,
         ISiteSettingsService? siteSettings = null)
@@ -38,6 +38,7 @@ public class ImageService
         _s3Storage = s3Storage;
         _localStorage = localStorage;
         _metadataRepo = metadataRepo;
+        _imageProcessor = imageProcessor;
         _logger = logger;
         _articleRepo = articleRepo;
         _siteSettings = siteSettings;
@@ -118,16 +119,31 @@ public class ImageService
             _logger.LogWarning("Servicio S3 no disponible. Se almacena en Storage Local como fallback.");
         }
 
-        // 3. Procesamiento y compresión con ImageSharp
-        using var image = await Image.LoadAsync(inputStream, ct);
+        // 3. Procesamiento y compresión mediante la estrategia configurada.
+        //    La implementación concreta (Magick.NET) queda aislada en Infrastructure.
+        var quality = _siteSettings is null
+            ? new ImageQualitySettingsDto()
+            : await _siteSettings.GetImageQualityAsync();
 
-        // Corregir orientación EXIF antes de eliminar cualquier metadato
-        image.Mutate(x => x.AutoOrient());
-        int originalWidth = image.Width;
-        int originalHeight = image.Height;
+        var options = new ImageProcessingOptions(
+            TargetWidths: TargetWidths,
+            QualityByWidth: TargetWidths.ToDictionary(
+                width => width,
+                width => quality.ForWidth(width)),
+            DefaultQuality: quality.Quality,
+            OutputFormat: ImageOutputFormat.WebP);
 
-        // Privacidad: quita EXIF, XMP, IPTC e ICC del lienzo y de cada fotograma
-        ImageMetadataCleaner.Strip(image);
+        _logger.LogInformation(
+            "Calidad WebP aplicada a '{FileName}': global {Global}, 400px {Small}, 800px {Medium}, 1600px {Large}.",
+            effectiveName,
+            quality.Quality,
+            quality.ForWidth(400),
+            quality.ForWidth(800),
+            quality.ForWidth(1600));
+
+        var processed = await _imageProcessor.ProcessAsync(inputStream, options, ct);
+        var originalWidth = processed.OriginalWidth;
+        var originalHeight = processed.OriginalHeight;
 
         var variants = new List<ImageVariant>();
         var dateFolder = DateTime.UtcNow.ToString("yyyy/MM");
@@ -138,51 +154,24 @@ public class ImageService
 
         var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
 
-        // Calidad configurable desde el panel; si no hay ajustes, se usa 80 (valor histórico)
-        var quality = _siteSettings is null
-            ? new ImageQualitySettingsDto()
-            : await _siteSettings.GetImageQualityAsync();
-
-        var encoders = TargetWidths.ToDictionary(
-            width => width,
-            width => new WebpEncoder { Quality = quality.ForWidth(width) });
-
-        _logger.LogInformation(
-            "Calidad WebP aplicada a '{FileName}': global {Global}, 400px {Small}, 800px {Medium}, 1600px {Large}.",
-            effectiveName,
-            quality.Quality,
-            quality.ForWidth(400),
-            quality.ForWidth(800),
-            quality.ForWidth(1600));
-
-        // 4. Generación y subida de variantes WebP (400, 800, 1600 px)
-        foreach (var width in TargetWidths)
+        // 4. Subida de las variantes generadas (400, 800, 1600 px)
+        foreach (var processedVariant in processed.Variants)
         {
-            // Solo generar variante si la imagen original es suficientemente grande (excepto miniatura mínima)
-            if (image.Width < width && width != TargetWidths[0]) continue;
+            var extension = string.Equals(
+                processedVariant.ContentType, "image/avif", StringComparison.OrdinalIgnoreCase)
+                ? "avif"
+                : "webp";
 
-            using var variant = image.Clone(ctx =>
-            {
-                ctx.Resize(new ResizeOptions
-                {
-                    Size = new Size(Math.Min(width, image.Width), 0),
-                    Mode = ResizeMode.Max
-                });
-            });
+            var key = $"images/{dateFolder}/{cleanName}-{uniqueSuffix}-{processedVariant.RequestedWidth}.{extension}";
+            using var ms = new MemoryStream(processedVariant.Bytes);
 
-            var key = $"images/{dateFolder}/{cleanName}-{uniqueSuffix}-{width}.webp";
-            using var ms = new MemoryStream();
-            await variant.SaveAsync(ms, encoders[width], ct);
-            var sizeBytes = ms.Length;
-            ms.Position = 0;
-
-            await targetStorage.UploadAsync(key, ms, "image/webp", ct);
+            await targetStorage.UploadAsync(key, ms, processedVariant.ContentType, ct);
 
             variants.Add(new ImageVariant
             {
-                Width = width,
+                Width = processedVariant.RequestedWidth,
                 Key = key,
-                SizeBytes = sizeBytes,
+                SizeBytes = processedVariant.Bytes.Length,
                 PublicUrl = targetStorage.GetPublicUrl(key)
             });
         }

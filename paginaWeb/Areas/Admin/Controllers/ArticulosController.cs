@@ -842,13 +842,24 @@ public class ArticulosController : Controller
         if (file is null || file.Length == 0)
             return BadRequest(new { error = "No se ha proporcionado ningún archivo." });
 
-        using var stream = file.OpenReadStream();
-        var metadata = await _imageService.ProcessAndStoreDtoAsync(
-            file.FileName, stream, file.FileName, articleId);
+        try
+        {
+            using var stream = file.OpenReadStream();
+            var metadata = await _imageService.ProcessAndStoreDtoAsync(
+                file.FileName, stream, file.FileName, articleId);
 
-        var url = ImageMapper.GetBestUrl(metadata) ?? metadata.Variants.FirstOrDefault()?.PublicUrl;
+            var url = ImageMapper.GetBestUrl(metadata) ?? metadata.Variants.FirstOrDefault()?.PublicUrl;
 
-        return Json(new { id = metadata.Id, url = url, alt = metadata.Alt });
+            return Json(new { id = metadata.Id, url, alt = metadata.Alt });
+        }
+        catch (UnsupportedImageFormatException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidImageContentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpGet("imagenes-disponibles")]
