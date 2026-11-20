@@ -134,11 +134,11 @@ public class ImagenesController : Controller
         {
             TempData["Error"] = "Error en el archivo de imagen: " + ex.Message;
         }
-        catch (SixLabors.ImageSharp.UnknownImageFormatException)
+        catch (UnsupportedImageFormatException)
         {
-            TempData["Error"] = "El archivo proporcionado no es un formato de imagen soportado (use JPEG, PNG, WEBP, AVIF, etc.).";
+            TempData["Error"] = "El archivo proporcionado no es un formato de imagen soportado (JPEG, PNG, WEBP, GIF, BMP, TIFF, AVIF o HEIC).";
         }
-        catch (SixLabors.ImageSharp.InvalidImageContentException)
+        catch (InvalidImageContentException)
         {
             TempData["Error"] = "El archivo de imagen está dañado o su contenido no es válido.";
         }
@@ -311,9 +311,9 @@ public class ImagenesController : Controller
         DomainValidationException => ex.Message,
         NotFoundException => ex.Message,
         ArgumentException => "Error en el archivo de imagen: " + ex.Message,
-        SixLabors.ImageSharp.UnknownImageFormatException =>
-            "El archivo proporcionado no es un formato de imagen soportado (use JPEG, PNG, WEBP, AVIF, etc.).",
-        SixLabors.ImageSharp.InvalidImageContentException =>
+        UnsupportedImageFormatException =>
+            "El archivo proporcionado no es un formato de imagen soportado (JPEG, PNG, WEBP, GIF, BMP, TIFF, AVIF o HEIC).",
+        InvalidImageContentException =>
             "El archivo de imagen está dañado o su contenido no es válido.",
         _ => "Error inesperado al procesar la imagen: " + ex.Message
     };

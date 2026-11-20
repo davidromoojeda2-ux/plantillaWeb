@@ -5,6 +5,7 @@ using Aplication.Services;
 using Infrastructure.Ai;
 using Infrastructure.Auth;
 using Infrastructure.Balances;
+using Infrastructure.Images;
 using Infrastructure.Links;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
@@ -86,6 +87,7 @@ builder.Services.AddScoped<LocalStorage>();
 builder.Services.AddScoped<S3Storage>();
 builder.Services.AddScoped<CloudflareR2Storage>();
 builder.Services.AddScoped<IImageStorage>(sp => sp.GetRequiredService<S3Storage>());
+builder.Services.AddSingleton<IImageProcessor, MagickImageProcessor>();
 builder.Services.AddScoped<ImageService>();
 
 // ─── Almacenamiento y servicio de documentos ─────────────────────────────────

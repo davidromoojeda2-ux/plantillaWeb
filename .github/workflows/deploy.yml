@@ -54,6 +54,9 @@ jobs:
       - name: Compilar solución (.NET 10)
         run: dotnet build paginaWeb.slnx -c Release --no-restore -p:SkipTailwind=true
 
+      - name: Probar procesamiento de imágenes (Magick.NET)
+        run: dotnet test tests/ImageOptimization.Tests/ImageOptimization.Tests.csproj -c Release --no-restore --nologo
+
   # ─── 2. Construcción y Publicación de Imagen Docker ─────────────────────────
   build-and-push:
     name: Build & Push Docker Image

@@ -33,7 +33,7 @@ COPY ["Aplication/Aplication.csproj", "Aplication/"]
 COPY ["Infrastructure/Infrastructure.csproj", "Infrastructure/"]
 COPY ["paginaWeb/paginaWeb.csproj", "paginaWeb/"]
 
-RUN dotnet restore "paginaWeb/paginaWeb.csproj"
+RUN dotnet restore "paginaWeb/paginaWeb.csproj" -r linux-x64
 
 # Copiar el resto del código fuente
 COPY Domine/ Domine/
@@ -48,6 +48,8 @@ COPY --from=frontend /src/frontend/wwwroot/css/tailwind.css ./paginaWeb/wwwroot/
 RUN dotnet publish "paginaWeb/paginaWeb.csproj" \
     -c Release \
     -o /app/publish \
+    -r linux-x64 \
+    --self-contained false \
     -p:SkipTailwind=true \
     --no-restore
 
