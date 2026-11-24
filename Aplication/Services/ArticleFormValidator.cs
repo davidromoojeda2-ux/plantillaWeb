@@ -40,6 +40,7 @@ public static class ArticleFormValidator
         ParagraphStyleProfile? paragraphStyle = null)
     {
         var issues = new List<ArticleValidationIssue>();
+        var styleFindings = Array.Empty<ParagraphFinding>();
 
         ValidateRequiredText(title, 5, 250, "El título", "titleInput", issues);
         ValidateRequiredText(summary, 20, 500, "El resumen", "Summary", issues);
@@ -50,8 +51,8 @@ public static class ArticleFormValidator
 
         if (paragraphStyle is not null && blocks.Count > 0)
         {
-            var findings = ParagraphStyle.Analyze(blocks, paragraphStyle);
-            foreach (var styleIssue in ParagraphStyle.SummarizeWithTargets(findings, paragraphStyle))
+            styleFindings = ParagraphStyle.Analyze(blocks, paragraphStyle).ToArray();
+            foreach (var styleIssue in ParagraphStyle.SummarizeWithTargets(styleFindings, paragraphStyle))
             {
                 issues.Add(new ArticleValidationIssue(
                     ArticleIssueSeverity.Warning,
@@ -63,7 +64,94 @@ public static class ArticleFormValidator
 
         var (errors, warnings) = SplitBySeverity(issues);
 
-        return new ArticleFormValidationResult(errors, warnings, ExtractLinks(blocks), issues);
+        return new ArticleFormValidationResult(
+            errors,
+            warnings,
+            ExtractLinks(blocks),
+            issues,
+            BuildBlockIssues(issues, blocks, styleFindings));
+    }
+
+    /// <summary>
+    /// Construye la lista de observaciones exactas de cada bloque. El resumen global
+    /// (<see cref="ArticleFormValidationResult.Issues"/>) puede agrupar varios bloques
+    /// en un solo mensaje; aquí cada entrada se separa y, cuando aplica, se sustituye
+    /// por el detalle concreto del bloque.
+    /// </summary>
+    private static IReadOnlyList<ArticleValidationIssue> BuildBlockIssues(
+        IReadOnlyList<ArticleValidationIssue> issues,
+        IReadOnlyList<ContentBlockDto> blocks,
+        IReadOnlyList<ParagraphFinding> styleFindings)
+    {
+        var blockIssues = new List<ArticleValidationIssue>();
+
+        foreach (var issue in issues)
+        {
+            // Los avisos de estilo se sustituyen por los hallazgos individuales de
+            // cada párrafo, que ya incluyen el número de párrafo y el detalle exacto.
+            if (issue.Code.StartsWith("style-", StringComparison.Ordinal)) continue;
+            if (issue.BlockIndexes is not { Count: > 0 }) continue;
+
+            foreach (var index in issue.BlockIndexes.Distinct())
+            {
+                if (index < 0 || index >= blocks.Count) continue;
+
+                blockIssues.Add(issue with
+                {
+                    Message = BlockIssueMessage(issue, blocks[index]),
+                    BlockIndexes = [index]
+                });
+            }
+        }
+
+        foreach (var finding in styleFindings)
+        {
+            if (finding.BlockIndex < 0 || finding.BlockIndex >= blocks.Count) continue;
+
+            blockIssues.Add(new ArticleValidationIssue(
+                ArticleIssueSeverity.Warning,
+                $"style-{finding.Code}",
+                finding.Message,
+                BlockIndexes: [finding.BlockIndex]));
+        }
+
+        return blockIssues
+            .OrderBy(issue => issue.BlockIndexes![0])
+            .ThenBy(issue => issue.Code, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Ajusta el mensaje de una observación para que se refiera al bloque concreto
+    /// cuando el texto original describía el conjunto. Los enlaces y demás hallazgos
+    /// que ya son específicos conservan su mensaje.
+    /// </summary>
+    private static string BlockIssueMessage(
+        ArticleValidationIssue issue, ContentBlockDto block)
+    {
+        if (issue.Code == "empty")
+        {
+            return block switch
+            {
+                ContentParagraphBlockDto =>
+                    "Este párrafo está vacío. Complétalo o elimina el bloque.",
+                ContentHeadingBlockDto =>
+                    "Este encabezado está vacío. Complétalo o elimina el bloque.",
+                ContentQuoteBlockDto =>
+                    "Esta cita está vacía. Complétala o elimina el bloque.",
+                ContentCalloutBlockDto =>
+                    "Este callout está vacío. Complétalo o elimina el bloque.",
+                ContentBulletListBlockDto or ContentOrderedListBlockDto =>
+                    "Esta lista tiene menos de 2 elementos. Añade otro elemento o elimina el bloque.",
+                ContentTableBlockDto =>
+                    "Esta tabla necesita al menos 2 filas de datos. Complétala o elimina el bloque.",
+                ContentCodeBlockDto =>
+                    "Este bloque de código está vacío. Complétalo o elimina el bloque.",
+                _ => "Este bloque está vacío o incompleto. Complétalo o elimina el bloque."
+            };
+        }
+
+        return issue.Message;
     }
 
     /// <summary>Separa los mensajes por severidad, conservando el orden original.</summary>

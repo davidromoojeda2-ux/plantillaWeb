@@ -161,6 +161,81 @@ public class ArticleFormValidatorTests
     }
 
     [Fact]
+    public void Las_observaciones_de_estilo_son_individuales_por_bloque()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto
+            {
+                Text = string.Join(' ', Enumerable.Repeat("palabra", 120))
+            },
+            new ContentParagraphBlockDto
+            {
+                Text = string.Join(' ', Enumerable.Repeat("palabra", 80))
+            }
+        };
+
+        var profile = ParagraphStyleProfile.Resolve("news", null, "es");
+
+        var result = ArticleFormValidator.Validate(
+            "Título de prueba",
+            "Resumen suficientemente largo para validar el artículo.",
+            "titulo-de-prueba",
+            "Redacción",
+            "cat-1",
+            "/uploads/portada.webp",
+            "Publicado",
+            blocks,
+            profile);
+
+        var blockIssues = result.EffectiveBlockIssues
+            .Where(issue => issue.Code == "style-length")
+            .OrderBy(issue => issue.BlockIndexes![0])
+            .ToList();
+
+        Assert.Equal(2, blockIssues.Count);
+        Assert.Equal([0], blockIssues[0].BlockIndexes);
+        Assert.Equal([1], blockIssues[1].BlockIndexes);
+        Assert.Contains("120 palabras", blockIssues[0].Message);
+        Assert.Contains("80 palabras", blockIssues[1].Message);
+
+        // El resumen global sigue agrupando, pero las notas de bloque no lo repiten.
+        Assert.Contains(result.Warnings, w => w.Contains("2 párrafos", StringComparison.Ordinal));
+        Assert.DoesNotContain(blockIssues, issue => issue.Message.Contains("2 párrafos", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void La_observacion_de_bloque_vacio_es_individual()
+    {
+        var blocks = new List<ContentBlockDto>
+        {
+            new ContentParagraphBlockDto(),
+            new ContentHeadingBlockDto { Level = 2, Text = "" },
+            new ContentParagraphBlockDto { Text = "Contenido con extensión suficiente." }
+        };
+
+        var result = ArticleFormValidator.Validate(
+            "Título de prueba",
+            "Resumen suficientemente largo para validar el artículo.",
+            "titulo-de-prueba",
+            "Redacción",
+            "cat-1",
+            "/uploads/portada.webp",
+            "Publicado",
+            blocks,
+            ParagraphStyleProfile.Resolve("news", null, "es"));
+
+        var emptyIssues = result.EffectiveBlockIssues
+            .Where(issue => issue.Code == "empty")
+            .OrderBy(issue => issue.BlockIndexes![0])
+            .ToList();
+
+        Assert.Equal(2, emptyIssues.Count);
+        Assert.Contains("párrafo está vacío", emptyIssues[0].Message);
+        Assert.Contains("encabezado está vacío", emptyIssues[1].Message);
+    }
+
+    [Fact]
     public void Los_errores_de_campo_apuntan_al_input()
     {
         var result = ArticleFormValidator.Validate(

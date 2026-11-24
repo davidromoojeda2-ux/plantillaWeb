@@ -154,6 +154,7 @@
         }
 
         let lastIssues = [];
+        let lastBlockIssues = [];
 
         // Observaciones que la IA no puede resolver por sí sola (requieren elección
         // de categoría, portada o estado).
@@ -425,13 +426,17 @@
                     ];
                 }
 
+                // El resumen agrupa observaciones de varios bloques; para las notas
+                // dentro del bloque se usa la lista individual que envía el servidor.
+                lastBlockIssues = Array.isArray(data.blockIssues) ? data.blockIssues : lastIssues;
+
                 const errorIssues = lastIssues.filter(issue => issue.severity === 'error');
                 const warningIssues = lastIssues.filter(issue => issue.severity === 'warning');
 
                 renderIssues(errorsBox, 'Errores', errorIssues);
                 renderIssues(warningsBox, 'Avisos', warningIssues);
                 renderLinks(data.links);
-                window.contentBlocksEditor?.markIssues?.(lastIssues);
+                window.contentBlocksEditor?.markIssues?.(lastBlockIssues);
 
                 aiButton?.classList.toggle('hidden', correctableIssues().length === 0);
                 cleanBox.classList.toggle('hidden', lastIssues.length > 0);
@@ -446,6 +451,7 @@
             } catch (error) {
                 results.classList.remove('hidden');
                 lastIssues = [];
+                lastBlockIssues = [];
                 aiButton?.classList.add('hidden');
                 window.contentBlocksEditor?.clearIssueMarks?.();
                 renderList(errorsBox, 'No se pudo validar', [error.message || 'Inténtalo de nuevo.']);

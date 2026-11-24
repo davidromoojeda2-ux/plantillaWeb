@@ -592,6 +592,15 @@
     padding: 0.15rem 0.4rem;
   }
 
+  /* La etiqueta inicial de un ítem debe leerse como un término destacado, igual
+     que en la vista pública. */
+  .cbe-list-item .cbe-rich > strong:first-child,
+  .cbe-list-item .cbe-rich > b:first-child,
+  .cbe-list-item .cbe-rich > .cbe-list-lead {
+    color: var(--color-brand-700, #003f88);
+    font-weight: 800;
+  }
+
   .cbe-list-remove {
     margin-top: 0.25rem;
     opacity: 0;

@@ -4,6 +4,6 @@
 <ol class="article-ordered-list">
     @foreach (var item in Model.Items)
     {
-        <li>@Html.Raw(HtmlSanitizer.Sanitize(item))</li>
+        <li>@Html.Raw(ContentBlockViewHelpers.HighlightListLead(HtmlSanitizer.Sanitize(item)))</li>
     }
 </ol>
