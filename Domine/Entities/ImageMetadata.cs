@@ -1,5 +1,4 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 
 namespace Domine.Entities;
 
@@ -7,12 +6,9 @@ namespace Domine.Entities;
 /// Metadatos de una imagen procesada y almacenada en Cloudflare R2.
 /// Los binarios viven en R2; este documento registra las variantes y metadatos.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class ImageMetadata
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     /// <summary>Nombre original del archivo subido.</summary>
     public string OriginalFileName { get; set; } = string.Empty;
@@ -33,7 +29,6 @@ public class ImageMetadata
     public string Storage { get; set; } = "r2";
 
     /// <summary>Id del artículo al cual está vinculada la imagen (opcional).</summary>
-    [BsonRepresentation(BsonType.ObjectId)]
     public string? ArticleId { get; set; }
 
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;

@@ -1,19 +1,15 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 
 namespace Domine.Entities;
 
 /// <summary>
 /// Metadatos de un documento descargable almacenado en S3/R2 o en el
-/// almacenamiento local. El binario vive fuera de MongoDB; este documento
+/// almacenamiento local. El binario vive fuera de la base de datos; este documento
 /// registra su ubicación, integridad y política de acceso.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class DocumentMetadata
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     /// <summary>Nombre original del archivo subido, conservado para trazabilidad.</summary>
     public string OriginalFileName { get; set; } = string.Empty;

@@ -1,5 +1,4 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 
 namespace Domine.Entities;
 
@@ -7,12 +6,9 @@ namespace Domine.Entities;
 /// Usuario administrador del panel /admin.
 /// Las credenciales son gestionadas externamente (hash de contraseña con BCrypt).
 /// </summary>
-[BsonIgnoreExtraElements]
 public class AdminUser
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     public string Username { get; set; } = string.Empty;
 

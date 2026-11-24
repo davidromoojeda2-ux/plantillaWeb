@@ -93,6 +93,33 @@
     }
 
     /**
+     * Destaca visualmente el término inicial de un elemento de lista cuando tiene
+     * la forma «Etiqueta: descripción». Solo se aplica mientras se edita: el
+     * sanitizador retira el span al guardar, por lo que el JSON no cambia.
+     */
+    function decorateListLead(rich) {
+        if (!rich || rich.querySelector('.cbe-list-lead')) return;
+
+        const first = rich.firstChild;
+        if (!first || first.nodeType !== Node.TEXT_NODE) return;
+
+        const text = first.textContent || '';
+        const colon = text.indexOf(':');
+        if (colon <= 0) return;
+
+        const lead = text.slice(0, colon);
+        if (!lead.trim() || lead.length > 80) return;
+        if (!/\p{L}/u.test(lead)) return;
+        if (/https?|www\./i.test(lead)) return;
+
+        const span = document.createElement('span');
+        span.className = 'cbe-list-lead';
+        span.textContent = text.slice(0, colon + 1);
+        first.textContent = text.slice(colon + 1);
+        rich.insertBefore(span, first);
+    }
+
+    /**
      * Deja únicamente el subconjunto inline que el servidor acepta para RichText.
      * No sustituye la sanitización del servidor; solo evita inyectar markup activo
      * mientras se edita o se pega contenido.
@@ -956,6 +983,8 @@
                 if (next) this.sync();
             });
             rich.dataset.field = 'item';
+            decorateListLead(rich);
+            rich.addEventListener('blur', () => decorateListLead(rich));
 
             const remove = this.iconButton('Eliminar elemento', ICONS.trash, () => {
                 if (list.children.length > 1) {

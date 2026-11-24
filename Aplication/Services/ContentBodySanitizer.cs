@@ -1,11 +1,11 @@
 using Aplication.Configuration;
 using Aplication.DTOs.ContentBlocks;
 using Aplication.Interfaces;
+using Domine.Common;
 using Domine.ContentBlocks;
 using Domine.Exceptions;
 using Domine.ValueObjects;
 using Microsoft.Extensions.Options;
-using MongoDB.Bson;
 
 namespace Aplication.Services;
 
@@ -126,7 +126,7 @@ public sealed class ContentBodySanitizer
     private ContentImageBlock SanitizeImage(ContentImageBlockDto dto, int index)
     {
         var imageId = string.IsNullOrWhiteSpace(dto.ImageId) ? null : dto.ImageId.Trim();
-        if (imageId is not null && !ObjectId.TryParse(imageId, out _))
+        if (imageId is not null && !EntityId.IsValid(imageId))
             throw BlockError(index, "El identificador de imagen no es válido.");
 
         var url = string.IsNullOrWhiteSpace(dto.Url) ? null : dto.Url.Trim();
@@ -163,7 +163,7 @@ public sealed class ContentBodySanitizer
     private ContentDocumentBlock SanitizeDocument(ContentDocumentBlockDto dto, int index)
     {
         var documentId = string.IsNullOrWhiteSpace(dto.DocumentId) ? null : dto.DocumentId.Trim();
-        if (documentId is null || !ObjectId.TryParse(documentId, out _))
+        if (documentId is null || !EntityId.IsValid(documentId))
             throw BlockError(index, "El documento debe tener un identificador válido.");
 
         return new ContentDocumentBlock

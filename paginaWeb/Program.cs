@@ -131,10 +131,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAntiforgery();
 
-// ─── Configuración de appsettings ─────────────────────────────────────────────
-builder.Services.Configure<MongoDbSettings>(
-    builder.Configuration.GetSection("MongoDB"));
-
 // Kestrel limita el cuerpo a ~30 MB por defecto. Si la configuración de
 // documentos supera ese valor, se amplía el límite de la petición y del
 // formulario multipart de forma coordinada.

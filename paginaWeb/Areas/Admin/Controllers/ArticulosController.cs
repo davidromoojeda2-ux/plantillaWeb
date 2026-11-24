@@ -258,6 +258,7 @@ public class ArticulosController : Controller
             blocks.Count > 0 ? await ResolveParagraphStyleAsync() : null);
 
         issues.AddRange(validation.EffectiveIssues);
+        var blockIssues = validation.EffectiveBlockIssues.ToList();
 
         var linksToCheck = validation.Links.ToList();
         if (!string.IsNullOrWhiteSpace(request.CoverImageUrl))
@@ -273,25 +274,40 @@ public class ArticulosController : Controller
 
             if (link.IsBroken)
             {
-                issues.Add(new ArticleValidationIssue(
+                var issue = new ArticleValidationIssue(
                     ArticleIssueSeverity.Error,
                     "link",
                     $"Enlace caído: {link.Url} ({link.Detail ?? link.Status}).",
                     isCover ? "coverImageUrlInput" : null,
                     isCover ? null : ArticleFormValidator.FindBlocksWithLink(blocks, link.Url, baseUri),
-                    link.Url));
+                    link.Url);
+                issues.Add(issue);
+                AddLinkBlockIssues(blockIssues, issue, isCover);
             }
             else if (link.IsWarning)
             {
-                issues.Add(new ArticleValidationIssue(
+                var issue = new ArticleValidationIssue(
                     ArticleIssueSeverity.Warning,
                     "link",
                     $"Enlace restringido: {link.Url} ({link.StatusCode}).",
                     isCover ? "coverImageUrlInput" : null,
                     isCover ? null : ArticleFormValidator.FindBlocksWithLink(blocks, link.Url, baseUri),
-                    link.Url));
+                    link.Url);
+                issues.Add(issue);
+                AddLinkBlockIssues(blockIssues, issue, isCover);
             }
         }
+
+        blockIssues = blockIssues
+            .GroupBy(issue => (
+                issue.Code,
+                issue.Message,
+                Index: issue.BlockIndexes?.FirstOrDefault() ?? -1,
+                issue.Url))
+            .Select(group => group.First())
+            .OrderBy(issue => issue.BlockIndexes![0])
+            .ThenBy(issue => issue.Code, StringComparer.Ordinal)
+            .ToList();
 
         var (errors, warnings) = ArticleFormValidator.SplitBySeverity(issues);
 
@@ -309,6 +325,14 @@ public class ArticulosController : Controller
                 blockIndexes = issue.BlockIndexes,
                 url = issue.Url
             }),
+            blockIssues = blockIssues.Select(issue => new
+            {
+                severity = issue.Severity,
+                code = issue.Code,
+                message = issue.Message,
+                blockIndexes = issue.BlockIndexes,
+                url = issue.Url
+            }),
             links = links.Select(link => new
             {
                 link.Url,
@@ -319,6 +343,17 @@ public class ArticulosController : Controller
             }),
             checkedAt = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
         });
+    }
+
+    private static void AddLinkBlockIssues(
+        List<ArticleValidationIssue> blockIssues,
+        ArticleValidationIssue issue,
+        bool isCover)
+    {
+        if (isCover || issue.BlockIndexes is not { Count: > 0 }) return;
+
+        blockIssues.AddRange(issue.BlockIndexes
+            .Select(index => issue with { BlockIndexes = [index] }));
     }
 
     [HttpPost("corregir")]

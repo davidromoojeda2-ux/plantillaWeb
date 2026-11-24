@@ -6,10 +6,10 @@ using Aplication.Exceptions;
 using Aplication.Interfaces;
 using Aplication.Mappers;
 using Aplication.Realtime;
+using Domine.Common;
 using Domine.ContentBlocks;
 using Domine.Exceptions;
 using Microsoft.Extensions.Options;
-using MongoDB.Bson;
 
 namespace Aplication.Services;
 
@@ -193,7 +193,7 @@ public class ArticleService : IArticleService
 
         foreach (var documentId in normalizedIds)
         {
-            if (!ObjectId.TryParse(documentId, out _))
+            if (!EntityId.IsValid(documentId))
             {
                 throw new DomainValidationException(
                     "El identificador de documento adjunto no es válido.",

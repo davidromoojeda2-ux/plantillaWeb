@@ -1,32 +1,18 @@
 using Domine.ValueObjects;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace Domine.ContentBlocks;
 
 /// <summary>
 /// Bloque editorial tipado. Cada subtipo declara únicamente los campos de su
-/// formato y se persiste como documento embebido con discriminador BSON.
+/// formato y se persiste como documento embebido con discriminador.
+/// El discriminador y la jerarquía se configuran en la capa de persistencia
+/// (<c>Infrastructure</c>), no en el dominio.
 /// </summary>
-[BsonDiscriminator(RootClass = true)]
-[BsonKnownTypes(
-    typeof(ContentParagraphBlock),
-    typeof(ContentHeadingBlock),
-    typeof(ContentOrderedListBlock),
-    typeof(ContentBulletListBlock),
-    typeof(ContentQuoteBlock),
-    typeof(ContentCalloutBlock),
-    typeof(ContentImageBlock),
-    typeof(ContentDocumentBlock),
-    typeof(ContentTableBlock),
-    typeof(ContentCodeBlock),
-    typeof(ContentDividerBlock))]
 public abstract class ContentBlock
 {
-    [BsonIgnore]
     public abstract string Type { get; }
 }
 
-[BsonDiscriminator("paragraph")]
 public sealed class ContentParagraphBlock : ContentBlock
 {
     public RichText Text { get; set; } = RichText.Empty();
@@ -34,7 +20,6 @@ public sealed class ContentParagraphBlock : ContentBlock
     public override string Type => "paragraph";
 }
 
-[BsonDiscriminator("heading")]
 public sealed class ContentHeadingBlock : ContentBlock
 {
     /// <summary>Nivel semántico permitido: 2 (H2) o 3 (H3).</summary>
@@ -45,7 +30,6 @@ public sealed class ContentHeadingBlock : ContentBlock
     public override string Type => "heading";
 }
 
-[BsonDiscriminator("ordered-list")]
 public sealed class ContentOrderedListBlock : ContentBlock
 {
     public List<RichText> Items { get; set; } = [];
@@ -53,7 +37,6 @@ public sealed class ContentOrderedListBlock : ContentBlock
     public override string Type => "ordered-list";
 }
 
-[BsonDiscriminator("bullet-list")]
 public sealed class ContentBulletListBlock : ContentBlock
 {
     public List<RichText> Items { get; set; } = [];
@@ -61,7 +44,6 @@ public sealed class ContentBulletListBlock : ContentBlock
     public override string Type => "bullet-list";
 }
 
-[BsonDiscriminator("quote")]
 public sealed class ContentQuoteBlock : ContentBlock
 {
     public RichText Text { get; set; } = RichText.Empty();
@@ -71,7 +53,6 @@ public sealed class ContentQuoteBlock : ContentBlock
     public override string Type => "quote";
 }
 
-[BsonDiscriminator("callout")]
 public sealed class ContentCalloutBlock : ContentBlock
 {
     public CalloutVariant Variant { get; set; } = CalloutVariant.Info;
@@ -83,7 +64,6 @@ public sealed class ContentCalloutBlock : ContentBlock
     public override string Type => "callout";
 }
 
-[BsonDiscriminator("image")]
 public sealed class ContentImageBlock : ContentBlock
 {
     public string? ImageId { get; set; }
@@ -103,7 +83,6 @@ public sealed class ContentImageBlock : ContentBlock
     public override string Type => "image";
 }
 
-[BsonDiscriminator("document")]
 public sealed class ContentDocumentBlock : ContentBlock
 {
     /// <summary>Id del documento en la colección documents.</summary>
@@ -118,7 +97,6 @@ public sealed class ContentDocumentBlock : ContentBlock
     public override string Type => "document";
 }
 
-[BsonDiscriminator("table")]
 public sealed class ContentTableBlock : ContentBlock
 {
     public List<PlainText> Headers { get; set; } = [];
@@ -130,7 +108,6 @@ public sealed class ContentTableBlock : ContentBlock
     public override string Type => "table";
 }
 
-[BsonDiscriminator("code")]
 public sealed class ContentCodeBlock : ContentBlock
 {
     public PlainText Code { get; set; } = PlainText.Empty();
@@ -140,7 +117,6 @@ public sealed class ContentCodeBlock : ContentBlock
     public override string Type => "code";
 }
 
-[BsonDiscriminator("divider")]
 public sealed class ContentDividerBlock : ContentBlock
 {
     public override string Type => "divider";

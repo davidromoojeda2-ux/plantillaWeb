@@ -1,17 +1,13 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 
 namespace Domine.Entities;
 
 /// <summary>
 /// Configuración durable del pipeline de automatización. Se persiste como documento único.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class AutomationSettings
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     /// <summary>Si es false, la automatización no genera artículos (apagado global).</summary>
     public bool Enabled { get; set; } = true;

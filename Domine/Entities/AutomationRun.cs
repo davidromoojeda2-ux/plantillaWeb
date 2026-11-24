@@ -1,5 +1,4 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 
 namespace Domine.Entities;
 
@@ -37,12 +36,9 @@ public enum AutomationDecisionKind
 /// <summary>
 /// Registro de una ejecución del pipeline de automatización (descubrir → generar → publicar).
 /// </summary>
-[BsonIgnoreExtraElements]
 public class AutomationRun
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     public AutomationRunStatus Status { get; set; } = AutomationRunStatus.EnProgreso;
     public AutomationTrigger Trigger { get; set; } = AutomationTrigger.Programada;
@@ -78,7 +74,6 @@ public class AutomationRun
 }
 
 /// <summary>Artículo creado por la automatización.</summary>
-[BsonIgnoreExtraElements]
 public class GeneratedArticleInfo
 {
     public string ArticleId { get; set; } = string.Empty;
@@ -89,7 +84,6 @@ public class GeneratedArticleInfo
 }
 
 /// <summary>Tema descartado porque la IA determinó que no corresponde al país configurado.</summary>
-[BsonIgnoreExtraElements]
 public class AutomationSkippedTopic
 {
     public string TopicTitle { get; set; } = string.Empty;
@@ -103,7 +97,6 @@ public class AutomationSkippedTopic
 }
 
 /// <summary>Decisión editorial sobre una temática detectada como repetida.</summary>
-[BsonIgnoreExtraElements]
 public class AutomationDecision
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");

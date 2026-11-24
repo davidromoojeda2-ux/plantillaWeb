@@ -26,9 +26,17 @@ public sealed record ArticleFormValidationResult(
     IReadOnlyList<string> Errors,
     IReadOnlyList<string> Warnings,
     IReadOnlyList<string> Links,
-    IReadOnlyList<ArticleValidationIssue>? Issues = null)
+    IReadOnlyList<ArticleValidationIssue>? Issues = null,
+    IReadOnlyList<ArticleValidationIssue>? BlockIssues = null)
 {
     public IReadOnlyList<ArticleValidationIssue> EffectiveIssues => Issues ?? [];
+
+    /// <summary>
+    /// Observaciones exactas de cada bloque. A diferencia de <see cref="Issues"/>,
+    /// que conserva el resumen global, aquí cada entrada apunta a un único bloque
+    /// con el detalle que le corresponde.
+    /// </summary>
+    public IReadOnlyList<ArticleValidationIssue> EffectiveBlockIssues => BlockIssues ?? [];
 }
 
 /// <summary>

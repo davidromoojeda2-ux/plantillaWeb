@@ -1,5 +1,4 @@
 using Domine.Content;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace Domine.ValueObjects;
 
@@ -9,13 +8,10 @@ namespace Domine.ValueObjects;
 /// </summary>
 public sealed class SafeUrl
 {
-    [BsonElement("value")]
     public string Value { get; private set; } = string.Empty;
 
-    [BsonIgnore]
     public string? Host { get; private set; }
 
-    [BsonIgnore]
     public bool IsRelative { get; private set; }
 
     private SafeUrl()

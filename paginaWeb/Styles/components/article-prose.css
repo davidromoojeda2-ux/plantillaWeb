@@ -325,9 +325,12 @@
     color: #334155;
   }
 
-  /* Un término en negrita al inicio del ítem funciona como "etiqueta" */
-  .article-prose li > strong:first-child {
-    color: var(--color-brand-900);
+  /* Etiqueta inicial del ítem: negrita marcada o término detectado antes de «:» */
+  .article-prose li > strong:first-child,
+  .article-prose li > b:first-child,
+  .article-prose li > .list-item-lead {
+    color: var(--color-brand-700, #003f88);
+    font-weight: 800;
   }
 
   /* ── Listas Estándar para .prose genérico (páginas informativas) ──────── */
