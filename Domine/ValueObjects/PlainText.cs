@@ -1,5 +1,4 @@
 using Domine.Content;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace Domine.ValueObjects;
 
@@ -9,7 +8,6 @@ namespace Domine.ValueObjects;
 /// </summary>
 public sealed class PlainText
 {
-    [BsonElement("value")]
     public string Value { get; private set; } = string.Empty;
 
     private PlainText()

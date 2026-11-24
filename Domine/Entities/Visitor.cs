@@ -1,5 +1,4 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 
 namespace Domine.Entities;
 
@@ -7,12 +6,9 @@ namespace Domine.Entities;
 /// Visitante anónimo que interactúa con el portal (comentarios).
 /// No almacena contraseñas; se identifica por correo con hash de IP para privacidad.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class Visitor
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     public string Name { get; set; } = string.Empty;
 
@@ -24,7 +20,7 @@ public class Visitor
 
     /// <summary>
     /// Indica si el visitante aceptó el aviso de cookies. Se conserva por compatibilidad
-    /// con los documentos ya persistidos en MongoDB.
+    /// con los documentos ya persistidos en la base de datos.
     /// </summary>
     public bool ConsentCookies { get; set; } = false;
 

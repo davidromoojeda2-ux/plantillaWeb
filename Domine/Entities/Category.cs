@@ -1,5 +1,4 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 using Domine.Exceptions;
 
 namespace Domine.Entities;
@@ -8,15 +7,11 @@ namespace Domine.Entities;
 /// Categoría del portal de noticias con soporte de jerarquía (padre/hijo).
 /// Permite hasta dos niveles: categoría raíz (ParentId == null) y subcategoría.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class Category
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     /// <summary>Id de la categoría padre; null indica categoría raíz.</summary>
-    [BsonRepresentation(BsonType.ObjectId)]
     public string? ParentId { get; set; }
 
     public string Name { get; set; } = string.Empty;

@@ -12,6 +12,8 @@ public class MongoDbContext
 {
     private readonly IMongoDatabase _database;
 
+    static MongoDbContext() => MongoClassMaps.Register();
+
     public MongoDbContext(IOptions<MongoDbSettings> settings)
     {
         var connStr = string.IsNullOrWhiteSpace(settings.Value.ConnectionString)

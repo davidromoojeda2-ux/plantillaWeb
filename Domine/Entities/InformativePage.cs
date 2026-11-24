@@ -1,5 +1,4 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 using Domine.Content;
 using Domine.ContentBlocks;
 using Domine.Exceptions;
@@ -11,15 +10,13 @@ namespace Domine.Entities;
 /// Accesible en /info/{slug} y opcionalmente listada en el pie de página.
 /// </summary>
 /// <remarks>
-/// <see cref="BsonIgnoreExtraElementsAttribute"/> evita que fallen los documentos
-/// persistidos con esquemas anteriores (por ejemplo el campo legado <c>Content</c>).
+/// El mapeo de persistencia (en <c>Infrastructure</c>) ignora los campos
+/// desconocidos para no fallar con documentos de esquemas anteriores
+/// (por ejemplo el campo legado <c>Content</c>).
 /// </remarks>
-[BsonIgnoreExtraElements]
 public class InformativePage
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     public string Title { get; set; } = string.Empty;
 

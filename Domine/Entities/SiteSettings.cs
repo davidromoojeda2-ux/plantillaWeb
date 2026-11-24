@@ -1,18 +1,15 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using Domine.Common;
 
 namespace Domine.Entities;
 
 /// <summary>
 /// Configuración global del portal para comunidad y difusión. Se persiste como documento único.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class SiteSettings
 {
     /// <summary>Identificador fijo que garantiza un único documento de configuración.</summary>
     public const string SingletonId = "site-settings";
 
-    [BsonId]
     public string Id { get; set; } = SingletonId;
 
     /// <summary>Grupos de WhatsApp que se muestran en el modal público del botón "Únete".</summary>
@@ -40,7 +37,6 @@ public class SiteSettings
 /// Calidad de codificación WebP para las variantes generadas al subir una imagen.
 /// Un valor nulo en un tamaño concreto indica que se usa la calidad global.
 /// </summary>
-[BsonIgnoreExtraElements]
 public class ImageQualitySettings
 {
     public const int DefaultQuality = 80;
@@ -67,10 +63,9 @@ public class ImageQualitySettings
     };
 }
 
-[BsonIgnoreExtraElements]
 public class WhatsAppGroupLink
 {
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public string Id { get; set; } = EntityId.New();
 
     public string Name { get; set; } = string.Empty;
 
@@ -81,7 +76,6 @@ public class WhatsAppGroupLink
     public bool Active { get; set; } = true;
 }
 
-[BsonIgnoreExtraElements]
 public class SocialProfileLink
 {
     /// <summary>Clave de la red social (ver <see cref="SocialNetworks"/>).</summary>

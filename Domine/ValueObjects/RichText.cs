@@ -1,5 +1,4 @@
 using Domine.Content;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace Domine.ValueObjects;
 
@@ -10,10 +9,8 @@ namespace Domine.ValueObjects;
 /// </summary>
 public sealed class RichText
 {
-    [BsonElement("html")]
     public string Html { get; private set; } = string.Empty;
 
-    [BsonElement("text")]
     public string Text { get; private set; } = string.Empty;
 
     private RichText()

@@ -17,7 +17,7 @@ public interface ISiteSettingsService
 
 /// <summary>
 /// Administra la configuración global de comunidad y difusión. Mantiene una copia en caché
-/// para no consultar MongoDB en cada render del navbar, footer y barra de compartir.
+/// para no consultar la persistencia en cada render del navbar, footer y barra de compartir.
 /// </summary>
 public class SiteSettingsService : ISiteSettingsService
 {

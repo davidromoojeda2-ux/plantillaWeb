@@ -21,7 +21,7 @@ public interface IMenuService
 }
 
 /// <summary>
-/// Carga el menú desde MongoDB con IMemoryCache (5 min).
+/// Carga el menú desde la persistencia con IMemoryCache (5 min).
 /// En caso de fallo de DB, retorna la última copia en caché como fallback.
 /// </summary>
 public class MenuService : IMenuService
