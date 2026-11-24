@@ -55,7 +55,7 @@
     <!-- Google Analytics -->
     <script>
         window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
+        function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
     </script>
     <!-- End Google Analytics -->
@@ -96,10 +96,10 @@
     <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7782482501198229"
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6449877021454477"
             crossorigin="anonymous"></script>
 
-    @* JSON-LD al final del <head>: no retrasa el descubrimiento del preload del LCP. *@
+    @* JSON-LD *@
     @JsonLd.Render(organizationJsonLd)
     @JsonLd.Render(websiteJsonLd)
     @await RenderSectionAsync("StructuredData", required: false)
